@@ -14,6 +14,7 @@ import {
 } from './data/mockData';
 import { Navbar } from './components/Navbar';
 import { LandingPage } from './components/LandingPage';
+import { OrbView } from './components/OrbView';
 import { OnboardingModal } from './components/OnboardingModal';
 import { DiscoverView } from './components/DiscoverView';
 import { ConnectModal } from './components/ConnectModal';
@@ -21,6 +22,7 @@ import { MessagesView } from './components/MessagesView';
 import { ConnectionsView } from './components/ConnectionsView';
 import { ExploreBoardView } from './components/ExploreBoardView';
 import { ProfileView } from './components/ProfileView';
+import { AuthModal } from './components/AuthModal';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('landing');
@@ -32,6 +34,7 @@ export default function App() {
   const [profiles, setProfiles] = useState<UserProfile[]>(SAMPLE_PROFILES);
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
+  const [isSignInOpen, setIsSignInOpen] = useState<boolean>(false);
   const [connectModalTarget, setConnectModalTarget] = useState<UserProfile | null>(null);
 
   // Initial connections
@@ -282,6 +285,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         currentUser={currentUser}
         onOpenOnboarding={() => setIsOnboardingOpen(true)}
+        onOpenSignIn={() => setIsSignInOpen(true)}
         unreadCount={connections.reduce((sum, c) => sum + (c.unreadCount || 0), 0)}
         connectionsCount={connections.length}
       />
@@ -291,12 +295,39 @@ export default function App() {
         {activeTab === 'landing' && (
           <LandingPage
             onStartOnboarding={() => setIsOnboardingOpen(true)}
+            onEnterOrb={() => setActiveTab('orb')}
             onExplore={() => setActiveTab('discover')}
             onSelectProfile={(profile) => {
               handleOpenConnectModal(profile);
             }}
             onSelectIntent={(intent: ConnectionIntent) => {
               setActiveTab('discover');
+            }}
+            allProfiles={profiles}
+          />
+        )}
+
+        {activeTab === 'orb' && (
+          <OrbView
+            currentUser={currentUser}
+            connections={connections}
+            allProfiles={profiles}
+            onExplore={() => setActiveTab('discover')}
+            onOpenOnboarding={() => setIsOnboardingOpen(true)}
+            onOpenChatWithProfile={(profileId) => {
+              const existing = connections.find((c) => c.profileId === profileId);
+              if (existing) {
+                setActiveConnectionId(existing.id);
+                setActiveTab('messages');
+              } else {
+                const targetProfile = profiles.find((p) => p.id === profileId);
+                if (targetProfile) {
+                  handleOpenConnectModal(targetProfile);
+                }
+              }
+            }}
+            onSelectProfile={(profile) => {
+              handleOpenConnectModal(profile);
             }}
           />
         )}
@@ -330,6 +361,7 @@ export default function App() {
               setActiveTab('messages');
             }}
             onExplore={() => setActiveTab('discover')}
+            onOpenOrb={() => setActiveTab('orb')}
           />
         )}
 
@@ -370,6 +402,20 @@ export default function App() {
         targetProfile={connectModalTarget}
         currentUser={currentUser}
         onStartConversation={handleStartConversation}
+      />
+
+      {/* Member Sign In / Authentication Modal */}
+      <AuthModal
+        isOpen={isSignInOpen}
+        onClose={() => setIsSignInOpen(false)}
+        onSuccess={(user) => {
+          setCurrentUser(user);
+          localStorage.setItem('misfits_current_user', JSON.stringify(user));
+        }}
+        onOpenOnboarding={() => {
+          setIsSignInOpen(false);
+          setIsOnboardingOpen(true);
+        }}
       />
 
     </div>

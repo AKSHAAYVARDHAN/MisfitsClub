@@ -6,12 +6,14 @@ interface ConnectionsViewProps {
   connections: Connection[];
   onOpenChat: (connectionId: string) => void;
   onExplore: () => void;
+  onOpenOrb?: () => void;
 }
 
 export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
   connections,
   onOpenChat,
   onExplore,
+  onOpenOrb,
 }) => {
   const [selectedIntentFilter, setSelectedIntentFilter] = useState<string>('All');
 
@@ -40,14 +42,26 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
           </p>
         </div>
 
-        <button
-          id="connections-discover-more-btn"
-          onClick={onExplore}
-          className="inline-flex items-center gap-2 bg-[#151516] border border-[#F5F5F0]/10 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-[#F5F5F0] hover:border-[#D4FF3F] hover:text-[#D4FF3F] transition-colors"
-        >
-          <span>Discover More Misfits</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-2.5">
+          {onOpenOrb && (
+            <button
+              id="connections-view-orb-btn"
+              onClick={onOpenOrb}
+              className="inline-flex items-center gap-2 bg-[#D4FF3F] text-[#0B0B0C] px-5 py-2.5 text-xs font-bold uppercase tracking-widest hover:bg-[#F5F5F0] transition-colors shadow-lg"
+            >
+              <span>View in 3D Orb</span>
+            </button>
+          )}
+
+          <button
+            id="connections-discover-more-btn"
+            onClick={onExplore}
+            className="inline-flex items-center gap-2 bg-[#151516] border border-[#F5F5F0]/10 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-[#F5F5F0] hover:border-[#D4FF3F] hover:text-[#D4FF3F] transition-colors"
+          >
+            <span>Discover More</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Filter Tabs */}

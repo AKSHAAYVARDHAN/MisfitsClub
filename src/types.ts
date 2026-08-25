@@ -22,6 +22,8 @@ export interface UserProfile {
   handle: string;
   location: string;
   country: string;
+  lat?: number;
+  lng?: number;
   role: string;
   roleEmoji: string;
   tagline: string;
@@ -46,6 +48,20 @@ export interface UserProfile {
   isOnline?: boolean;
   timeZone?: string;
   joinedDate?: string;
+}
+
+export interface OrbLocation {
+  id: string;
+  name: string;
+  city: string;
+  country: string;
+  lat: number;
+  lng: number;
+  profile?: UserProfile;
+  isUser?: boolean;
+  intents?: ConnectionIntent[];
+  connectionsCount?: number;
+  lastActive?: string;
 }
 
 export interface Connection {
@@ -95,4 +111,4 @@ export interface CuriousBoardPost {
   repliesCount: number;
 }
 
-export type ActiveTab = 'landing' | 'discover' | 'explore' | 'connections' | 'messages' | 'profile';
+export type ActiveTab = 'landing' | 'orb' | 'discover' | 'explore' | 'connections' | 'messages' | 'profile';

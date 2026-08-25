@@ -1,0 +1,6 @@
+{
+  "name": "Misfits Club",
+  "description": "A global platform to meet curious, like-minded people for meaningful conversations, building together, and exchanging ideas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,266 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Test connection doc (public read for bootstrap verification)
+    match /test/{docId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // =========================================================================
+    // PRIVATE USERS COLLECTION (Owner Only - Contains Email & Private Data)
+    // =========================================================================
+    function isValidUser(data) {
+      return (data.id is string || data.uid is string) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.email is string && data.email.size() > 0 && data.email.size() <= 120 &&
+             (!('handle' in data) || (data.handle is string && data.handle.size() <= 60)) &&
+             (!('title' in data) || (data.title is string && data.title.size() <= 120)) &&
+             (!('role' in data) || (data.role is string && data.role.size() <= 120)) &&
+             (!('roleEmoji' in data) || (data.roleEmoji is string && data.roleEmoji.size() <= 16)) &&
+             (!('tagline' in data) || (data.tagline is string && data.tagline.size() <= 300)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 2000)) &&
+             (!('college' in data) || (data.college is string && data.college.size() <= 150)) &&
+             (!('department' in data) || (data.department is string && data.department.size() <= 150)) &&
+             (!('year' in data) || (data.year is string && data.year.size() <= 50)) &&
+             (!('skills' in data) || (data.skills is list && data.skills.size() <= 50)) &&
+             (!('location' in data) || (data.location is string && data.location.size() <= 120)) &&
+             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500)) &&
+             (!('profilePhoto' in data) || (data.profilePhoto is string && data.profilePhoto.size() <= 500)) &&
+             (!('onboardingCompleted' in data) || data.onboardingCompleted is bool) &&
+             (!('intents' in data) || (data.intents is list && data.intents.size() <= 20)) &&
+             (!('interests' in data) || (data.interests is list && data.interests.size() <= 40)) &&
+             (!('curiousAbout' in data) || (data.curiousAbout is list && data.curiousAbout.size() <= 20)) &&
+             (!('building' in data) || (data.building is string && data.building.size() <= 300)) &&
+             (!('learning' in data) || (data.learning is string && data.learning.size() <= 300)) &&
+             (!('openQuestion' in data) || (data.openQuestion is string && data.openQuestion.size() <= 500));
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
+      allow delete: if isOwner(userId);
+    }
+
+    // =========================================================================
+    // PUBLIC PROFILES COLLECTION (Discovery - Strictly NO Emails or Secrets)
+    // =========================================================================
+    function isValidPublicProfile(data) {
+      return (data.id is string || data.uid is string) &&
+             !('email' in data) && // Enforce that private email is strictly excluded
+             !('password' in data) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             (!('handle' in data) || (data.handle is string && data.handle.size() <= 60)) &&
+             (!('role' in data) || (data.role is string && data.role.size() <= 120)) &&
+             (!('roleEmoji' in data) || (data.roleEmoji is string && data.roleEmoji.size() <= 16)) &&
+             (!('tagline' in data) || (data.tagline is string && data.tagline.size() <= 300)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 2000)) &&
+             (!('college' in data) || (data.college is string && data.college.size() <= 150)) &&
+             (!('department' in data) || (data.department is string && data.department.size() <= 150)) &&
+             (!('year' in data) || (data.year is string && data.year.size() <= 50)) &&
+             (!('skills' in data) || (data.skills is list && data.skills.size() <= 50)) &&
+             (!('location' in data) || (data.location is string && data.location.size() <= 120)) &&
+             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500)) &&
+             (!('profilePhoto' in data) || (data.profilePhoto is string && data.profilePhoto.size() <= 500)) &&
+             (!('onboardingCompleted' in data) || data.onboardingCompleted is bool) &&
+             (!('intents' in data) || (data.intents is list && data.intents.size() <= 20)) &&
+             (!('interests' in data) || (data.interests is list && data.interests.size() <= 40)) &&
+             (!('curiousAbout' in data) || (data.curiousAbout is list && data.curiousAbout.size() <= 20)) &&
+             (!('building' in data) || (data.building is string && data.building.size() <= 300)) &&
+             (!('learning' in data) || (data.learning is string && data.learning.size() <= 300)) &&
+             (!('openQuestion' in data) || (data.openQuestion is string && data.openQuestion.size() <= 500));
+    }
+
+    match /publicProfiles/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId) && isValidId(userId) && isValidPublicProfile(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidPublicProfile(incoming());
+      allow delete: if isOwner(userId);
+    }
+
+    // =========================================================================
+    // CURIOSITY BOARD POSTS
+    // =========================================================================
+    function isValidBoardPost(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.authorId is string && data.authorId.size() <= 128 &&
+             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() <= 100 &&
+             data.content is string && data.content.size() > 0 && data.content.size() <= 3000 &&
+             (!('tags' in data) || (data.tags is list && data.tags.size() <= 15)) &&
+             (!('intents' in data) || (data.intents is list && data.intents.size() <= 10)) &&
+             (!('authorRole' in data) || (data.authorRole is string && data.authorRole.size() <= 120)) &&
+             (!('authorLocation' in data) || (data.authorLocation is string && data.authorLocation.size() <= 120)) &&
+             (!('authorAvatar' in data) || (data.authorAvatar is string && data.authorAvatar.size() <= 500)) &&
+             (!('repliesCount' in data) || data.repliesCount is number);
+    }
+
+    match /boardPosts/{postId} {
+      allow read: if true; // Publicly readable for landing manifesto and member discovery
+      allow create: if isSignedIn() && isValidId(postId) && isValidBoardPost(incoming()) && incoming().id == postId;
+      allow update: if isSignedIn() && isValidId(postId) && (
+        // Author full update
+        (existing().authorId == request.auth.uid && isValidBoardPost(incoming())) ||
+        // Community reaction incrementing repliesCount
+        (incoming().diff(existing()).affectedKeys().hasOnly(['repliesCount']))
+      );
+      allow delete: if isSignedIn() && existing().authorId == request.auth.uid;
+    }
+
+    // =========================================================================
+    // CONNECTIONS COLLECTION
+    // =========================================================================
+    function isValidConnection(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.status is string && (data.status == 'pending' || data.status == 'connected' || data.status == 'declined' || data.status == 'archived') &&
+             (!('requesterId' in data) || (data.requesterId is string && data.requesterId.size() <= 128)) &&
+             (!('targetId' in data) || (data.targetId is string && data.targetId.size() <= 128)) &&
+             (!('profileId' in data) || (data.profileId is string && data.profileId.size() <= 128)) &&
+             (!('participants' in data) || (data.participants is list && data.participants.size() <= 10)) &&
+             (!('introNote' in data) || (data.introNote is string && data.introNote.size() <= 1000)) &&
+             (!('lastMessage' in data) || (data.lastMessage is string && data.lastMessage.size() <= 500)) &&
+             (!('lastMessageTime' in data) || (data.lastMessageTime is string && data.lastMessageTime.size() <= 64)) &&
+             (!('unreadCount' in data) || data.unreadCount is number);
+    }
+
+    match /connections/{connectionId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(connectionId) && isValidConnection(incoming()) && incoming().id == connectionId;
+      allow update: if isSignedIn() && isValidId(connectionId) && isValidConnection(incoming());
+      allow delete: if isSignedIn();
+    }
+
+    // =========================================================================
+    // CONVERSATIONS & MESSAGES
+    // =========================================================================
+    function isValidConversationId(id) {
+      return id is string && id.size() > 0 && id.size() <= 256 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isConversationParticipant(convId) {
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/conversations/$(convId)) &&
+             (request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participantIds);
+    }
+
+    function isValidConversation(data) {
+      return data.id is string && data.id.size() <= 256 &&
+             data.participantIds is list && data.participantIds.size() >= 2 && data.participantIds.size() <= 10 &&
+             (!('connectionId' in data) || (data.connectionId is string && data.connectionId.size() <= 128)) &&
+             (!('lastMessage' in data) || (data.lastMessage is string && data.lastMessage.size() <= 4000)) &&
+             (!('lastMessageAt' in data) || (data.lastMessageAt is string && data.lastMessageAt.size() <= 64)) &&
+             (!('lastMessageSenderId' in data) || (data.lastMessageSenderId is string && data.lastMessageSenderId.size() <= 128)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64)) &&
+             (!('participantsSummary' in data) || (data.participantsSummary is map)) &&
+             (!('unreadCounts' in data) || (data.unreadCounts is map));
+    }
+
+    function isValidMessage(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             (!('conversationId' in data) || (data.conversationId is string && data.conversationId.size() <= 256)) &&
+             (!('connectionId' in data) || (data.connectionId is string && data.connectionId.size() <= 128)) &&
+             data.senderId is string && data.senderId.size() <= 128 &&
+             (!('senderName' in data) || (data.senderName is string && data.senderName.size() <= 100)) &&
+             data.text is string && data.text.size() > 0 && data.text.size() <= 4000 &&
+             (!('timestamp' in data) || (data.timestamp is string && data.timestamp.size() <= 64)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+             (!('readAt' in data) || (data.readAt is string && data.readAt.size() <= 64)) &&
+             (!('readBy' in data) || (data.readBy is list && data.readBy.size() <= 10)) &&
+             (!('isStarterPrompt' in data) || data.isStarterPrompt is bool);
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if isSignedIn() && (request.auth.uid in resource.data.participantIds);
+      allow create: if isSignedIn() && isValidConversationId(conversationId) && isValidConversation(incoming()) && incoming().id == conversationId && (request.auth.uid in incoming().participantIds);
+      allow update: if isSignedIn() && isValidConversationId(conversationId) && isValidConversation(incoming()) && (request.auth.uid in resource.data.participantIds) && incoming().participantIds == existing().participantIds;
+      allow delete: if isSignedIn() && (request.auth.uid in resource.data.participantIds);
+
+      match /messages/{messageId} {
+        allow read: if isConversationParticipant(conversationId);
+        allow create: if isSignedIn() &&
+                         isValidId(messageId) &&
+                         isValidMessage(incoming()) &&
+                         incoming().id == messageId &&
+                         incoming().senderId == request.auth.uid &&
+                         isConversationParticipant(conversationId);
+        allow update: if isSignedIn() &&
+                         isValidMessage(incoming()) &&
+                         isConversationParticipant(conversationId) &&
+                         incoming().senderId == existing().senderId;
+        allow delete: if isSignedIn() && resource.data.senderId == request.auth.uid;
+      }
+    }
+
+    match /messages/{messageId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(messageId) && isValidMessage(incoming()) && incoming().id == messageId && incoming().senderId == request.auth.uid;
+      allow update: if isSignedIn() && isValidMessage(incoming()) && incoming().senderId == existing().senderId;
+      allow delete: if isSignedIn() && resource.data.senderId == request.auth.uid;
+    }
+
+    // =========================================================================
+    // NOTIFICATIONS COLLECTION
+    // =========================================================================
+    function isValidNotification(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.recipientId is string && data.recipientId.size() <= 128 &&
+             (!('senderId' in data) || data.senderId == null || (data.senderId is string && data.senderId.size() <= 128)) &&
+             (!('senderName' in data) || (data.senderName is string && data.senderName.size() <= 100)) &&
+             (!('senderAvatar' in data) || (data.senderAvatar is string && data.senderAvatar.size() <= 500)) &&
+             (!('senderRole' in data) || (data.senderRole is string && data.senderRole.size() <= 120)) &&
+             data.type is string && (
+               data.type == 'CONNECTION_REQUEST' ||
+               data.type == 'CONNECTION_ACCEPTED' ||
+               data.type == 'SPARK_INTERACTION' ||
+               data.type == 'MESSAGE' ||
+               data.type == 'CLUB_INVITE' ||
+               data.type == 'EVENT_INVITE'
+             ) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 120 &&
+             data.message is string && data.message.size() > 0 && data.message.size() <= 1000 &&
+             data.referenceId is string && data.referenceId.size() <= 128 &&
+             data.read is bool &&
+             data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.recipientId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(notificationId) && isValidNotification(incoming()) && incoming().id == notificationId && (
+        incoming().senderId == request.auth.uid || incoming().recipientId == request.auth.uid
+      );
+      allow update: if isSignedIn() && isValidId(notificationId) && isValidNotification(incoming()) && (
+        resource.data.recipientId == request.auth.uid &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['read', 'updatedAt'])
+      );
+      allow delete: if isSignedIn() && resource.data.recipientId == request.auth.uid;
+    }
+  }
+}

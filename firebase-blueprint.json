@@ -1,0 +1,475 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Registered misfit member profile and preferences",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "User UID matching auth.uid",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name or display name",
+          "maxLength": 100
+        },
+        "handle": {
+          "type": "string",
+          "description": "Unique username handle",
+          "maxLength": 60
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 120
+        },
+        "title": {
+          "type": "string",
+          "description": "Self-described editorial title",
+          "maxLength": 120
+        },
+        "role": {
+          "type": "string",
+          "description": "Role descriptor",
+          "maxLength": 120
+        },
+        "roleEmoji": {
+          "type": "string",
+          "description": "Role icon emoji",
+          "maxLength": 16
+        },
+        "tagline": {
+          "type": "string",
+          "description": "Short bio tagline",
+          "maxLength": 300
+        },
+        "bio": {
+          "type": "string",
+          "description": "Bio context summary",
+          "maxLength": 1000
+        },
+        "location": {
+          "type": "string",
+          "description": "Geographical location text",
+          "maxLength": 120
+        },
+        "city": {
+          "type": "string",
+          "description": "City name",
+          "maxLength": 80
+        },
+        "country": {
+          "type": "string",
+          "description": "Country name",
+          "maxLength": 80
+        },
+        "intents": {
+          "type": "array",
+          "description": "Primary connection intents"
+        },
+        "interests": {
+          "type": "array",
+          "description": "Intellectual curiosities and radar topics"
+        },
+        "curiousAbout": {
+          "type": "array",
+          "description": "Curiosity questions list"
+        },
+        "archetypesToMeet": {
+          "type": "array",
+          "description": "Preferred partner archetypes"
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "Profile picture URL",
+          "maxLength": 500
+        },
+        "onboardingCompleted": {
+          "type": "boolean",
+          "description": "Whether member completed editorial onboarding"
+        },
+        "joinedDate": {
+          "type": "string",
+          "description": "Display joined date text",
+          "maxLength": 64
+        },
+        "isOnline": {
+          "type": "boolean",
+          "description": "Online presence status"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of account creation",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "name", "email"]
+    },
+    "BoardPost": {
+      "title": "BoardPost",
+      "description": "Curiosity note or query posted on the community board",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Post identifier",
+          "maxLength": 128
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Author UID",
+          "maxLength": 128
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Author display name",
+          "maxLength": 100
+        },
+        "authorLocation": {
+          "type": "string",
+          "description": "Author location text",
+          "maxLength": 120
+        },
+        "authorRole": {
+          "type": "string",
+          "description": "Author role text",
+          "maxLength": 120
+        },
+        "authorAvatar": {
+          "type": "string",
+          "description": "Author avatar URL",
+          "maxLength": 500
+        },
+        "content": {
+          "type": "string",
+          "description": "Curious post thought text",
+          "maxLength": 3000
+        },
+        "intents": {
+          "type": "array",
+          "description": "Connection intents"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Domain tags"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Display timestamp text",
+          "maxLength": 64
+        },
+        "repliesCount": {
+          "type": "number",
+          "description": "Number of replies"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "authorId", "authorName", "content"]
+    },
+    "Connection": {
+      "title": "Connection",
+      "description": "Mutual connection link between members",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique connection ID",
+          "maxLength": 128
+        },
+        "requesterId": {
+          "type": "string",
+          "description": "UID of the member requesting the connection",
+          "maxLength": 128
+        },
+        "targetId": {
+          "type": "string",
+          "description": "UID of the target recipient member",
+          "maxLength": 128
+        },
+        "participants": {
+          "type": "array",
+          "description": "Array of participant UIDs"
+        },
+        "profileId": {
+          "type": "string",
+          "description": "Connected member UID",
+          "maxLength": 128
+        },
+        "profile": {
+          "type": "object",
+          "description": "Member profile snapshot"
+        },
+        "requesterSummary": {
+          "type": "object",
+          "description": "Requester profile summary"
+        },
+        "targetSummary": {
+          "type": "object",
+          "description": "Target profile summary"
+        },
+        "connectedAt": {
+          "type": "string",
+          "description": "Timestamp string when accepted",
+          "maxLength": 64
+        },
+        "status": {
+          "type": "string",
+          "description": "Connection status",
+          "enum": ["pending", "connected", "declined", "archived"]
+        },
+        "sharedIntents": {
+          "type": "array",
+          "description": "Shared intent labels"
+        },
+        "sharedInterests": {
+          "type": "array",
+          "description": "Shared interest tags"
+        },
+        "introNote": {
+          "type": "string",
+          "description": "Intro starter conversation prompt",
+          "maxLength": 1000
+        },
+        "lastMessage": {
+          "type": "string",
+          "description": "Snippet of last message exchanged",
+          "maxLength": 500
+        },
+        "lastMessageTime": {
+          "type": "string",
+          "description": "Display time string",
+          "maxLength": 64
+        },
+        "unreadCount": {
+          "type": "number",
+          "description": "Unread messages count for active user"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Update timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "status"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Individual 1-on-1 dialogue message",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Message unique identifier",
+          "maxLength": 128
+        },
+        "connectionId": {
+          "type": "string",
+          "description": "Parent connection identifier",
+          "maxLength": 128
+        },
+        "senderId": {
+          "type": "string",
+          "description": "UID of author or 'currentUser'",
+          "maxLength": 128
+        },
+        "text": {
+          "type": "string",
+          "description": "Content of message",
+          "maxLength": 4000
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Display time text",
+          "maxLength": 64
+        },
+        "isStarterPrompt": {
+          "type": "boolean",
+          "description": "Whether message was the initial prompt"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "connectionId", "senderId", "text"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notification event item",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Notification ID",
+          "maxLength": 128
+        },
+        "recipientId": {
+          "type": "string",
+          "description": "Recipient member UID",
+          "maxLength": 128
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Sender member UID or null",
+          "maxLength": 128
+        },
+        "senderName": {
+          "type": "string",
+          "description": "Display name of sender",
+          "maxLength": 100
+        },
+        "senderAvatar": {
+          "type": "string",
+          "description": "Avatar URL of sender",
+          "maxLength": 500
+        },
+        "senderRole": {
+          "type": "string",
+          "description": "Role descriptor of sender",
+          "maxLength": 120
+        },
+        "type": {
+          "type": "string",
+          "description": "Notification category",
+          "enum": ["CONNECTION_REQUEST", "CONNECTION_ACCEPTED", "SPARK_INTERACTION", "MESSAGE", "CLUB_INVITE", "EVENT_INVITE"]
+        },
+        "title": {
+          "type": "string",
+          "description": "Notification header",
+          "maxLength": 120
+        },
+        "message": {
+          "type": "string",
+          "description": "Notification detail content",
+          "maxLength": 1000
+        },
+        "referenceId": {
+          "type": "string",
+          "description": "Referenced entity identifier (e.g. connectionId)",
+          "maxLength": 128
+        },
+        "read": {
+          "type": "boolean",
+          "description": "Read status flag"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "recipientId", "type", "title", "message", "referenceId", "read", "createdAt"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Direct dialogue channel between two connected members",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Deterministic conversation ID (conv_uidA_uidB)",
+          "maxLength": 256
+        },
+        "connectionId": {
+          "type": "string",
+          "description": "Associated connection ID",
+          "maxLength": 128
+        },
+        "participantIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "description": "Array of participant UIDs (exactly 2)"
+        },
+        "participantsSummary": {
+          "type": "object",
+          "description": "Map of participant UID to profile summary info"
+        },
+        "lastMessage": {
+          "type": "string",
+          "description": "Preview snippet of last message",
+          "maxLength": 4000
+        },
+        "lastMessageAt": {
+          "type": "string",
+          "description": "ISO timestamp of last message",
+          "maxLength": 64
+        },
+        "lastMessageSenderId": {
+          "type": "string",
+          "description": "UID of user who sent last message",
+          "maxLength": 128
+        },
+        "unreadCounts": {
+          "type": "object",
+          "description": "Map of participant UID to unread messages count"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "participantIds", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Member profile directory documents"
+    },
+    "/boardPosts/{postId}": {
+      "schema": "BoardPost",
+      "description": "Public community curious board notes"
+    },
+    "/connections/{connectionId}": {
+      "schema": "Connection",
+      "description": "1-on-1 member connections"
+    },
+    "/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Direct 1-on-1 member conversation metadata"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Messages belonging to a specific conversation"
+    },
+    "/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Direct conversation messages (legacy collection)"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "User notifications"
+    }
+  }
+}

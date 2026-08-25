@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ActiveTab, 
   UserProfile, 
@@ -13,6 +13,7 @@ import {
   SAMPLE_BOARD_POSTS 
 } from './data/mockData';
 import { authService } from './services/authService';
+import { firestoreService } from './services/firestoreService';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { RouterProvider, useRouter, AppRoute } from './context/RouterContext';
 import { Navbar } from './components/Navbar';
@@ -32,7 +33,7 @@ function MainApp() {
   const { user, isAuthenticated, isLoading, signOut, completeOnboarding, updateUser } = useAuth();
   const { currentPath, navigate } = useRouter();
 
-  const [profiles] = useState<UserProfile[]>(() => authService.getAllProfiles());
+  const [profiles, setProfiles] = useState<UserProfile[]>(SAMPLE_PROFILES);
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
   const [connectModalTarget, setConnectModalTarget] = useState<UserProfile | null>(null);
 
@@ -84,11 +85,25 @@ function MainApp() {
       timestamp: 'Yesterday 10:42 AM',
     },
     {
+      id: 'm-2b',
+      connectionId: 'conn-maya',
+      senderId: 'p-maya',
+      text: 'What made you start exploring this?',
+      timestamp: 'Yesterday 10:43 AM',
+    },
+    {
       id: 'm-3',
       connectionId: 'conn-maya',
       senderId: 'currentUser',
-      text: 'Totally agree. It feels like our tools are obsessing over visual resolution while ignoring emotional fidelity.',
+      text: 'I started exploring it after reading about how spatial memory and analog tactile interfaces shape human cognition.',
       timestamp: 'Yesterday 11:20 AM',
+    },
+    {
+      id: 'm-3b',
+      connectionId: 'conn-maya',
+      senderId: 'currentUser',
+      text: 'It feels like our tools are obsessing over visual resolution while ignoring emotional fidelity.',
+      timestamp: 'Yesterday 11:21 AM',
     },
     {
       id: 'm-4',
@@ -101,6 +116,26 @@ function MainApp() {
 
   const [activeConnectionId, setActiveConnectionId] = useState<string>('conn-maya');
   const [boardPosts, setBoardPosts] = useState<CuriousBoardPost[]>(SAMPLE_BOARD_POSTS);
+
+  // Synchronize live members directory from Firestore
+  useEffect(() => {
+    const unsub = firestoreService.subscribeUsers((liveUsers) => {
+      if (liveUsers && liveUsers.length > 0) {
+        setProfiles(liveUsers);
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  // Synchronize live community curiosity board from Firestore
+  useEffect(() => {
+    const unsub = firestoreService.subscribeBoardPosts((livePosts) => {
+      if (livePosts && livePosts.length > 0) {
+        setBoardPosts(livePosts);
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // Map route to activeTab
   const getActiveTabFromPath = (path: AppRoute): ActiveTab => {
@@ -193,7 +228,7 @@ function MainApp() {
   };
 
   // Start new conversation from connect modal
-  const handleStartConversation = (target: UserProfile, introPrompt: string) => {
+  const handleStartConversation = async (target: UserProfile, introPrompt: string) => {
     const existingConn = connections.find((c) => c.profileId === target.id);
     if (existingConn) {
       setActiveConnectionId(existingConn.id);
@@ -220,7 +255,7 @@ function MainApp() {
     const starterMessage: ChatMessage = {
       id: `msg-${Date.now()}`,
       connectionId: newConnId,
-      senderId: 'currentUser',
+      senderId: user?.id || 'currentUser',
       text: introPrompt,
       timestamp: 'Just now',
       isStarterPrompt: true,
@@ -231,14 +266,22 @@ function MainApp() {
     setActiveConnectionId(newConnId);
     setConnectModalTarget(null);
     navigate('/messages');
+
+    // Persist to Firestore asynchronously
+    try {
+      await firestoreService.saveConnection(newConnection);
+      await firestoreService.sendMessage(starterMessage);
+    } catch (e) {
+      console.warn('Persisted connection locally', e);
+    }
   };
 
   // Send message inside conversation
-  const handleSendMessage = (connectionId: string, text: string) => {
+  const handleSendMessage = async (connectionId: string, text: string) => {
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       connectionId,
-      senderId: 'currentUser',
+      senderId: user?.id || 'currentUser',
       text,
       timestamp: 'Just now',
     };
@@ -252,15 +295,22 @@ function MainApp() {
       )
     );
 
-    // Simulated reply from other user
+    // Persist to Firestore
+    try {
+      await firestoreService.sendMessage(newMsg);
+    } catch (e) {
+      console.warn('Stored message locally', e);
+    }
+
+    // Simulated reply from other user for engaging interactive demo
     const conn = connections.find((c) => c.id === connectionId);
     if (conn) {
-      setTimeout(() => {
+      setTimeout(async () => {
         const replies = [
           `That perspective hits on something subtle. I've been noticing the exact same phenomenon lately.`,
           `Fascinating point. Have you considered how this changes once we move past current constraints?`,
           `I love this angle. It reminds me of a conversation I had about analog feedback loops.`,
-          `This would make an incredible experiment. We should prototype a small version.`,
+          `This would make an incredible experiment. We should prototype a small version together.`,
         ];
         const randomReply = replies[Math.floor(Math.random() * replies.length)];
         const replyMsg: ChatMessage = {
@@ -279,7 +329,7 @@ function MainApp() {
               : c
           )
         );
-      }, 2500);
+      }, 2000);
     }
   };
 
@@ -295,8 +345,13 @@ function MainApp() {
     );
   };
 
-  const handleAddBoardPost = (newPost: CuriousBoardPost) => {
+  const handleAddBoardPost = async (newPost: CuriousBoardPost) => {
     setBoardPosts((prev) => [newPost, ...prev]);
+    try {
+      await firestoreService.addBoardPost(newPost);
+    } catch (e) {
+      console.warn('Persisted board post locally', e);
+    }
   };
 
   if (isLoading) {
@@ -305,7 +360,7 @@ function MainApp() {
         <div className="flex items-center gap-3">
           <span className="w-2 h-2 rounded-full bg-[#D4FF3F] animate-ping" />
           <span className="text-xs font-mono-code uppercase tracking-widest text-[#8A8A8A]">
-            MISFITS CLUB · VERIFYING SESSION...
+            MISFITS CLUB · SYNCHRONIZING CLOUD SESSION...
           </span>
         </div>
       </div>
@@ -395,7 +450,7 @@ function MainApp() {
             onSelectProfile={(profile) => {
               handleOpenConnectModal(profile);
             }}
-            onSelectIntent={(intent: ConnectionIntent) => {
+            onSelectIntent={(_intent: ConnectionIntent) => {
               if (user) {
                 navigate('/discover');
               } else {

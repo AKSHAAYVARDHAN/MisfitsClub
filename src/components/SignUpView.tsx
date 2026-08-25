@@ -67,7 +67,9 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
       const user = await signInWithGoogle();
       onSuccess(user);
     } catch (err: any) {
-      setError('Google account connection could not be completed.');
+      if (err?.message !== 'Sign-in cancelled.') {
+        setError(err?.message || 'Google account connection could not be completed.');
+      }
     } finally {
       setIsGoogleLoading(false);
     }

@@ -21,22 +21,18 @@ export interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(() => authService.getCurrentUser());
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize auth state on mount from persistent storage
+  // Subscribe to Firebase Auth state changes
   useEffect(() => {
-    try {
-      const persistedUser = authService.getCurrentUser();
-      setUser(persistedUser);
-    } catch (err) {
-      console.error('Failed to restore auth state', err);
-      setUser(null);
-    } finally {
-      // Provide a clean micro-tick so initialization completes before guards run
+    const unsubscribe = authService.onAuthStateChanged((firebaseProfile) => {
+      setUser(firebaseProfile);
       setIsLoading(false);
-    }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const clearError = useCallback(() => {

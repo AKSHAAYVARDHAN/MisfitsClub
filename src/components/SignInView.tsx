@@ -50,7 +50,9 @@ export const SignInView: React.FC<SignInViewProps> = ({
       const user = await signInWithGoogle();
       onSuccess(user);
     } catch (err: any) {
-      setError('Google Sign-In could not be completed.');
+      if (err?.message !== 'Sign-in cancelled.') {
+        setError(err?.message || 'Google Sign-In could not be completed.');
+      }
     } finally {
       setIsGoogleLoading(false);
     }

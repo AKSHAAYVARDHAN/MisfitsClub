@@ -272,56 +272,161 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
             </div>
 
             {/* Messages Scroll Area */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-6 space-y-6 sm:space-y-7">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-6 space-y-1">
               
               {/* Dialogue Start Marker */}
-              <div className="flex justify-center my-2">
-                <div className="inline-flex items-center gap-2 border border-[#242424] bg-[#101010] px-3.5 py-1 text-[10px] text-[#8A8A8A] uppercase tracking-widest font-mono-code">
+              <div className="flex justify-center mb-6">
+                <div className="inline-flex items-center gap-2 border border-[#242424] bg-[#101010] px-3.5 py-1.5 text-[10px] text-[#8A8A8A] uppercase tracking-widest font-mono-code">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]"></span>
                   <span>Conversation opened · Calm & unhurried</span>
                 </div>
               </div>
 
-              {/* Render Chat Messages */}
-              {activeMessages.map((msg) => {
-                const isMe = msg.senderId === 'currentUser';
+              {/* Render Chat Messages with Dynamic Left/Right Alignment & Visual Grouping */}
+              {activeMessages.map((msg, index) => {
+                // Determine dynamic ownership from authenticated user or fallback ID
+                const isMe = (() => {
+                  if (currentUser) {
+                    if (currentUser.id && msg.senderId === currentUser.id) return true;
+                    if (currentUser.uid && msg.senderId === currentUser.uid) return true;
+                  }
+                  return msg.senderId === 'currentUser' || msg.senderId === 'me';
+                })();
+
+                const prevMsg = index > 0 ? activeMessages[index - 1] : null;
+                const nextMsg = index < activeMessages.length - 1 ? activeMessages[index + 1] : null;
+
+                const prevIsMe = prevMsg ? (() => {
+                  if (currentUser) {
+                    if (currentUser.id && prevMsg.senderId === currentUser.id) return true;
+                    if (currentUser.uid && prevMsg.senderId === currentUser.uid) return true;
+                  }
+                  return prevMsg.senderId === 'currentUser' || prevMsg.senderId === 'me';
+                })() : null;
+
+                const nextIsMe = nextMsg ? (() => {
+                  if (currentUser) {
+                    if (currentUser.id && nextMsg.senderId === currentUser.id) return true;
+                    if (currentUser.uid && nextMsg.senderId === currentUser.uid) return true;
+                  }
+                  return nextMsg.senderId === 'currentUser' || nextMsg.senderId === 'me';
+                })() : null;
+
+                const isFirstInGroup = prevIsMe === null || prevIsMe !== isMe;
+                const isLastInGroup = nextIsMe === null || nextIsMe !== isMe;
+
                 return (
                   <div
                     key={msg.id}
-                    className={`flex flex-col group ${isMe ? 'items-end' : 'items-start'}`}
+                    className={`w-full flex ${
+                      isMe ? 'justify-end' : 'justify-start'
+                    } ${isFirstInGroup ? 'mt-4 sm:mt-5' : 'mt-1'}`}
                   >
-                    {/* Message Bubble */}
-                    <div
-                      className={`max-w-md sm:max-w-xl p-4 sm:p-5 text-xs sm:text-[13px] leading-relaxed transition-colors border ${
-                        isMe
-                          ? 'bg-[#181818] text-[#F2F2ED] border-[#292929]'
-                          : 'bg-[#111111] text-[#F2F2ED] border-[#222222]'
-                      }`}
-                    >
-                      {/* Highlighted Starter Header */}
-                      {msg.isStarterPrompt && (
-                        <div className="flex items-center gap-2 pb-2 mb-2 border-b border-[#242424]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]" />
-                          <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#D4FF3F] font-bold">
-                            CONVERSATION OPENER
-                          </span>
+                    {/* LEFT SIDE: Other Person's Message */}
+                    {!isMe && (
+                      <div className="flex items-end gap-2.5 max-w-[85%] sm:max-w-[70%]">
+                        {/* Avatar placed strategically beside the last message in a group */}
+                        <div className="w-7 h-7 flex-shrink-0 mb-0.5">
+                          {isLastInGroup ? (
+                            <img
+                              src={activeConnection.profile.avatarUrl}
+                              alt={activeConnection.profile.name}
+                              referrerPolicy="no-referrer"
+                              className="w-7 h-7 object-cover rounded-sm border border-[#242424]"
+                            />
+                          ) : (
+                            <div className="w-7 h-7" />
+                          )}
                         </div>
-                      )}
 
-                      <p className="font-sans-clean whitespace-pre-wrap font-normal text-[#F2F2ED]">
-                        {msg.text}
-                      </p>
-                    </div>
+                        {/* Message Content & Grouping Container */}
+                        <div className="flex flex-col items-start min-w-0">
+                          {/* Sender Label (on first message of group) */}
+                          {isFirstInGroup && (
+                            <div className="flex items-center gap-2 mb-1 px-1">
+                              <span className="text-[9px] font-mono-code uppercase tracking-wider text-[#8A8A8A] font-semibold">
+                                {activeConnection.profile.name.split(' ')[0]}
+                              </span>
+                            </div>
+                          )}
 
-                    {/* Timestamp & Status */}
-                    <div className="flex items-center gap-1.5 mt-1.5 px-1">
-                      <span className="text-[9px] text-[#8A8A8A] font-mono-code uppercase tracking-wider">
-                        {msg.timestamp}
-                      </span>
-                      {isMe && (
-                        <CheckCheck className="w-3 h-3 text-[#8A8A8A]/70 inline" />
-                      )}
-                    </div>
+                          {/* Message Bubble */}
+                          <div
+                            className={`p-3.5 sm:p-4 text-xs sm:text-[13px] leading-relaxed transition-colors border rounded-lg bg-[#111111] text-[#F2F2ED] border-[#222222] ${
+                              !isFirstInGroup ? 'rounded-tl-sm' : ''
+                            } ${!isLastInGroup ? 'rounded-bl-sm' : ''}`}
+                          >
+                            {/* Highlighted Starter Header */}
+                            {msg.isStarterPrompt && (
+                              <div className="flex items-center gap-2 pb-1.5 mb-2 border-b border-[#242424]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]" />
+                                <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#D4FF3F] font-bold">
+                                  CONVERSATION OPENER
+                                </span>
+                              </div>
+                            )}
+
+                            <p className="font-sans-clean whitespace-pre-wrap font-normal text-[#F2F2ED]">
+                              {msg.text}
+                            </p>
+                          </div>
+
+                          {/* Subtle Timestamp (after last message of group) */}
+                          {isLastInGroup && (
+                            <div className="flex items-center gap-1.5 mt-1 px-1">
+                              <span className="text-[9px] text-[#7A7A7A] font-mono-code uppercase tracking-wider">
+                                {msg.timestamp}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* RIGHT SIDE: Current User's Message */}
+                    {isMe && (
+                      <div className="flex flex-col items-end max-w-[85%] sm:max-w-[70%]">
+                        {/* Sender Label (on first message of group) */}
+                        {isFirstInGroup && (
+                          <div className="flex items-center gap-2 mb-1 px-1">
+                            <span className="text-[9px] font-mono-code uppercase tracking-wider text-[#8A8A8A] font-semibold">
+                              YOU
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Message Bubble */}
+                        <div
+                          className={`p-3.5 sm:p-4 text-xs sm:text-[13px] leading-relaxed transition-colors border rounded-lg bg-[#181818] text-[#F2F2ED] border-[#2C2C2C] hover:border-[#383838] shadow-sm ${
+                            !isFirstInGroup ? 'rounded-tr-sm' : ''
+                          } ${!isLastInGroup ? 'rounded-br-sm' : ''}`}
+                        >
+                          {/* Highlighted Starter Header */}
+                          {msg.isStarterPrompt && (
+                            <div className="flex items-center gap-2 pb-1.5 mb-2 border-b border-[#2C2C2C]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]" />
+                              <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#D4FF3F] font-bold">
+                                CONVERSATION OPENER
+                              </span>
+                            </div>
+                          )}
+
+                          <p className="font-sans-clean whitespace-pre-wrap font-normal text-[#F2F2ED]">
+                            {msg.text}
+                          </p>
+                        </div>
+
+                        {/* Subtle Timestamp & Delivery Status */}
+                        {isLastInGroup && (
+                          <div className="flex items-center gap-1.5 mt-1 px-1">
+                            <span className="text-[9px] text-[#7A7A7A] font-mono-code uppercase tracking-wider">
+                              {msg.timestamp}
+                            </span>
+                            <CheckCheck className="w-3 h-3 text-[#8A8A8A]/70 inline" />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}

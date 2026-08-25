@@ -14,6 +14,8 @@ import {
   CheckCheck
 } from 'lucide-react';
 import { CONVERSATION_STARTERS } from '../data/mockData';
+import { getOtherParticipantId } from '../services/connectionService';
+import { messageService } from '../services/messageService';
 
 interface MessagesViewProps {
   connections: Connection[];
@@ -44,8 +46,30 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   // Active connection
   const activeConnection = safeConnections.find((c) => c.id === activeConnectionId) || safeConnections[0];
 
+  // Helper to match messages for a connection
+  const getMessagesForConnection = (conn: Connection | undefined) => {
+    if (!conn) return [];
+    const currentUserId = currentUser?.uid || currentUser?.id || '';
+    const otherId = getOtherParticipantId(conn, currentUserId);
+    let convoId: string | null = null;
+    if (currentUserId && otherId) {
+      try {
+        convoId = messageService.getDeterministicConversationId(currentUserId, otherId);
+      } catch {
+        // ignore
+      }
+    }
+
+    return safeMessages.filter((m) => {
+      if (m.connectionId === conn.id) return true;
+      if (convoId && m.conversationId === convoId) return true;
+      if (m.conversationId === conn.id) return true;
+      return false;
+    });
+  };
+
   // Messages for active connection
-  const activeMessages = safeMessages.filter((m) => m.connectionId === activeConnection?.id);
+  const activeMessages = getMessagesForConnection(activeConnection);
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -113,7 +137,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
           <div className="flex-1 overflow-y-auto divide-y divide-[#1A1A1A]/80">
             {safeConnections.map((conn) => {
               const isSelected = activeConnection?.id === conn.id;
-              const allConvoMsgs = safeMessages.filter((m) => m.connectionId === conn.id);
+              const allConvoMsgs = getMessagesForConnection(conn);
               const lastMsg = allConvoMsgs.slice(-1)[0]?.text || conn.introNote || 'Connected on Misfits Club';
               const lastTime = allConvoMsgs.slice(-1)[0]?.timestamp || conn.lastMessageTime || 'Just now';
 
@@ -154,9 +178,19 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                       }`}>
                         {conn.profile?.name || 'Member'}
                       </h4>
-                      <span className="text-[9px] text-[#8A8A8A] font-mono-code uppercase tracking-wider whitespace-nowrap">
-                        {lastTime}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {conn.unreadCount && conn.unreadCount > 0 ? (
+                          <span
+                            id={`convo-unread-${conn.id}`}
+                            className="bg-[#D4FF3F] text-[#080808] text-[9px] font-mono-code font-bold px-1.5 py-0.2 min-w-[17px] h-[17px] flex items-center justify-center shadow-sm"
+                          >
+                            {conn.unreadCount > 9 ? '9+' : conn.unreadCount}
+                          </span>
+                        ) : null}
+                        <span className="text-[9px] text-[#8A8A8A] font-mono-code uppercase tracking-wider whitespace-nowrap">
+                          {lastTime}
+                        </span>
+                      </div>
                     </div>
 
                     <p className="text-[10px] text-[#8A8A8A] truncate font-sans-clean mb-1">
@@ -284,6 +318,21 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   <span>Conversation opened · Calm & unhurried</span>
                 </div>
               </div>
+
+              {/* Zero messages empty state prompt */}
+              {activeMessages.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                  <div className="w-10 h-10 rounded-full bg-[#141414] border border-[#242424] flex items-center justify-center mb-3 text-[#D4FF3F]">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#F2F2ED] mb-1 font-mono-code">
+                    Start the conversation
+                  </h4>
+                  <p className="text-xs text-[#8A8A8A] max-w-xs leading-relaxed font-sans-clean">
+                    Share a thoughtful thought or pick one of the conversation prompts below to get started.
+                  </p>
+                </div>
+              )}
 
               {/* Render Chat Messages with Dynamic Left/Right Alignment & Visual Grouping */}
               {activeMessages.map((msg, index) => {

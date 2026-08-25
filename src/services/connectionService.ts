@@ -14,6 +14,7 @@ import {
 import { db, handleFirestoreError, OperationType } from './firebase';
 import { Connection, ConnectionStatus, ProfileSummary, PublicProfile, UserProfile, ConnectionIntent } from '../types';
 import { SAMPLE_PROFILES } from '../data/mockData';
+import { notificationService } from './notificationService';
 
 function sanitizePayload<T extends Record<string, any>>(obj: T): T {
   const clean: Record<string, any> = {};
@@ -42,6 +43,36 @@ export function toProfileSummary(p: Partial<UserProfile | PublicProfile> & { id:
     interests: p.interests || [],
     intents: p.intents || [],
   };
+}
+
+/**
+ * Returns the other participant's user ID from a connection document.
+ * Guarantees that the current user ID is never returned as the target.
+ */
+export function getOtherParticipantId(conn: Connection, currentUserId: string): string | null {
+  if (conn.requesterId && conn.requesterId !== currentUserId) return conn.requesterId;
+  if (conn.targetId && conn.targetId !== currentUserId) return conn.targetId;
+  if (conn.participants && Array.isArray(conn.participants)) {
+    const other = conn.participants.find((p) => p && p !== currentUserId);
+    if (other) return other;
+  }
+  if (conn.profileId && conn.profileId !== currentUserId) return conn.profileId;
+  if (conn.profile?.id && conn.profile.id !== currentUserId) return conn.profile.id;
+  if (conn.profile?.uid && conn.profile.uid !== currentUserId) return conn.profile.uid;
+  
+  // Deterministic connection ID format: conn_uid1_uid2
+  if (conn.id && conn.id.startsWith('conn_')) {
+    const raw = conn.id.slice(5);
+    const lastUnderscore = raw.lastIndexOf('_');
+    if (lastUnderscore > 0) {
+      const part1 = raw.slice(0, lastUnderscore);
+      const part2 = raw.slice(lastUnderscore + 1);
+      if (part1 === currentUserId && part2) return part2;
+      if (part2 === currentUserId && part1) return part1;
+    }
+  }
+
+  return null;
 }
 
 export interface SendConnectionParams {
@@ -116,6 +147,26 @@ export const connectionService = {
 
     try {
       await setDoc(doc(db, 'connections', connId), sanitized, { merge: true });
+
+      // Trigger CONNECTION_REQUEST notification for the target user
+      if (targetId && targetId !== requesterId) {
+        try {
+          await notificationService.createNotification({
+            recipientId: targetId,
+            senderId: requesterId,
+            senderName: requester.name,
+            senderAvatar: requester.avatarUrl || requester.profilePhoto,
+            senderRole: requester.role,
+            type: 'CONNECTION_REQUEST',
+            title: 'Connection Request',
+            message: `${requester.name} sent you a connection request.`,
+            referenceId: connId,
+          });
+        } catch (notifErr) {
+          console.warn('Failed to send connection request notification document:', notifErr);
+        }
+      }
+
       return connectionData;
     } catch (error) {
       console.warn('Failed to send connection request to Firestore, using optimistic update', error);
@@ -127,16 +178,60 @@ export const connectionService = {
   /**
    * Accept a pending connection request
    */
-  async acceptConnection(connectionId: string, currentUserId: string): Promise<void> {
+  async acceptConnection(connectionId: string, currentUserId: string, currentUserProfile?: UserProfile): Promise<void> {
     const path = `connections/${connectionId}`;
     const now = new Date().toISOString();
 
     try {
+      // Get connection document first to determine original requester
+      let requesterId: string | undefined;
+      let targetName: string = currentUserProfile?.name || 'A Misfits Member';
+      let targetAvatar: string | undefined = currentUserProfile?.avatarUrl || currentUserProfile?.profilePhoto;
+      let targetRole: string | undefined = currentUserProfile?.role;
+
+      try {
+        const connSnap = await getDoc(doc(db, 'connections', connectionId));
+        if (connSnap.exists()) {
+          const connData = connSnap.data() as Connection;
+          requesterId = connData.requesterId;
+          if (connData.targetSummary?.name) {
+            targetName = connData.targetSummary.name;
+          }
+          if (connData.targetSummary?.avatarUrl || connData.targetSummary?.profilePhoto) {
+            targetAvatar = connData.targetSummary.avatarUrl || connData.targetSummary.profilePhoto;
+          }
+          if (connData.targetSummary?.role) {
+            targetRole = connData.targetSummary.role;
+          }
+        }
+      } catch (lookupErr) {
+        console.warn('Could not read existing connection for notification recipient lookup:', lookupErr);
+      }
+
       await updateDoc(doc(db, 'connections', connectionId), {
         status: 'connected',
         connectedAt: now,
         updatedAt: now,
       });
+
+      // Trigger CONNECTION_ACCEPTED notification for the original requester
+      if (requesterId && requesterId !== currentUserId) {
+        try {
+          await notificationService.createNotification({
+            recipientId: requesterId,
+            senderId: currentUserId,
+            senderName: targetName,
+            senderAvatar: targetAvatar,
+            senderRole: targetRole,
+            type: 'CONNECTION_ACCEPTED',
+            title: 'Connection Accepted',
+            message: `${targetName} accepted your connection request.`,
+            referenceId: connectionId,
+          });
+        } catch (notifErr) {
+          console.warn('Failed to send connection accepted notification document:', notifErr);
+        }
+      }
     } catch (error) {
       console.warn('Failed to accept connection in Firestore', error);
       handleFirestoreError(error, OperationType.UPDATE, path);

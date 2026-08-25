@@ -1,6 +1,7 @@
-import React from 'react';
-import { ActiveTab, UserProfile } from '../types';
-import { Compass, Sparkles, MessageSquare, Users, User, ArrowRight, Globe } from 'lucide-react';
+import React, { useState } from 'react';
+import { ActiveTab, UserProfile, AppNotification } from '../types';
+import { Compass, Sparkles, MessageSquare, Users, User, ArrowRight, Globe, Bell } from 'lucide-react';
+import { NotificationPanel } from './NotificationPanel';
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -11,6 +12,12 @@ interface NavbarProps {
   onSignOut?: () => void;
   unreadCount?: number;
   connectionsCount?: number;
+  notifications?: AppNotification[];
+  unreadNotificationsCount?: number;
+  onMarkNotificationAsRead?: (id: string) => void;
+  onMarkAllNotificationsAsRead?: () => void;
+  onNotificationClick?: (notification: AppNotification) => void;
+  isLoadingNotifications?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -20,9 +27,23 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenOnboarding,
   onOpenSignIn,
   onSignOut,
-  unreadCount = 1,
-  connectionsCount = 2,
+  unreadCount = 0,
+  connectionsCount = 0,
+  notifications = [],
+  unreadNotificationsCount = 0,
+  onMarkNotificationAsRead,
+  onMarkAllNotificationsAsRead,
+  onNotificationClick,
+  isLoadingNotifications = false,
 }) => {
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
+
+  const handleNotificationItemClick = (notif: AppNotification) => {
+    if (onNotificationClick) {
+      onNotificationClick(notif);
+    }
+    setIsNotificationsOpen(false);
+  };
   return (
     <header className="sticky top-0 z-40 w-full border-b border-[#F5F5F0]/10 bg-[#0B0B0C]/90 backdrop-blur-md transition-all">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-6 px-6 sm:px-10 lg:px-12">
@@ -144,8 +165,47 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </nav>
 
-        {/* Right: User Account / Action */}
+        {/* Right: User Account, Notifications & Action */}
         <div className="flex items-center gap-3 lg:gap-4 flex-shrink-0">
+          {/* Notification Bell Dropdown Container */}
+          <div className="relative">
+            <button
+              id="nav-notification-bell-btn"
+              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+              className={`relative p-2 rounded-none border transition-all focus:outline-none ${
+                isNotificationsOpen
+                  ? 'border-[#D4FF3F] text-[#D4FF3F] bg-[#D4FF3F]/10'
+                  : unreadNotificationsCount > 0
+                  ? 'border-[#333] text-[#F5F5F0] hover:border-[#D4FF3F]/60 bg-[#101010]'
+                  : 'border-[#242424] text-[#8A8A8A] hover:text-[#F5F5F0] hover:border-[#444] bg-[#0E0E10]'
+              }`}
+              title="Notifications"
+              aria-label="View notifications"
+            >
+              <Bell className="w-4 h-4" />
+              {unreadNotificationsCount > 0 && (
+                <span
+                  id="nav-unread-notifications-badge"
+                  className="absolute -top-1.5 -right-1.5 bg-[#D4FF3F] text-[#080808] text-[9px] font-mono-code font-bold px-1 py-0.2 rounded-none min-w-[15px] h-[15px] flex items-center justify-center shadow-md"
+                >
+                  {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                </span>
+              )}
+            </button>
+
+            {/* Dropdown Panel */}
+            <NotificationPanel
+              isOpen={isNotificationsOpen}
+              onClose={() => setIsNotificationsOpen(false)}
+              notifications={notifications}
+              unreadCount={unreadNotificationsCount}
+              onMarkAsRead={(id) => onMarkNotificationAsRead && onMarkNotificationAsRead(id)}
+              onMarkAllAsRead={() => onMarkAllNotificationsAsRead && onMarkAllNotificationsAsRead()}
+              onNotificationClick={handleNotificationItemClick}
+              isLoading={isLoadingNotifications}
+            />
+          </div>
+
           {currentUser ? (
             <div className="flex items-center gap-2.5">
               <button

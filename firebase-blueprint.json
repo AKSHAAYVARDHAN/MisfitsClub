@@ -309,6 +309,137 @@
         }
       },
       "required": ["id", "connectionId", "senderId", "text"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notification event item",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Notification ID",
+          "maxLength": 128
+        },
+        "recipientId": {
+          "type": "string",
+          "description": "Recipient member UID",
+          "maxLength": 128
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Sender member UID or null",
+          "maxLength": 128
+        },
+        "senderName": {
+          "type": "string",
+          "description": "Display name of sender",
+          "maxLength": 100
+        },
+        "senderAvatar": {
+          "type": "string",
+          "description": "Avatar URL of sender",
+          "maxLength": 500
+        },
+        "senderRole": {
+          "type": "string",
+          "description": "Role descriptor of sender",
+          "maxLength": 120
+        },
+        "type": {
+          "type": "string",
+          "description": "Notification category",
+          "enum": ["CONNECTION_REQUEST", "CONNECTION_ACCEPTED", "SPARK_INTERACTION", "MESSAGE", "CLUB_INVITE", "EVENT_INVITE"]
+        },
+        "title": {
+          "type": "string",
+          "description": "Notification header",
+          "maxLength": 120
+        },
+        "message": {
+          "type": "string",
+          "description": "Notification detail content",
+          "maxLength": 1000
+        },
+        "referenceId": {
+          "type": "string",
+          "description": "Referenced entity identifier (e.g. connectionId)",
+          "maxLength": 128
+        },
+        "read": {
+          "type": "boolean",
+          "description": "Read status flag"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "recipientId", "type", "title", "message", "referenceId", "read", "createdAt"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Direct dialogue channel between two connected members",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Deterministic conversation ID (conv_uidA_uidB)",
+          "maxLength": 256
+        },
+        "connectionId": {
+          "type": "string",
+          "description": "Associated connection ID",
+          "maxLength": 128
+        },
+        "participantIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "description": "Array of participant UIDs (exactly 2)"
+        },
+        "participantsSummary": {
+          "type": "object",
+          "description": "Map of participant UID to profile summary info"
+        },
+        "lastMessage": {
+          "type": "string",
+          "description": "Preview snippet of last message",
+          "maxLength": 4000
+        },
+        "lastMessageAt": {
+          "type": "string",
+          "description": "ISO timestamp of last message",
+          "maxLength": 64
+        },
+        "lastMessageSenderId": {
+          "type": "string",
+          "description": "UID of user who sent last message",
+          "maxLength": 128
+        },
+        "unreadCounts": {
+          "type": "object",
+          "description": "Map of participant UID to unread messages count"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "participantIds", "createdAt", "updatedAt"]
     }
   },
   "firestore": {
@@ -324,9 +455,21 @@
       "schema": "Connection",
       "description": "1-on-1 member connections"
     },
+    "/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Direct 1-on-1 member conversation metadata"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Messages belonging to a specific conversation"
+    },
     "/messages/{messageId}": {
       "schema": "ChatMessage",
-      "description": "Direct conversation messages"
+      "description": "Direct conversation messages (legacy collection)"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "User notifications"
     }
   }
 }

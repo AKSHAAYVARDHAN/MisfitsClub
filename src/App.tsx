@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ActiveTab, 
   UserProfile, 
@@ -6,7 +6,8 @@ import {
   Connection, 
   ChatMessage, 
   CuriousBoardPost, 
-  ConnectionIntent 
+  ConnectionIntent,
+  AppNotification
 } from './types';
 import { 
   INITIAL_USER, 
@@ -15,7 +16,9 @@ import {
 } from './data/mockData';
 import { authService } from './services/authService';
 import { firestoreService } from './services/firestoreService';
-import { connectionService } from './services/connectionService';
+import { connectionService, getOtherParticipantId } from './services/connectionService';
+import { notificationService } from './services/notificationService';
+import { messageService } from './services/messageService';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { RouterProvider, useRouter, AppRoute } from './context/RouterContext';
 import { Navbar } from './components/Navbar';
@@ -74,6 +77,37 @@ const INITIAL_SAMPLE_CONNECTIONS: Connection[] = [
   },
 ];
 
+const INITIAL_SAMPLE_NOTIFICATIONS: AppNotification[] = [
+  {
+    id: 'sample-notif-1',
+    recipientId: 'current-user',
+    senderId: 'p-elena',
+    senderName: 'Elena Rostova',
+    senderAvatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80',
+    senderRole: 'Aerospace Engineer · Micro-satellites',
+    type: 'CONNECTION_REQUEST',
+    title: 'Connection Request',
+    message: 'Elena Rostova sent you a connection request.',
+    referenceId: 'conn-elena',
+    read: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
+  },
+  {
+    id: 'sample-notif-2',
+    recipientId: 'current-user',
+    senderId: 'p-maya',
+    senderName: 'Maya Lin',
+    senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+    senderRole: 'Creative Technologist · Ambient Audio',
+    type: 'CONNECTION_ACCEPTED',
+    title: 'Connection Accepted',
+    message: 'Maya Lin accepted your connection request.',
+    referenceId: 'conn-maya',
+    read: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+  },
+];
+
 function MainApp() {
   const { user, isAuthenticated, isLoading, signOut, completeOnboarding, updateUser } = useAuth();
   const { currentPath, navigate } = useRouter();
@@ -86,6 +120,11 @@ function MainApp() {
 
   // Connections list synchronized from Firestore with local fallback
   const [connections, setConnections] = useState<Connection[]>(INITIAL_SAMPLE_CONNECTIONS);
+  const [connectionsInitialTab, setConnectionsInitialTab] = useState<'connected' | 'received' | 'sent'>('connected');
+
+  // Notifications state
+  const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_SAMPLE_NOTIFICATIONS);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState<boolean>(false);
 
   // Active chat & messages
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -129,6 +168,10 @@ function MainApp() {
 
   const [activeConnectionId, setActiveConnectionId] = useState<string>('conn-maya');
   const [boardPosts, setBoardPosts] = useState<CuriousBoardPost[]>(SAMPLE_BOARD_POSTS);
+
+  // Keep ref for connections to avoid re-triggering effects on state updates
+  const connectionsRef = useRef<Connection[]>(connections);
+  connectionsRef.current = connections;
 
   // Synchronize live members directory from Firestore
   useEffect(() => {
@@ -174,6 +217,176 @@ function MainApp() {
 
     return () => unsub();
   }, [user?.uid, user?.id]);
+
+  // Synchronize real-time conversations metadata & unread counts
+  useEffect(() => {
+    const currentUserId = user?.uid || user?.id;
+    if (!currentUserId) return;
+
+    const unsub = messageService.subscribeUserConversations(currentUserId, (liveConvos) => {
+      if (liveConvos && liveConvos.length > 0) {
+        setConnections((prev) => {
+          let hasChange = false;
+          const next = prev.map((conn) => {
+            const otherId = getOtherParticipantId(conn, currentUserId);
+            const convo = liveConvos.find(
+              (c) =>
+                (c.participantIds.includes(currentUserId) && otherId && c.participantIds.includes(otherId)) ||
+                c.connectionId === conn.id
+            );
+            if (convo) {
+              const newLastMsg = convo.lastMessage || conn.lastMessage;
+              const newTime = convo.lastMessageAt ? 'Active' : conn.lastMessageTime;
+              const newUnread = convo.unreadCounts?.[currentUserId] ?? conn.unreadCount;
+              if (
+                newLastMsg !== conn.lastMessage ||
+                newTime !== conn.lastMessageTime ||
+                newUnread !== conn.unreadCount
+              ) {
+                hasChange = true;
+                return {
+                  ...conn,
+                  lastMessage: newLastMsg,
+                  lastMessageTime: newTime,
+                  unreadCount: newUnread,
+                };
+              }
+            }
+            return conn;
+          });
+          return hasChange ? next : prev;
+        });
+      }
+    });
+
+    return () => unsub();
+  }, [user?.uid, user?.id]);
+
+  // Synchronize real-time messages for active conversation
+  useEffect(() => {
+    const currentUserId = user?.uid || user?.id;
+    if (!currentUserId) return;
+    const activeConn = connectionsRef.current.find((c) => c.id === activeConnectionId);
+    if (!activeConn) return;
+
+    const targetUserId = getOtherParticipantId(activeConn, currentUserId);
+    if (!targetUserId) return;
+
+    let conversationId: string;
+    try {
+      conversationId = messageService.getDeterministicConversationId(currentUserId, targetUserId);
+    } catch {
+      return;
+    }
+
+    // If on messages page, clear unread count for this conversation if not already cleared
+    if (currentPath === '/messages') {
+      messageService.markConversationAsRead(conversationId, currentUserId);
+      setConnections((prev) => {
+        const target = prev.find((c) => c.id === activeConnectionId);
+        if (target && (target.unreadCount || 0) > 0) {
+          return prev.map((c) => (c.id === activeConnectionId ? { ...c, unreadCount: 0 } : c));
+        }
+        return prev;
+      });
+    }
+
+    const unsub = messageService.subscribeConversationMessages(conversationId, (liveMsgs) => {
+      if (liveMsgs && liveMsgs.length > 0) {
+        setMessages((prev) => {
+          // Merge live messages for this conversation with messages from other conversations
+          const otherMsgs = prev.filter(
+            (m) => m.connectionId !== activeConnectionId && m.conversationId !== conversationId
+          );
+          return [...otherMsgs, ...liveMsgs];
+        });
+      }
+    });
+
+    return () => unsub();
+  }, [activeConnectionId, currentPath, user?.uid, user?.id]);
+
+  // Synchronize real-time user notifications from Firestore
+  useEffect(() => {
+    const currentUserId = user?.uid || user?.id;
+    if (!currentUserId) {
+      setNotifications(INITIAL_SAMPLE_NOTIFICATIONS);
+      return;
+    }
+
+    setIsLoadingNotifications(true);
+    const unsub = notificationService.subscribeUserNotifications(currentUserId, (liveNotifs) => {
+      setIsLoadingNotifications(false);
+      if (liveNotifs && liveNotifs.length > 0) {
+        setNotifications(liveNotifs);
+      } else {
+        setNotifications(INITIAL_SAMPLE_NOTIFICATIONS);
+      }
+    });
+
+    return () => unsub();
+  }, [user?.uid, user?.id]);
+
+  const handleMarkNotificationAsRead = async (notificationId: string) => {
+    const currentUserId = user?.uid || user?.id || 'current-user';
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+    );
+    try {
+      await notificationService.markNotificationAsRead(notificationId, currentUserId);
+    } catch (e) {
+      console.warn('Marked notification read locally', e);
+    }
+  };
+
+  const handleMarkAllNotificationsAsRead = async () => {
+    const currentUserId = user?.uid || user?.id || 'current-user';
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await notificationService.markAllNotificationsAsRead(currentUserId, notifications);
+    } catch (e) {
+      console.warn('Marked all notifications read locally', e);
+    }
+  };
+
+  const handleNotificationClick = async (notif: AppNotification) => {
+    // 1. Mark as read immediately
+    await handleMarkNotificationAsRead(notif.id);
+
+    // 2. Navigate based on notification category
+    if (notif.type === 'CONNECTION_REQUEST') {
+      setConnectionsInitialTab('received');
+      navigate('/connections');
+    } else if (notif.type === 'CONNECTION_ACCEPTED') {
+      if (notif.referenceId) {
+        setActiveConnectionId(notif.referenceId);
+        navigate('/messages');
+      } else {
+        setConnectionsInitialTab('connected');
+        navigate('/connections');
+      }
+    } else if (notif.type === 'SPARK_INTERACTION') {
+      navigate('/board');
+    } else if (notif.type === 'MESSAGE') {
+      if (notif.referenceId) {
+        const matched = connections.find(
+          (c) =>
+            c.id === notif.referenceId ||
+            c.profileId === notif.senderId ||
+            c.targetId === notif.senderId ||
+            c.profileId === notif.referenceId
+        );
+        if (matched) {
+          setActiveConnectionId(matched.id);
+        } else {
+          setActiveConnectionId(notif.referenceId);
+        }
+      }
+      navigate('/messages');
+    } else {
+      navigate('/connections');
+    }
+  };
 
   // Map route to activeTab
   const getActiveTabFromPath = (path: AppRoute): ActiveTab => {
@@ -337,7 +550,7 @@ function MainApp() {
       )
     );
     try {
-      await connectionService.acceptConnection(connectionId, currentUserId);
+      await connectionService.acceptConnection(connectionId, currentUserId, user || INITIAL_USER);
     } catch (e) {
       console.warn('Failed to accept connection in Firestore', e);
     }
@@ -383,10 +596,31 @@ function MainApp() {
   // Send message inside conversation
   const handleSendMessage = async (connectionId: string, text: string) => {
     const currentUserId = user?.uid || user?.id || 'currentUser';
+    const conn = connections.find((c) => c.id === connectionId);
+    
+    // Only users who are connected can message each other
+    if (!conn) {
+      console.warn('Cannot send message: conversation connection not found.');
+      return;
+    }
+
+    const targetUserId = getOtherParticipantId(conn, currentUserId) || 'sample-target';
+
+    let conversationId: string;
+    try {
+      conversationId = messageService.getDeterministicConversationId(currentUserId, targetUserId);
+    } catch (idErr) {
+      console.error('Failed to compute conversation ID:', idErr);
+      return;
+    }
+
+    // 1. Optimistic message creation
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
+      conversationId,
       connectionId,
       senderId: currentUserId,
+      senderName: user?.name || INITIAL_USER.name,
       text,
       timestamp: 'Just now',
     };
@@ -395,21 +629,33 @@ function MainApp() {
     setConnections((prev) =>
       prev.map((c) =>
         c.id === connectionId
-          ? { ...c, lastMessage: text, lastMessageTime: 'Just now' }
+          ? { ...c, lastMessage: text, lastMessageTime: 'Just now', unreadCount: 0 }
           : c
       )
     );
 
-    // Persist to Firestore
+    // 2. Persist to Firestore subcollection & dispatch notification
     try {
-      await firestoreService.sendMessage(newMsg);
-    } catch (e) {
-      console.warn('Stored message locally', e);
+      await messageService.sendMessage({
+        conversationId,
+        senderId: currentUserId,
+        senderProfile: user || INITIAL_USER,
+        recipientId: targetUserId,
+        recipientProfile: conn.profile,
+        text,
+        connectionId,
+      });
+    } catch (e: any) {
+      console.error('Error sending message to Firestore:', e);
+      // Only suppress if testing with a sample profile
+      if (!targetUserId.startsWith('p-') && targetUserId !== 'sample-target') {
+        const errorMsg = e?.message || 'Failed to send message';
+        console.warn('Firestore message persistence error:', errorMsg);
+      }
     }
 
-    // Simulated reply from other user for engaging interactive demo if talking to sample profiles
-    const conn = connections.find((c) => c.id === connectionId);
-    if (conn) {
+    // 3. Simulated reply from sample profile for engaging interactive testing
+    if (conn.profileId && conn.profileId.startsWith('p-')) {
       setTimeout(async () => {
         const replies = [
           `That perspective hits on something subtle. I've been noticing the exact same phenomenon lately.`,
@@ -420,8 +666,10 @@ function MainApp() {
         const randomReply = replies[Math.floor(Math.random() * replies.length)];
         const replyMsg: ChatMessage = {
           id: `msg-reply-${Date.now()}`,
+          conversationId,
           connectionId,
           senderId: conn.profileId,
+          senderName: conn.profile?.name || 'Member',
           text: randomReply,
           timestamp: 'Just now',
         };
@@ -492,6 +740,12 @@ function MainApp() {
         onSignOut={handleSignOut}
         unreadCount={connections.reduce((sum, c) => sum + (c.unreadCount || 0), 0)}
         connectionsCount={connections.filter((c) => c.status === 'connected').length}
+        notifications={notifications}
+        unreadNotificationsCount={notifications.filter((n) => !n.read).length}
+        onMarkNotificationAsRead={handleMarkNotificationAsRead}
+        onMarkAllNotificationsAsRead={handleMarkAllNotificationsAsRead}
+        onNotificationClick={handleNotificationClick}
+        isLoadingNotifications={isLoadingNotifications}
       />
 
       {/* Main View Router */}
@@ -627,6 +881,7 @@ function MainApp() {
           <ConnectionsView
             connections={connections}
             currentUser={user || INITIAL_USER}
+            initialTab={connectionsInitialTab}
             onOpenChat={(connId) => {
               setActiveConnectionId(connId);
               navigate('/messages');

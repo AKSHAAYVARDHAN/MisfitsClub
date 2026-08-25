@@ -76,6 +76,9 @@ export const RouterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, []);
 
   // Route Guarding & Enforcement Logic
+  const userId = user?.uid || user?.id;
+  const onboardingCompleted = user?.onboardingCompleted;
+
   useEffect(() => {
     // Wait until initial auth loading has completed to avoid race conditions or redirect flashes
     if (isLoading) return;
@@ -84,7 +87,7 @@ export const RouterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const authenticatedAppRoutes: AppRoute[] = ['/orb', '/discover', '/board', '/connections', '/messages', '/profile'];
 
     // CASE 1: Signed-Out User
-    if (!isAuthenticated || !user) {
+    if (!isAuthenticated || !userId) {
       // If signed out and trying to access any protected authenticated route or onboarding
       if (!publicRoutes.includes(currentPath)) {
         navigate('/signin', { replace: true });
@@ -93,7 +96,7 @@ export const RouterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
 
     // CASE 2: Signed-In User with INCOMPLETE Onboarding
-    if (user.onboardingCompleted === false) {
+    if (onboardingCompleted === false) {
       // If they are on signin/signup or any protected app route, redirect to /onboarding
       if (currentPath === '/signin' || currentPath === '/signup' || authenticatedAppRoutes.includes(currentPath)) {
         navigate('/onboarding', { replace: true });
@@ -116,7 +119,7 @@ export const RouterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
 
     // Landing page '/' and all authenticated routes remain accessible!
-  }, [isLoading, isAuthenticated, user, currentPath, navigate]);
+  }, [isLoading, isAuthenticated, userId, onboardingCompleted, currentPath, navigate]);
 
   const isPublicRoute = currentPath === '/' || currentPath === '/signin' || currentPath === '/signup';
 

@@ -31,6 +31,7 @@ interface ConnectionsViewProps {
   onCancelRequest?: (connectionId: string) => Promise<void> | void;
   onRemoveConnection?: (connectionId: string) => Promise<void> | void;
   onSelectProfile?: (profile: PublicProfile | UserProfile) => void;
+  initialTab?: TabType;
 }
 
 type TabType = 'connected' | 'received' | 'sent';
@@ -46,8 +47,15 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
   onCancelRequest,
   onRemoveConnection,
   onSelectProfile,
+  initialTab = 'connected',
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('connected');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
+
+  React.useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const [selectedIntentFilter, setSelectedIntentFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);

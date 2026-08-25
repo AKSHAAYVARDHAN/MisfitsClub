@@ -13,11 +13,12 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from './firebase';
-import { UserProfile, PublicProfile, CuriousBoardPost, Connection, ChatMessage } from '../types';
+import { UserProfile, PublicProfile, CuriousBoardPost, Connection, ChatMessage, AppNotification, NotificationType } from '../types';
 import { SAMPLE_PROFILES, SAMPLE_BOARD_POSTS } from '../data/mockData';
 import { userService } from './userService';
 import { discoveryService } from './discoveryService';
 import { connectionService, SendConnectionParams } from './connectionService';
+import { notificationService, CreateNotificationInput } from './notificationService';
 
 // Helper to sanitize undefined values before writing to Firestore
 function sanitizeData<T extends Record<string, any>>(obj: T): T {
@@ -231,5 +232,32 @@ export const firestoreService = {
         handleFirestoreError(error, OperationType.GET, path);
       }
     );
+  },
+
+  // =========================================================================
+  // NOTIFICATIONS
+  // =========================================================================
+  async createNotification(input: CreateNotificationInput): Promise<AppNotification | null> {
+    return notificationService.createNotification(input);
+  },
+
+  async getNotifications(userId: string, limitCount = 40): Promise<AppNotification[]> {
+    return notificationService.getNotifications(userId, limitCount);
+  },
+
+  async markNotificationAsRead(notificationId: string, userId: string): Promise<void> {
+    return notificationService.markNotificationAsRead(notificationId, userId);
+  },
+
+  async markAllNotificationsAsRead(userId: string, currentNotifications?: AppNotification[]): Promise<void> {
+    return notificationService.markAllNotificationsAsRead(userId, currentNotifications);
+  },
+
+  subscribeNotifications(
+    userId: string,
+    onUpdate: (notifications: AppNotification[]) => void,
+    limitCount = 50
+  ): () => void {
+    return notificationService.subscribeUserNotifications(userId, onUpdate, limitCount);
   },
 };

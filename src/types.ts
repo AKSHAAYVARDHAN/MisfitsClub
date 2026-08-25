@@ -183,11 +183,39 @@ export interface Connection {
 
 export interface ChatMessage {
   id: string;
-  connectionId: string;
+  conversationId?: string;
+  connectionId?: string;
   senderId: 'currentUser' | string;
+  senderName?: string;
   text: string;
   timestamp: string;
+  createdAt?: string;
+  readBy?: string[];
   isStarterPrompt?: boolean;
+}
+
+export interface Conversation {
+  id: string;
+  connectionId?: string;
+  participantIds: string[];
+  participantsSummary?: {
+    [uid: string]: {
+      name: string;
+      avatarUrl?: string;
+      profilePhoto?: string;
+      role?: string;
+      location?: string;
+      isOnline?: boolean;
+    };
+  };
+  lastMessage?: string;
+  lastMessageAt?: string;
+  lastMessageSenderId?: string;
+  unreadCounts?: {
+    [uid: string]: number;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ThoughtSnippet {
@@ -215,3 +243,27 @@ export interface CuriousBoardPost {
 }
 
 export type ActiveTab = 'landing' | 'orb' | 'discover' | 'board' | 'explore' | 'connections' | 'messages' | 'profile' | 'signin' | 'signup' | 'onboarding';
+
+export type NotificationType =
+  | 'CONNECTION_REQUEST'
+  | 'CONNECTION_ACCEPTED'
+  | 'SPARK_INTERACTION'
+  | 'MESSAGE'
+  | 'CLUB_INVITE'
+  | 'EVENT_INVITE';
+
+export interface AppNotification {
+  id: string;
+  recipientId: string;
+  senderId: string | null;
+  senderName?: string;
+  senderAvatar?: string;
+  senderRole?: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  referenceId: string;
+  read: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}

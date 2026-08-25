@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { UserProfile, ConnectionIntent, OrbLocation } from '../types';
 import { latLngToVector3, createGreatCircleArc, generateEarthCanvasTexture, getIntentVisual } from '../utils/geo';
+import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 
 interface OrbGlobeProps {
   userLocation: { lat: number; lng: number; name: string; city: string };
@@ -28,7 +29,7 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
   autoRotate = true,
   emptyState = false,
   showRecenterButton = true,
-  initialDistance = 5.4,
+  initialDistance = 7.2,
   className = '',
   onHoverLocation,
 }) => {
@@ -579,10 +580,10 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
     const state = threeRef.current;
     if (!state) return;
 
-    const zoomSpeed = 0.0025;
+    const zoomSpeed = 0.003;
     state.cameraTargetDistance = Math.max(
-      3.4,
-      Math.min(7.2, state.cameraTargetDistance + e.deltaY * zoomSpeed)
+      4.2,
+      Math.min(11.0, state.cameraTargetDistance + e.deltaY * zoomSpeed)
     );
   };
 
@@ -599,8 +600,8 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
       if (touchDistance !== null) {
         const delta = touchDistance - dist;
         state.cameraTargetDistance = Math.max(
-          3.4,
-          Math.min(7.2, state.cameraTargetDistance + delta * 0.015)
+          4.2,
+          Math.min(11.0, state.cameraTargetDistance + delta * 0.015)
         );
       }
       setTouchDistance(dist);
@@ -612,6 +613,18 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
   };
 
   // External Control Functions
+  const zoomIn = () => {
+    const state = threeRef.current;
+    if (!state) return;
+    state.cameraTargetDistance = Math.max(4.2, state.cameraTargetDistance - 0.8);
+  };
+
+  const zoomOut = () => {
+    const state = threeRef.current;
+    if (!state) return;
+    state.cameraTargetDistance = Math.min(11.0, state.cameraTargetDistance + 0.8);
+  };
+
   const resetToHome = useCallback(() => {
     const state = threeRef.current;
     if (!state) return;
@@ -648,6 +661,31 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
       {/* Floating Canvas UI Controls */}
       {showRecenterButton && (
         <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 flex items-center gap-2 z-20 pointer-events-auto">
+          <div className="flex items-center border border-[#F5F5F0]/15 bg-[#151516]/90 backdrop-blur-md">
+            <button
+              id="orb-zoom-out-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                zoomOut();
+              }}
+              title="Zoom out"
+              className="p-2 text-[#969696] hover:text-[#D4FF3F] hover:bg-[#202020] transition-colors border-r border-[#F5F5F0]/10"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <button
+              id="orb-zoom-in-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                zoomIn();
+              }}
+              title="Zoom in"
+              className="p-2 text-[#969696] hover:text-[#D4FF3F] hover:bg-[#202020] transition-colors"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
           <button
             id="orb-recenter-home-btn"
             onClick={(e) => {
@@ -655,7 +693,7 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
               resetToHome();
             }}
             title="Recenter to your location"
-            className="bg-[#151516]/90 backdrop-blur-md border border-[#F5F5F0]/15 hover:border-[#D4FF3F] text-[#F5F5F0] hover:text-[#D4FF3F] px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all shadow-xl flex items-center gap-1.5"
+            className="bg-[#151516]/90 backdrop-blur-md border border-[#F5F5F0]/15 hover:border-[#D4FF3F] text-[#F5F5F0] hover:text-[#D4FF3F] px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all shadow-xl flex items-center gap-1.5 font-mono-code"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F] animate-pulse" />
             <span>Recenter ({userLocation.city})</span>

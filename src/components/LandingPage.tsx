@@ -26,6 +26,7 @@ interface LandingPageProps {
   onSelectProfile: (profile: UserProfile) => void;
   onSelectIntent: (intent: ConnectionIntent) => void;
   allProfiles: UserProfile[];
+  currentUser?: UserProfile | null;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
@@ -35,6 +36,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onSelectProfile,
   onSelectIntent,
   allProfiles,
+  currentUser,
 }) => {
   const [activeIntentTab, setActiveIntentTab] = useState<ConnectionIntent>('Exchange Ideas');
 
@@ -155,16 +157,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 onClick={onStartOnboarding}
                 className="bg-[#F5F5F0] text-[#0B0B0C] px-8 py-3.5 text-xs sm:text-sm font-bold uppercase tracking-widest hover:bg-[#D4FF3F] transition-colors shadow-lg text-center"
               >
-                FIND SOMEONE
+                {currentUser ? 'FIND SOMEONE' : 'JOIN THE CLUB'}
               </button>
 
               <button
                 id="hero-explore-misfits-btn"
-                onClick={onExplore}
+                onClick={currentUser ? onEnterOrb : onExplore}
                 className="bg-[#0B0B0C] border border-[#F5F5F0]/20 text-[#F5F5F0] px-8 py-3.5 text-xs sm:text-sm font-bold uppercase tracking-widest hover:border-[#D4FF3F] hover:text-[#D4FF3F] transition-all flex items-center justify-center gap-2.5"
               >
                 <Compass className="w-4 h-4 text-[#D4FF3F]" />
-                <span>EXPLORE MISFITS</span>
+                <span>{currentUser ? 'ENTER THE ORB' : 'EXPLORE MISFITS'}</span>
               </button>
             </div>
 
@@ -564,10 +566,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               id="footer-join-misfits-btn"
-              onClick={onStartOnboarding}
+              onClick={currentUser ? onEnterOrb : onStartOnboarding}
               className="bg-[#F5F5F0] text-[#0B0B0C] px-10 py-4 text-xs sm:text-sm font-bold uppercase tracking-widest hover:bg-[#D4FF3F] transition-colors"
             >
-              <span>Join Misfits Club</span>
+              <span>{currentUser ? 'Enter Misfits Club' : 'Join Misfits Club'}</span>
             </button>
             <button
               id="footer-enter-orb-btn"

@@ -8,6 +8,7 @@ interface NavbarProps {
   currentUser: UserProfile | null;
   onOpenOnboarding: () => void;
   onOpenSignIn: () => void;
+  onSignOut?: () => void;
   unreadCount?: number;
   connectionsCount?: number;
 }
@@ -18,6 +19,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
   onOpenOnboarding,
   onOpenSignIn,
+  onSignOut,
   unreadCount = 1,
   connectionsCount = 2,
 }) => {
@@ -61,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <Globe className="w-3.5 h-3.5" />
-            <span>The Orb</span>
+            <span>Orb</span>
           </button>
 
           <button
@@ -79,9 +81,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             id="nav-explore-btn"
-            onClick={() => setActiveTab('explore')}
+            onClick={() => setActiveTab('board')}
             className={`transition-colors flex items-center gap-2 py-2 ${
-              activeTab === 'explore'
+              activeTab === 'board' || activeTab === 'explore'
                 ? 'text-[#D4FF3F] font-bold'
                 : 'text-[#969696] hover:text-[#F5F5F0]'
             }`}
@@ -125,26 +127,68 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             )}
           </button>
+
+          {currentUser && (
+            <button
+              id="nav-profile-btn"
+              onClick={() => setActiveTab('profile')}
+              className={`transition-colors flex items-center gap-2 py-2 ${
+                activeTab === 'profile'
+                  ? 'text-[#D4FF3F] font-bold'
+                  : 'text-[#969696] hover:text-[#F5F5F0]'
+              }`}
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>Profile</span>
+            </button>
+          )}
         </nav>
 
         {/* Right: User Account / Action */}
-        <div className="flex items-center gap-4 lg:gap-5 flex-shrink-0">
-          <button
-            id="nav-sign-in-btn"
-            onClick={onOpenSignIn}
-            className="text-xs uppercase tracking-widest font-medium text-[#969696] hover:text-[#F5F5F0] transition-colors px-2 py-1.5 whitespace-nowrap focus:outline-none"
-          >
-            SIGN IN
-          </button>
+        <div className="flex items-center gap-3 lg:gap-4 flex-shrink-0">
+          {currentUser ? (
+            <div className="flex items-center gap-2.5">
+              <button
+                id="nav-user-account-btn"
+                onClick={() => setActiveTab('profile')}
+                className={`flex items-center gap-2.5 px-3 py-1.5 border transition-all ${
+                  activeTab === 'profile'
+                    ? 'border-[#D4FF3F] text-[#D4FF3F] bg-[#D4FF3F]/10'
+                    : 'border-[#242424] text-[#F5F5F0] hover:border-[#D4FF3F]/60 bg-[#101010]'
+                }`}
+                title="View your Misfits Club profile"
+              >
+                <img
+                  src={currentUser.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
+                  alt={currentUser.name}
+                  referrerPolicy="no-referrer"
+                  className="h-5 w-5 rounded-sm object-cover border border-[#333]"
+                />
+                <span className="text-xs uppercase tracking-wider font-mono-code font-medium">
+                  {currentUser.name.split(' ')[0]}
+                </span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <button
+                id="nav-sign-in-btn"
+                onClick={onOpenSignIn}
+                className="text-xs font-mono-code uppercase tracking-widest font-medium text-[#969696] hover:text-[#F5F5F0] transition-colors px-2 py-1.5 whitespace-nowrap focus:outline-none"
+              >
+                SIGN IN
+              </button>
 
-          <button
-            id="nav-enter-orb-header-btn"
-            onClick={() => setActiveTab('orb')}
-            className="bg-[#D4FF3F] text-[#0B0B0C] px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-[#F5F5F0] transition-colors flex items-center gap-2 whitespace-nowrap shadow-md"
-          >
-            <Globe className="w-3.5 h-3.5" />
-            <span>ENTER ORB</span>
-          </button>
+              <button
+                id="nav-enter-orb-header-btn"
+                onClick={() => setActiveTab('orb')}
+                className="bg-[#D4FF3F] text-[#080808] px-4 py-2 text-xs font-bold font-mono-code uppercase tracking-widest hover:bg-[#F5F5F0] transition-colors flex items-center gap-2 whitespace-nowrap shadow-md"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>ENTER ORB</span>
+              </button>
+            </div>
+          )}
         </div>
 
       </div>
@@ -176,9 +220,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             id="mobile-nav-explore"
-            onClick={() => setActiveTab('explore')}
+            onClick={() => setActiveTab('board')}
             className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 ${
-              activeTab === 'explore' ? 'text-[#D4FF3F] font-bold' : 'text-[#969696]'
+              activeTab === 'board' || activeTab === 'explore' ? 'text-[#D4FF3F] font-bold' : 'text-[#969696]'
             }`}
           >
             <Sparkles className="h-4 w-4 mb-0.5" />

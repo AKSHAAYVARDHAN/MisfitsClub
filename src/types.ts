@@ -18,9 +18,12 @@ export type MeetArchetype =
 
 export interface UserProfile {
   id: string;
+  uid?: string;
+  email?: string;
   name: string;
   handle: string;
   location: string;
+  city?: string;
   country: string;
   lat?: number;
   lng?: number;
@@ -48,6 +51,16 @@ export interface UserProfile {
   isOnline?: boolean;
   timeZone?: string;
   joinedDate?: string;
+  onboardingCompleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AuthState {
+  user: UserProfile | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  onboardingDraft?: Partial<UserProfile> | null;
 }
 
 export interface OrbLocation {
@@ -111,4 +124,4 @@ export interface CuriousBoardPost {
   repliesCount: number;
 }
 
-export type ActiveTab = 'landing' | 'orb' | 'discover' | 'explore' | 'connections' | 'messages' | 'profile';
+export type ActiveTab = 'landing' | 'orb' | 'discover' | 'board' | 'explore' | 'connections' | 'messages' | 'profile' | 'signin' | 'signup' | 'onboarding';

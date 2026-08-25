@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   ActiveTab, 
   UserProfile, 
@@ -12,29 +12,28 @@ import {
   SAMPLE_PROFILES, 
   SAMPLE_BOARD_POSTS 
 } from './data/mockData';
+import { authService } from './services/authService';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { RouterProvider, useRouter, AppRoute } from './context/RouterContext';
 import { Navbar } from './components/Navbar';
 import { LandingPage } from './components/LandingPage';
 import { OrbView } from './components/OrbView';
-import { OnboardingModal } from './components/OnboardingModal';
+import { OnboardingFlow } from './components/OnboardingFlow';
 import { DiscoverView } from './components/DiscoverView';
 import { ConnectModal } from './components/ConnectModal';
 import { MessagesView } from './components/MessagesView';
 import { ConnectionsView } from './components/ConnectionsView';
 import { ExploreBoardView } from './components/ExploreBoardView';
 import { ProfileView } from './components/ProfileView';
-import { AuthModal } from './components/AuthModal';
+import { SignInView } from './components/SignInView';
+import { SignUpView } from './components/SignUpView';
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('landing');
-  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem('misfits_current_user');
-    return saved ? JSON.parse(saved) : INITIAL_USER;
-  });
+function MainApp() {
+  const { user, isAuthenticated, isLoading, signOut, completeOnboarding, updateUser } = useAuth();
+  const { currentPath, navigate } = useRouter();
 
-  const [profiles, setProfiles] = useState<UserProfile[]>(SAMPLE_PROFILES);
+  const [profiles] = useState<UserProfile[]>(() => authService.getAllProfiles());
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
-  const [isSignInOpen, setIsSignInOpen] = useState<boolean>(false);
   const [connectModalTarget, setConnectModalTarget] = useState<UserProfile | null>(null);
 
   // Initial connections
@@ -98,121 +97,144 @@ export default function App() {
       text: 'Exactly. The acoustics of old tape degradation is something neural models still struggle to capture accurately.',
       timestamp: '12:40 PM',
     },
-    {
-      id: 'm-5',
-      connectionId: 'conn-arjun',
-      senderId: 'currentUser',
-      text: 'What are you building right now that feels slightly irrational?',
-      timestamp: '3 days ago 2:10 PM',
-      isStarterPrompt: true,
-    },
-    {
-      id: 'm-6',
-      connectionId: 'conn-arjun',
-      senderId: 'p-arjun',
-      text: 'Soldered the first PCB for the keystroke biometric monitor. Will upload schematics tonight.',
-      timestamp: 'Yesterday 8:05 PM',
-    },
   ]);
 
-  const [activeConnectionId, setActiveConnectionId] = useState<string | null>('conn-maya');
+  const [activeConnectionId, setActiveConnectionId] = useState<string>('conn-maya');
   const [boardPosts, setBoardPosts] = useState<CuriousBoardPost[]>(SAMPLE_BOARD_POSTS);
 
-  // Save current user to localStorage
-  useEffect(() => {
-    localStorage.setItem('misfits_current_user', JSON.stringify(currentUser));
-  }, [currentUser]);
-
-  // Handle Onboarding Completion
-  const handleCompleteOnboarding = (newUser: UserProfile) => {
-    setCurrentUser(newUser);
-    setIsOnboardingOpen(false);
-    setActiveTab('discover');
+  // Map route to activeTab
+  const getActiveTabFromPath = (path: AppRoute): ActiveTab => {
+    switch (path) {
+      case '/': return 'landing';
+      case '/signin': return 'signin';
+      case '/signup': return 'signup';
+      case '/orb': return 'orb';
+      case '/discover': return 'discover';
+      case '/board': return 'board';
+      case '/connections': return 'connections';
+      case '/messages': return 'messages';
+      case '/profile': return 'profile';
+      case '/onboarding': return 'onboarding';
+      default: return 'landing';
+    }
   };
 
-  // Toggle bookmarking profile
-  const handleToggleBookmark = (profileId: string) => {
+  const activeTab = getActiveTabFromPath(currentPath);
+
+  // Map tab clicks to route navigation
+  const handleTabChange = (tab: ActiveTab) => {
+    switch (tab) {
+      case 'landing':
+        navigate('/');
+        break;
+      case 'signin':
+        navigate('/signin');
+        break;
+      case 'signup':
+        navigate('/signup');
+        break;
+      case 'orb':
+        navigate('/orb');
+        break;
+      case 'discover':
+        navigate('/discover');
+        break;
+      case 'board':
+      case 'explore':
+        navigate('/board');
+        break;
+      case 'connections':
+        navigate('/connections');
+        break;
+      case 'messages':
+        navigate('/messages');
+        break;
+      case 'profile':
+        navigate('/profile');
+        break;
+      case 'onboarding':
+        navigate('/onboarding');
+        break;
+      default:
+        navigate('/');
+    }
+  };
+
+  const handleAuthSuccess = (authenticatedUser: UserProfile) => {
+    if (authenticatedUser.onboardingCompleted === false) {
+      navigate('/onboarding');
+    } else {
+      navigate('/orb');
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/', { replace: true });
+  };
+
+  const handleCompleteOnboarding = async (updated: UserProfile) => {
+    await completeOnboarding(updated);
+    navigate('/orb');
+  };
+
+  const handleToggleBookmark = (id: string) => {
     setBookmarkedIds((prev) =>
-      prev.includes(profileId) ? prev.filter((id) => id !== profileId) : [...prev, profileId]
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
   };
 
-  // Trigger connect modal
-  const handleOpenConnectModal = (profile: UserProfile) => {
-    setConnectModalTarget(profile);
+  const handleOpenConnectModal = (target: UserProfile) => {
+    if (!isAuthenticated) {
+      navigate('/signin');
+      return;
+    }
+    setConnectModalTarget(target);
   };
 
-  // Start conversation & create connection
-  const handleStartConversation = (targetProfile: UserProfile, starterMessage: string) => {
-    // Check if connection already exists
-    let existingConn = connections.find((c) => c.profileId === targetProfile.id);
-
-    if (!existingConn) {
-      const newConnId = `conn-${Date.now()}`;
-      const mutualIntents = currentUser
-        ? targetProfile.intents.filter((i) => currentUser.intents.includes(i))
-        : targetProfile.intents.slice(0, 2);
-      const mutualInterests = currentUser
-        ? targetProfile.interests.filter((i) => currentUser.interests.includes(i))
-        : targetProfile.interests.slice(0, 2);
-
-      const newConnection: Connection = {
-        id: newConnId,
-        profileId: targetProfile.id,
-        profile: targetProfile,
-        connectedAt: 'Just now',
-        status: 'connected',
-        sharedIntents: mutualIntents.length > 0 ? mutualIntents : targetProfile.intents.slice(0, 1),
-        sharedInterests: mutualInterests.length > 0 ? mutualInterests : targetProfile.interests.slice(0, 2),
-        introNote: starterMessage,
-        lastMessage: starterMessage,
-        lastMessageTime: 'Just now',
-        unreadCount: 0,
-      };
-
-      setConnections((prev) => [newConnection, ...prev]);
-      existingConn = newConnection;
+  // Start new conversation from connect modal
+  const handleStartConversation = (target: UserProfile, introPrompt: string) => {
+    const existingConn = connections.find((c) => c.profileId === target.id);
+    if (existingConn) {
+      setActiveConnectionId(existingConn.id);
+      navigate('/messages');
+      setConnectModalTarget(null);
+      return;
     }
 
-    // Add intro message
-    const newMsg: ChatMessage = {
+    const newConnId = `conn-${Date.now()}`;
+    const newConnection: Connection = {
+      id: newConnId,
+      profileId: target.id,
+      profile: target,
+      connectedAt: 'Just now',
+      status: 'connected',
+      sharedIntents: target.intents.filter((i) => (user?.intents || []).includes(i)),
+      sharedInterests: target.interests.filter((i) => (user?.interests || []).includes(i)),
+      introNote: introPrompt,
+      lastMessage: introPrompt,
+      lastMessageTime: 'Just now',
+      unreadCount: 0,
+    };
+
+    const starterMessage: ChatMessage = {
       id: `msg-${Date.now()}`,
-      connectionId: existingConn.id,
+      connectionId: newConnId,
       senderId: 'currentUser',
-      text: starterMessage,
+      text: introPrompt,
       timestamp: 'Just now',
       isStarterPrompt: true,
     };
 
-    setMessages((prev) => [...prev, newMsg]);
+    setConnections((prev) => [newConnection, ...prev]);
+    setMessages((prev) => [...prev, starterMessage]);
+    setActiveConnectionId(newConnId);
     setConnectModalTarget(null);
-    setActiveConnectionId(existingConn.id);
-    setActiveTab('messages');
-
-    // Simulate realistic thoughtful response after a brief unhurried interval
-    setTimeout(() => {
-      const responseReplies = [
-        `Thanks for reaching out! I was just reading about this earlier. What pulled you into this space initially?`,
-        `Fascinating question. I've been thinking about this for months—glad to find someone else exploring the exact same thread.`,
-        `That resonated with me. I love that you noticed that in my profile. Are you currently building something around this?`,
-      ];
-      const randomReply = responseReplies[Math.floor(Math.random() * responseReplies.length)];
-
-      const simulatedMsg: ChatMessage = {
-        id: `msg-${Date.now() + 1}`,
-        connectionId: existingConn.id,
-        senderId: targetProfile.id,
-        text: randomReply,
-        timestamp: 'Just now',
-      };
-
-      setMessages((prev) => [...prev, simulatedMsg]);
-    }, 2500);
+    navigate('/messages');
   };
 
-  // Send message in existing chat
+  // Send message inside conversation
   const handleSendMessage = (connectionId: string, text: string) => {
-    const conn = connections.find((c) => c.id === connectionId);
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       connectionId,
@@ -222,8 +244,6 @@ export default function App() {
     };
 
     setMessages((prev) => [...prev, newMsg]);
-
-    // Update connection last message
     setConnections((prev) =>
       prev.map((c) =>
         c.id === connectionId
@@ -232,20 +252,21 @@ export default function App() {
       )
     );
 
-    // Simulate thoughtful organic response
+    // Simulated reply from other user
+    const conn = connections.find((c) => c.id === connectionId);
     if (conn) {
       setTimeout(() => {
         const replies = [
-          `That makes so much sense. How do you think about the trade-offs when experimenting with that?`,
-          `I hadn't looked at it from that angle before. Have you read anything that changed your mind on this recently?`,
-          `Very true. Let's definitely keep this thread going—I want to test a similar idea this weekend.`,
+          `That perspective hits on something subtle. I've been noticing the exact same phenomenon lately.`,
+          `Fascinating point. Have you considered how this changes once we move past current constraints?`,
+          `I love this angle. It reminds me of a conversation I had about analog feedback loops.`,
+          `This would make an incredible experiment. We should prototype a small version.`,
         ];
         const randomReply = replies[Math.floor(Math.random() * replies.length)];
-
         const replyMsg: ChatMessage = {
-          id: `msg-${Date.now() + 2}`,
+          id: `msg-reply-${Date.now()}`,
           connectionId,
-          senderId: conn.profile.id,
+          senderId: conn.profileId,
           text: randomReply,
           timestamp: 'Just now',
         };
@@ -258,12 +279,15 @@ export default function App() {
               : c
           )
         );
-      }, 3000);
+      }, 2500);
     }
   };
 
-  // Connect from thought board
   const handleConnectWithBoardAuthor = (authorId: string, contextPostText: string) => {
+    if (!isAuthenticated) {
+      navigate('/signin');
+      return;
+    }
     const authorProfile = profiles.find((p) => p.id === authorId) || profiles[0];
     handleStartConversation(
       authorProfile,
@@ -271,54 +295,130 @@ export default function App() {
     );
   };
 
-  // Add post to curiosity board
   const handleAddBoardPost = (newPost: CuriousBoardPost) => {
     setBoardPosts((prev) => [newPost, ...prev]);
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#080808] flex flex-col items-center justify-center text-[#F2F2ED]">
+        <div className="flex items-center gap-3">
+          <span className="w-2 h-2 rounded-full bg-[#D4FF3F] animate-ping" />
+          <span className="text-xs font-mono-code uppercase tracking-widest text-[#8A8A8A]">
+            MISFITS CLUB · VERIFYING SESSION...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#0B0B0C] text-[#F5F5F0] flex flex-col font-sans-clean selection:bg-[#D4FF3F] selection:text-[#0B0B0C]">
+    <div className="min-h-screen bg-[#080808] text-[#F2F2ED] flex flex-col font-sans-clean selection:bg-[#D4FF3F] selection:text-[#080808]">
       
-      {/* Top Persistent Minimal Navigation */}
+      {/* Top Persistent Navigation */}
       <Navbar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        currentUser={currentUser}
-        onOpenOnboarding={() => setIsOnboardingOpen(true)}
-        onOpenSignIn={() => setIsSignInOpen(true)}
+        setActiveTab={handleTabChange}
+        currentUser={user}
+        onOpenOnboarding={() => {
+          if (user) {
+            navigate('/onboarding');
+          } else {
+            navigate('/signup');
+          }
+        }}
+        onOpenSignIn={() => navigate('/signin')}
+        onSignOut={handleSignOut}
         unreadCount={connections.reduce((sum, c) => sum + (c.unreadCount || 0), 0)}
         connectionsCount={connections.length}
       />
 
       {/* Main View Router */}
       <main className="flex-1">
-        {activeTab === 'landing' && (
+        
+        {/* Sign In View */}
+        {currentPath === '/signin' && (
+          <SignInView
+            onSuccess={handleAuthSuccess}
+            onNavigateToSignUp={() => navigate('/signup')}
+            onClose={() => navigate('/')}
+          />
+        )}
+
+        {/* Sign Up View */}
+        {currentPath === '/signup' && (
+          <SignUpView
+            onSuccess={handleAuthSuccess}
+            onNavigateToSignIn={() => navigate('/signin')}
+            onClose={() => navigate('/')}
+          />
+        )}
+
+        {/* Dedicated Onboarding Flow */}
+        {currentPath === '/onboarding' && (
+          <OnboardingFlow
+            currentUser={user || INITIAL_USER}
+            onComplete={handleCompleteOnboarding}
+            onCancel={() => navigate(user?.onboardingCompleted ? '/orb' : '/')}
+          />
+        )}
+
+        {/* Public / Landing Page */}
+        {currentPath === '/' && (
           <LandingPage
-            onStartOnboarding={() => setIsOnboardingOpen(true)}
-            onEnterOrb={() => setActiveTab('orb')}
-            onExplore={() => setActiveTab('discover')}
+            currentUser={user}
+            onStartOnboarding={() => {
+              if (user) {
+                if (user.onboardingCompleted === false) {
+                  navigate('/onboarding');
+                } else {
+                  navigate('/discover');
+                }
+              } else {
+                navigate('/signup');
+              }
+            }}
+            onEnterOrb={() => {
+              if (user) {
+                navigate('/orb');
+              } else {
+                navigate('/signin');
+              }
+            }}
+            onExplore={() => {
+              if (user) {
+                navigate('/discover');
+              } else {
+                navigate('/signin');
+              }
+            }}
             onSelectProfile={(profile) => {
               handleOpenConnectModal(profile);
             }}
             onSelectIntent={(intent: ConnectionIntent) => {
-              setActiveTab('discover');
+              if (user) {
+                navigate('/discover');
+              } else {
+                navigate('/signin');
+              }
             }}
             allProfiles={profiles}
           />
         )}
 
-        {activeTab === 'orb' && (
+        {/* 3D Orb View */}
+        {currentPath === '/orb' && (
           <OrbView
-            currentUser={currentUser}
+            currentUser={user || INITIAL_USER}
             connections={connections}
             allProfiles={profiles}
-            onExplore={() => setActiveTab('discover')}
-            onOpenOnboarding={() => setIsOnboardingOpen(true)}
+            onExplore={() => navigate('/discover')}
+            onOpenOnboarding={() => navigate('/onboarding')}
             onOpenChatWithProfile={(profileId) => {
               const existing = connections.find((c) => c.profileId === profileId);
               if (existing) {
                 setActiveConnectionId(existing.id);
-                setActiveTab('messages');
+                navigate('/messages');
               } else {
                 const targetProfile = profiles.find((p) => p.id === profileId);
                 if (targetProfile) {
@@ -332,92 +432,88 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'discover' && (
+        {/* Discover View */}
+        {currentPath === '/discover' && (
           <DiscoverView
             profiles={profiles}
-            currentUser={currentUser}
+            currentUser={user || INITIAL_USER}
             onConnect={handleOpenConnectModal}
-            onOpenOnboarding={() => setIsOnboardingOpen(true)}
+            onOpenOnboarding={() => navigate('/onboarding')}
             bookmarkedIds={bookmarkedIds}
             onToggleBookmark={handleToggleBookmark}
           />
         )}
 
-        {activeTab === 'explore' && (
+        {/* Explore / Curiosity Board View */}
+        {currentPath === '/board' && (
           <ExploreBoardView
             posts={boardPosts}
             onAddPost={handleAddBoardPost}
-            currentUser={currentUser}
+            currentUser={user || INITIAL_USER}
             onConnectWithAuthor={handleConnectWithBoardAuthor}
-            onOpenOnboarding={() => setIsOnboardingOpen(true)}
+            onOpenOnboarding={() => navigate('/onboarding')}
           />
         )}
 
-        {activeTab === 'connections' && (
+        {/* Connections / Circle View */}
+        {currentPath === '/connections' && (
           <ConnectionsView
             connections={connections}
             onOpenChat={(connId) => {
               setActiveConnectionId(connId);
-              setActiveTab('messages');
+              navigate('/messages');
             }}
-            onExplore={() => setActiveTab('discover')}
-            onOpenOrb={() => setActiveTab('orb')}
+            onExplore={() => navigate('/discover')}
+            onOpenOrb={() => navigate('/orb')}
           />
         )}
 
-        {activeTab === 'messages' && (
+        {/* Intimate Messages View */}
+        {currentPath === '/messages' && (
           <MessagesView
             connections={connections}
             activeConnectionId={activeConnectionId}
             onSelectConnection={(id) => setActiveConnectionId(id)}
             messages={messages}
             onSendMessage={handleSendMessage}
-            currentUser={currentUser}
-            onExplore={() => setActiveTab('discover')}
+            currentUser={user || INITIAL_USER}
+            onExplore={() => navigate('/discover')}
           />
         )}
 
-        {activeTab === 'profile' && (
+        {/* Profile View */}
+        {currentPath === '/profile' && (
           <ProfileView
-            currentUser={currentUser}
-            onUpdateProfile={(updated) => setCurrentUser(updated)}
-            onOpenOnboarding={() => setIsOnboardingOpen(true)}
-            onExplore={() => setActiveTab('discover')}
+            currentUser={user || INITIAL_USER}
+            onUpdateProfile={async (updated) => {
+              await updateUser(updated);
+            }}
+            onOpenOnboarding={() => navigate('/onboarding')}
+            onExplore={() => navigate('/discover')}
+            onSignOut={handleSignOut}
           />
         )}
       </main>
-
-      {/* Onboarding Focused Modal (5 Steps) */}
-      <OnboardingModal
-        isOpen={isOnboardingOpen}
-        onClose={() => setIsOnboardingOpen(false)}
-        onComplete={handleCompleteOnboarding}
-        initialUser={currentUser}
-      />
 
       {/* Connect & Conversation Starter Modal */}
       <ConnectModal
         isOpen={!!connectModalTarget}
         onClose={() => setConnectModalTarget(null)}
         targetProfile={connectModalTarget}
-        currentUser={currentUser}
+        currentUser={user || INITIAL_USER}
         onStartConversation={handleStartConversation}
       />
 
-      {/* Member Sign In / Authentication Modal */}
-      <AuthModal
-        isOpen={isSignInOpen}
-        onClose={() => setIsSignInOpen(false)}
-        onSuccess={(user) => {
-          setCurrentUser(user);
-          localStorage.setItem('misfits_current_user', JSON.stringify(user));
-        }}
-        onOpenOnboarding={() => {
-          setIsSignInOpen(false);
-          setIsOnboardingOpen(true);
-        }}
-      />
-
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <RouterProvider>
+        <MainApp />
+      </RouterProvider>
+    </AuthProvider>
   );
 }

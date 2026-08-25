@@ -21,6 +21,7 @@ interface ProfileViewProps {
   onUpdateProfile: (updated: UserProfile) => void;
   onOpenOnboarding: () => void;
   onExplore: () => void;
+  onSignOut?: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -28,6 +29,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onUpdateProfile,
   onOpenOnboarding,
   onExplore,
+  onSignOut,
 }) => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [name, setName] = useState<string>(currentUser.name);
@@ -377,12 +379,23 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             )}
           </div>
 
-          <button
-            onClick={onOpenOnboarding}
-            className="text-[10px] text-[#969696] uppercase tracking-widest font-bold hover:text-[#D4FF3F] transition-colors"
-          >
-            Restart Profile Flow
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onOpenOnboarding}
+              className="text-[10px] text-[#969696] uppercase tracking-widest font-bold hover:text-[#D4FF3F] transition-colors"
+            >
+              Update Onboarding
+            </button>
+            {onSignOut && (
+              <button
+                id="profile-sign-out-btn"
+                onClick={onSignOut}
+                className="text-[10px] text-red-400/80 hover:text-red-400 uppercase tracking-widest font-mono-code font-bold transition-colors border border-red-500/20 px-3 py-1.5 hover:border-red-500/40"
+              >
+                Sign Out
+              </button>
+            )}
+          </div>
         </div>
 
       </div>

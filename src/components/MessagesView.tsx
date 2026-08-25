@@ -3,14 +3,15 @@ import { Connection, ChatMessage, UserProfile } from '../types';
 import { 
   Send, 
   Sparkles, 
-  User, 
   MapPin, 
   Clock, 
   ArrowLeft, 
   Info, 
-  ExternalLink,
+  X,
   ChevronRight,
-  Lightbulb
+  Lightbulb,
+  Check,
+  CheckCheck
 } from 'lucide-react';
 import { CONVERSATION_STARTERS } from '../data/mockData';
 
@@ -62,108 +63,115 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
   if (connections.length === 0) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-6 max-w-lg mx-auto py-16 selection:bg-[#D4FF3F] selection:text-[#0B0B0C]">
-        <div className="p-4 bg-[#151516] border border-[#F5F5F0]/10 mb-4">
-          <Sparkles className="w-8 h-8 text-[#D4FF3F]" />
+      <div className="min-h-[75vh] flex flex-col items-center justify-center text-center px-6 max-w-md mx-auto py-20 bg-[#080808] text-[#F2F2ED] selection:bg-[#D4FF3F] selection:text-[#080808]">
+        <div className="w-12 h-12 rounded-full bg-[#141414] border border-[#242424] flex items-center justify-center mb-6">
+          <Sparkles className="w-5 h-5 text-[#D4FF3F]" />
         </div>
-        <h2 className="font-editorial text-3xl text-[#F5F5F0] font-light mb-2">
+        <h2 className="font-editorial text-3xl font-light tracking-tight text-[#F2F2ED] mb-3">
           No conversations yet
         </h2>
-        <p className="text-sm text-[#969696] mb-6 leading-relaxed">
-          Misfits Club is about finding people worth talking to. Discover members with aligned curiosities and start an authentic dialogue.
+        <p className="text-xs text-[#8A8A8A] mb-8 leading-relaxed font-sans-clean">
+          Misfits Club is built for unhurried, authentic dialogue between curious minds. Connect with members on the Orb or explore board to start talking.
         </p>
         <button
           id="empty-messages-discover-btn"
           onClick={onExplore}
-          className="bg-[#F5F5F0] text-[#0B0B0C] px-6 py-2.5 text-xs font-bold uppercase tracking-widest hover:bg-[#D4FF3F] transition-colors"
+          className="bg-[#F2F2ED] text-[#080808] px-7 py-3 text-xs font-bold uppercase tracking-widest hover:bg-[#D4FF3F] transition-colors"
         >
-          Discover People Worth Meeting
+          Discover People
         </button>
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-4 flex flex-col selection:bg-[#D4FF3F] selection:text-[#0B0B0C]">
-      <div className="flex-1 flex border border-[#F5F5F0]/10 bg-[#0B0B0C] overflow-hidden shadow-2xl">
+    <div className="h-[calc(100vh-5rem)] max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-3 sm:py-5 flex flex-col bg-[#080808] text-[#F2F2ED] selection:bg-[#D4FF3F] selection:text-[#080808]">
+      <div className="flex-1 flex border border-[#242424] bg-[#0B0B0B] overflow-hidden relative shadow-2xl">
         
         {/* Left Sidebar: Conversations List */}
-        <div className={`w-full md:w-80 lg:w-96 border-r border-[#F5F5F0]/10 bg-[#151516] flex flex-col ${
+        <div className={`w-full md:w-80 lg:w-[340px] border-r border-[#242424] bg-[#101010] flex flex-col flex-shrink-0 ${
           activeConnectionId && 'hidden md:flex'
         }`}>
           
-          {/* Header */}
-          <div className="p-4 border-b border-[#F5F5F0]/10 flex items-center justify-between">
-            <div>
-              <h2 className="font-editorial text-xl text-[#F5F5F0]">
-                Conversations
+          {/* Sidebar Header */}
+          <div className="px-5 py-4 border-b border-[#242424] flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]"></span>
+              <h2 className="text-xs font-mono-code uppercase tracking-widest text-[#F2F2ED] font-bold">
+                Dialogues
               </h2>
-              <p className="text-[10px] text-[#969696] uppercase tracking-widest font-bold">
-                {connections.length} active dialogues
-              </p>
             </div>
+            <span className="text-[10px] font-mono-code text-[#8A8A8A] uppercase tracking-wider">
+              {connections.length} ACTIVE
+            </span>
           </div>
 
-          {/* List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-[#F5F5F0]/5">
+          {/* Conversations List */}
+          <div className="flex-1 overflow-y-auto divide-y divide-[#1A1A1A]/80">
             {connections.map((conn) => {
               const isSelected = activeConnection?.id === conn.id;
-              const lastMsg = messages
-                .filter((m) => m.connectionId === conn.id)
-                .slice(-1)[0]?.text || conn.introNote || 'Connected on Misfits Club';
+              const allConvoMsgs = messages.filter((m) => m.connectionId === conn.id);
+              const lastMsg = allConvoMsgs.slice(-1)[0]?.text || conn.introNote || 'Connected on Misfits Club';
+              const lastTime = allConvoMsgs.slice(-1)[0]?.timestamp || conn.lastMessageTime || 'Just now';
 
               return (
                 <button
                   key={conn.id}
                   id={`convo-item-${conn.id}`}
                   onClick={() => onSelectConnection(conn.id)}
-                  className={`w-full text-left p-4 flex items-start gap-3.5 transition-colors ${
+                  className={`w-full text-left px-4 sm:px-5 py-4 flex items-start gap-3.5 transition-all relative group ${
                     isSelected
-                      ? 'bg-[#0B0B0C] border-l-2 border-[#D4FF3F]'
-                      : 'hover:bg-[#0B0B0C]/50'
+                      ? 'bg-[#161616]'
+                      : 'hover:bg-[#141414]'
                   }`}
                 >
-                  <div className="relative">
+                  {/* Subtle active indicator */}
+                  {isSelected && (
+                    <div className="absolute left-0 top-0 bottom-0 w-[2.5px] bg-[#D4FF3F]" />
+                  )}
+
+                  {/* Avatar */}
+                  <div className="relative flex-shrink-0 mt-0.5">
                     <img
                       src={conn.profile.avatarUrl}
                       alt={conn.profile.name}
                       referrerPolicy="no-referrer"
-                      className="w-10 h-10 object-cover border border-[#F5F5F0]/10"
+                      className="w-10 h-10 object-cover rounded-sm border border-[#242424]"
                     />
                     {conn.profile.isOnline && (
-                      <span className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-[#D4FF3F] border border-[#0B0B0C]"></span>
+                      <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#D4FF3F] ring-2 ring-[#101010]"></span>
                     )}
                   </div>
 
+                  {/* Body */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1 mb-1">
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F0] truncate">
+                      <h4 className={`text-xs uppercase tracking-wider truncate font-bold ${
+                        isSelected ? 'text-[#F2F2ED]' : 'text-[#F2F2ED]/90 group-hover:text-[#F2F2ED]'
+                      }`}>
                         {conn.profile.name}
                       </h4>
-                      <span className="text-[9px] text-[#969696] uppercase tracking-widest whitespace-nowrap">
-                        {conn.lastMessageTime || 'Just now'}
+                      <span className="text-[9px] text-[#8A8A8A] font-mono-code uppercase tracking-wider whitespace-nowrap">
+                        {lastTime}
                       </span>
                     </div>
 
-                    <p className="text-[10px] text-[#969696] uppercase tracking-wider mb-1 truncate">
-                      {conn.profile.roleEmoji} {conn.profile.role} · {conn.profile.location.split(',')[0]}
+                    <p className="text-[10px] text-[#8A8A8A] truncate font-sans-clean mb-1">
+                      {conn.profile.role} · {conn.profile.location.split(',')[0]}
                     </p>
 
-                    <p className="text-xs text-[#969696] truncate leading-tight font-sans-clean">
+                    <p className="text-[11px] text-[#8A8A8A] truncate font-sans-clean leading-relaxed">
                       {lastMsg}
                     </p>
 
-                    {/* Intent Tag */}
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {conn.sharedIntents.slice(0, 1).map((intent) => (
-                        <span
-                          key={intent}
-                          className="text-[9px] text-[#D4FF3F] uppercase tracking-widest font-bold"
-                        >
-                          {intent}
+                    {/* Shared Intent pill */}
+                    {conn.sharedIntents.length > 0 && (
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <span className="text-[9px] font-mono-code text-[#D4FF3F] uppercase tracking-wider">
+                          {conn.sharedIntents[0]}
                         </span>
-                      ))}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </button>
               );
@@ -171,91 +179,106 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
           </div>
         </div>
 
-        {/* Right Area: Active Conversation */}
+        {/* Center/Right Area: Active Conversation */}
         {activeConnection ? (
-          <div className="flex-1 flex flex-col bg-[#0B0B0C] relative">
+          <div className="flex-1 flex flex-col bg-[#0B0B0B] relative min-w-0">
             
-            {/* Top Chat Header */}
-            <div className="h-16 px-4 sm:px-6 border-b border-[#F5F5F0]/10 bg-[#151516] flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            {/* Conversation Header */}
+            <div className="h-16 px-4 sm:px-6 lg:px-8 border-b border-[#242424] bg-[#101010] flex items-center justify-between gap-4 flex-shrink-0">
+              <div className="flex items-center gap-3.5 min-w-0">
                 
-                {/* Mobile Back Button */}
+                {/* Mobile Back to List Button */}
                 <button
                   onClick={() => onSelectConnection('')}
-                  className="md:hidden p-1.5 text-[#969696] hover:text-[#F5F5F0]"
+                  className="md:hidden p-1.5 text-[#8A8A8A] hover:text-[#F2F2ED] transition-colors"
+                  aria-label="Back to conversations list"
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <ArrowLeft className="w-4 h-4" />
                 </button>
 
                 <img
                   src={activeConnection.profile.avatarUrl}
                   alt={activeConnection.profile.name}
                   referrerPolicy="no-referrer"
-                  className="w-8 h-8 object-cover border border-[#F5F5F0]/10"
+                  className="w-9 h-9 object-cover rounded-sm border border-[#242424] flex-shrink-0"
                 />
 
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F0]">
+                    <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#F2F2ED] truncate">
                       {activeConnection.profile.name}
                     </h3>
-                    <span className="text-[10px] text-[#969696] uppercase tracking-widest">
-                      {activeConnection.profile.location}
+                    <span className="hidden sm:inline text-[10px] text-[#8A8A8A] uppercase tracking-widest font-mono-code">
+                      · {activeConnection.profile.location}
                     </span>
                   </div>
-                  <p className="text-[10px] text-[#969696] uppercase tracking-wider">
-                    {activeConnection.profile.role}
-                  </p>
+                  <div className="flex items-center gap-2 text-[10px] text-[#8A8A8A] uppercase tracking-wider truncate mt-0.5">
+                    <span>{activeConnection.profile.role}</span>
+                    <span className="text-[#242424]">|</span>
+                    <span className="text-[#D4FF3F] flex items-center gap-1 font-mono-code text-[9px]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]"></span>
+                      CONNECTED
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Toggle Profile Drawer Button */}
+              {/* Minimalist Profile Context Action */}
               <button
                 id="toggle-profile-drawer-btn"
                 onClick={() => setIsProfileDrawerOpen(!isProfileDrawerOpen)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs uppercase tracking-widest font-bold transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-mono-code uppercase tracking-wider transition-colors border ${
                   isProfileDrawerOpen
-                    ? 'border-[#D4FF3F] bg-[#D4FF3F]/10 text-[#D4FF3F]'
-                    : 'border-[#F5F5F0]/10 bg-[#0B0B0C] text-[#969696] hover:text-[#F5F5F0]'
+                    ? 'border-[#D4FF3F] text-[#D4FF3F] bg-[#141414]'
+                    : 'border-[#242424] text-[#8A8A8A] hover:text-[#F2F2ED] hover:border-[#333333] bg-[#101010]'
                 }`}
+                title="View bio and background context"
               >
-                <Info className="w-3.5 h-3.5" />
+                <Info className="w-3.5 h-3.5 text-[#8A8A8A]" />
                 <span className="hidden sm:inline">Profile Context</span>
               </button>
             </div>
 
-            {/* Context Banner: Shared Intents & Interests */}
-            <div className="bg-[#151516] border-b border-[#F5F5F0]/10 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs gap-2">
-              <div className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 bg-[#D4FF3F]"></span>
-                <span className="text-[#969696]">
-                  You both selected{' '}
-                  <strong className="text-[#F5F5F0] font-bold">
-                    {activeConnection.sharedIntents.join(' & ') || 'Exchange Ideas'}
-                  </strong>
+            {/* Shared Intent & Curiosities Context Strip */}
+            <div className="bg-[#0D0D0D] border-b border-[#202020] px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between text-[11px] gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 text-[#8A8A8A] font-sans-clean">
+                <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#8A8A8A]">
+                  YOU BOTH SELECTED
+                </span>
+                <span className="text-[#292929]">·</span>
+                <span className="text-[#F2F2ED] font-medium tracking-wide uppercase text-[10px] font-mono-code">
+                  {activeConnection.sharedIntents.join(' · ') || 'EXCHANGE IDEAS'}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-[#969696] uppercase tracking-widest font-bold">Shared curiosities:</span>
-                {activeConnection.sharedInterests.slice(0, 3).map((item) => (
-                  <span
-                    key={item}
-                    className="text-[9px] text-[#D4FF3F] bg-[#0B0B0C] px-2 py-0.5 border border-[#D4FF3F]/20 uppercase tracking-wider"
-                  >
-                    {item}
+              
+              {activeConnection.sharedInterests.length > 0 && (
+                <div className="hidden lg:flex items-center gap-2">
+                  <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#8A8A8A]">
+                    SHARED CURIOSITIES
                   </span>
-                ))}
-              </div>
+                  <span className="text-[#292929]">·</span>
+                  <div className="flex items-center gap-1.5">
+                    {activeConnection.sharedInterests.slice(0, 3).map((item) => (
+                      <span
+                        key={item}
+                        className="text-[9px] text-[#8A8A8A] border border-[#242424] px-2 py-0.5 uppercase tracking-wider font-mono-code bg-[#111111]"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Messages Scroll Area */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-6 space-y-6 sm:space-y-7">
               
-              {/* Connection established header */}
-              <div className="text-center my-4">
-                <div className="inline-flex items-center gap-2 bg-[#151516] border border-[#F5F5F0]/10 px-4 py-1 text-xs text-[#969696] uppercase tracking-widest font-bold">
-                  <Sparkles className="w-3 h-3 text-[#D4FF3F]" />
-                  <span>Dialogue started · Calm & unhurried</span>
+              {/* Dialogue Start Marker */}
+              <div className="flex justify-center my-2">
+                <div className="inline-flex items-center gap-2 border border-[#242424] bg-[#101010] px-3.5 py-1 text-[10px] text-[#8A8A8A] uppercase tracking-widest font-mono-code">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]"></span>
+                  <span>Conversation opened · Calm & unhurried</span>
                 </div>
               </div>
 
@@ -265,25 +288,40 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 return (
                   <div
                     key={msg.id}
-                    className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
+                    className={`flex flex-col group ${isMe ? 'items-end' : 'items-start'}`}
                   >
+                    {/* Message Bubble */}
                     <div
-                      className={`max-w-md sm:max-w-lg p-4 text-xs sm:text-sm leading-relaxed ${
+                      className={`max-w-md sm:max-w-xl p-4 sm:p-5 text-xs sm:text-[13px] leading-relaxed transition-colors border ${
                         isMe
-                          ? 'bg-[#D4FF3F] text-[#0B0B0C] font-medium'
-                          : 'bg-[#151516] text-[#F5F5F0] border border-[#F5F5F0]/10'
+                          ? 'bg-[#181818] text-[#F2F2ED] border-[#292929]'
+                          : 'bg-[#111111] text-[#F2F2ED] border-[#222222]'
                       }`}
                     >
+                      {/* Highlighted Starter Header */}
                       {msg.isStarterPrompt && (
-                        <span className="text-[10px] font-bold opacity-80 block mb-1 uppercase tracking-widest">
-                          Conversation Opener
-                        </span>
+                        <div className="flex items-center gap-2 pb-2 mb-2 border-b border-[#242424]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]" />
+                          <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#D4FF3F] font-bold">
+                            CONVERSATION OPENER
+                          </span>
+                        </div>
                       )}
-                      <p className="font-sans-clean whitespace-pre-wrap">{msg.text}</p>
+
+                      <p className="font-sans-clean whitespace-pre-wrap font-normal text-[#F2F2ED]">
+                        {msg.text}
+                      </p>
                     </div>
-                    <span className="text-[9px] text-[#969696] uppercase tracking-widest mt-1 px-1">
-                      {msg.timestamp}
-                    </span>
+
+                    {/* Timestamp & Status */}
+                    <div className="flex items-center gap-1.5 mt-1.5 px-1">
+                      <span className="text-[9px] text-[#8A8A8A] font-mono-code uppercase tracking-wider">
+                        {msg.timestamp}
+                      </span>
+                      {isMe && (
+                        <CheckCheck className="w-3 h-3 text-[#8A8A8A]/70 inline" />
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -291,20 +329,20 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Conversation Starter Shortcut Bar (if few messages) */}
+            {/* Conversation Starter Shortcut Bar (if dialogue is fresh) */}
             {activeMessages.length <= 2 && (
-              <div className="px-4 py-2 border-t border-[#F5F5F0]/10 bg-[#151516]">
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                  <span className="text-[10px] text-[#969696] uppercase tracking-widest font-bold whitespace-nowrap flex items-center gap-1">
-                    <Lightbulb className="w-3 h-3 text-[#D4FF3F]" /> Quick prompts:
+              <div className="px-4 sm:px-6 py-2.5 border-t border-[#202020] bg-[#0E0E0E]">
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                  <span className="text-[9px] text-[#8A8A8A] uppercase tracking-widest font-mono-code whitespace-nowrap flex items-center gap-1.5">
+                    <Lightbulb className="w-3 h-3 text-[#D4FF3F]" /> Prompts:
                   </span>
                   {CONVERSATION_STARTERS.slice(0, 3).map((starter, idx) => (
                     <button
                       key={idx}
                       onClick={() => handleSendStarter(starter)}
-                      className="whitespace-nowrap border border-[#F5F5F0]/10 bg-[#0B0B0C] px-2.5 py-1 text-[11px] text-[#969696] hover:text-[#F5F5F0] hover:border-[#D4FF3F]/40 transition-colors"
+                      className="whitespace-nowrap border border-[#242424] bg-[#121212] px-3 py-1 text-[11px] text-[#8A8A8A] hover:text-[#F2F2ED] hover:border-[#383838] transition-colors font-sans-clean"
                     >
-                      “{starter.slice(0, 32)}...”
+                      “{starter.slice(0, 34)}...”
                     </button>
                   ))}
                 </div>
@@ -312,99 +350,117 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
             )}
 
             {/* Message Input Bar */}
-            <form onSubmit={handleSend} className="p-3 sm:p-4 border-t border-[#F5F5F0]/10 bg-[#151516]">
-              <div className="flex items-center gap-2">
+            <form onSubmit={handleSend} className="p-3 sm:p-5 border-t border-[#242424] bg-[#101010] flex-shrink-0">
+              <div className="flex items-center gap-3">
                 <input
                   id="message-text-input"
                   type="text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder={`Write a thoughtful message to ${activeConnection.profile.name.split(' ')[0]}...`}
-                  className="flex-1 border border-[#F5F5F0]/10 bg-[#0B0B0C] px-4 py-3 text-xs sm:text-sm text-[#F5F5F0] placeholder-[#969696]/60 focus:border-[#D4FF3F] focus:outline-none"
+                  placeholder={`Write a thoughtful note to ${activeConnection.profile.name.split(' ')[0]}...`}
+                  className="flex-1 border border-[#242424] bg-[#0B0B0B] px-4 py-3.5 text-xs sm:text-sm text-[#F2F2ED] placeholder-[#8A8A8A]/50 focus:border-[#383838] focus:outline-none transition-colors"
                 />
                 <button
                   id="send-message-btn"
                   type="submit"
                   disabled={!inputText.trim()}
-                  className="p-3 bg-[#F5F5F0] text-[#0B0B0C] hover:bg-[#D4FF3F] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  className="px-5 py-3.5 bg-[#D4FF3F] text-[#080808] hover:bg-[#F2F2ED] disabled:opacity-30 disabled:hover:bg-[#D4FF3F] disabled:cursor-not-allowed transition-all font-bold text-xs flex items-center justify-center gap-1.5"
+                  title="Send message"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline font-mono-code text-[11px] tracking-wider">SEND</span>
                 </button>
               </div>
             </form>
 
             {/* Slide-out Profile Context Drawer */}
             {isProfileDrawerOpen && (
-              <div className="absolute top-16 right-0 bottom-0 w-80 bg-[#151516] border-l border-[#F5F5F0]/10 p-5 overflow-y-auto z-20 shadow-2xl">
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#F5F5F0]/10">
-                  <span className="font-editorial text-lg text-[#F5F5F0]">
-                    Profile Context
-                  </span>
+              <div className="absolute top-16 right-0 bottom-0 w-full sm:w-80 md:w-96 bg-[#101010] border-l border-[#242424] p-6 overflow-y-auto z-30 shadow-2xl animate-fade-in">
+                <div className="flex items-center justify-between mb-5 pb-3 border-b border-[#242424]">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]" />
+                    <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#F2F2ED] font-bold">
+                      PROFILE CONTEXT
+                    </span>
+                  </div>
                   <button
                     onClick={() => setIsProfileDrawerOpen(false)}
-                    className="text-xs uppercase tracking-widest text-[#969696] hover:text-[#F5F5F0]"
+                    className="p-1 text-[#8A8A8A] hover:text-[#F2F2ED] transition-colors"
+                    aria-label="Close profile drawer"
                   >
-                    Close
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="space-y-4 text-left">
-                  <div className="flex items-center gap-3">
+                <div className="space-y-5 text-left">
+                  <div className="flex items-center gap-3.5">
                     <img
                       src={activeConnection.profile.avatarUrl}
                       alt={activeConnection.profile.name}
                       referrerPolicy="no-referrer"
-                      className="w-10 h-10 object-cover border border-[#F5F5F0]/10"
+                      className="w-12 h-12 object-cover rounded-sm border border-[#242424]"
                     />
                     <div>
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F0]">
+                      <h4 className="text-sm font-bold uppercase tracking-wider text-[#F2F2ED]">
                         {activeConnection.profile.name}
                       </h4>
-                      <p className="text-[10px] text-[#969696] uppercase tracking-widest">
+                      <p className="text-[11px] text-[#8A8A8A] font-sans-clean mt-0.5">
+                        {activeConnection.profile.role}
+                      </p>
+                      <p className="text-[10px] text-[#8A8A8A] font-mono-code uppercase tracking-wider">
                         {activeConnection.profile.location}
                       </p>
                     </div>
                   </div>
 
-                  <p className="text-xs text-[#969696] leading-relaxed italic font-editorial text-sm">
-                    “{activeConnection.profile.tagline}”
-                  </p>
+                  {activeConnection.profile.tagline && (
+                    <div className="p-3.5 bg-[#141414] border border-[#202020]">
+                      <p className="text-xs text-[#F2F2ED] italic font-editorial leading-relaxed">
+                        “{activeConnection.profile.tagline}”
+                      </p>
+                    </div>
+                  )}
 
-                  <p className="text-xs text-[#969696] leading-relaxed">
-                    {activeConnection.profile.bio}
-                  </p>
+                  <div>
+                    <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#8A8A8A] block mb-1.5">
+                      ABOUT
+                    </span>
+                    <p className="text-xs text-[#8A8A8A] leading-relaxed font-sans-clean">
+                      {activeConnection.profile.bio}
+                    </p>
+                  </div>
 
                   {activeConnection.profile.building && (
-                    <div className="bg-[#0B0B0C] p-3 border border-[#F5F5F0]/5">
-                      <span className="text-[9px] text-[#D4FF3F] uppercase tracking-widest font-bold block mb-1">
-                        🔨 What they're building
+                    <div className="bg-[#141414] p-3.5 border border-[#202020]">
+                      <span className="text-[9px] text-[#D4FF3F] uppercase tracking-widest font-mono-code block mb-1 font-bold">
+                        CURRENTLY BUILDING
                       </span>
-                      <p className="text-xs text-[#F5F5F0]/90 leading-relaxed">
+                      <p className="text-xs text-[#F2F2ED]/90 leading-relaxed font-sans-clean">
                         {activeConnection.profile.building}
                       </p>
                     </div>
                   )}
 
                   {activeConnection.profile.openQuestion && (
-                    <div className="bg-[#0B0B0C] p-3 border border-[#F5F5F0]/5">
-                      <span className="text-[9px] text-[#969696] uppercase tracking-widest font-bold block mb-1">
-                        ❓ Open Question
+                    <div className="bg-[#141414] p-3.5 border border-[#202020]">
+                      <span className="text-[9px] text-[#8A8A8A] uppercase tracking-widest font-mono-code block mb-1 font-bold">
+                        OPEN QUESTION
                       </span>
-                      <p className="text-xs text-[#F5F5F0] italic leading-relaxed">
+                      <p className="text-xs text-[#F2F2ED] italic leading-relaxed font-editorial">
                         “{activeConnection.profile.openQuestion}”
                       </p>
                     </div>
                   )}
 
                   <div>
-                    <span className="text-[10px] text-[#969696] uppercase tracking-widest font-bold block mb-1.5">
-                      Interests
+                    <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#8A8A8A] block mb-2">
+                      INTERESTS & TOPICS
                     </span>
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1.5">
                       {activeConnection.profile.interests.map((i) => (
                         <span
                           key={i}
-                          className="text-[9px] text-[#969696] bg-[#0B0B0C] px-2 py-0.5 border border-[#F5F5F0]/5 uppercase"
+                          className="text-[9px] text-[#8A8A8A] bg-[#141414] px-2.5 py-1 border border-[#242424] uppercase font-mono-code"
                         >
                           {i}
                         </span>
@@ -417,8 +473,8 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
           </div>
         ) : (
-          <div className="flex-1 hidden md:flex items-center justify-center text-center p-8 text-[#969696] uppercase tracking-widest text-xs">
-            Select a conversation to start reading
+          <div className="flex-1 hidden md:flex items-center justify-center text-center p-8 text-[#8A8A8A] uppercase tracking-widest text-xs font-mono-code">
+            Select a dialogue to start reading
           </div>
         )}
 
@@ -426,3 +482,4 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     </div>
   );
 };
+

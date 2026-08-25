@@ -199,6 +199,19 @@ export const messageService = {
     if (!senderId || !recipientId) {
       throw new Error(`Invalid sender/recipient: senderId='${senderId}', recipientId='${recipientId}'`);
     }
+    // Guard: sample/demo profile IDs (p-*, sample-target) are not real Firebase Auth UIDs.
+    // Writing to Firestore with these as participants always produces permission-denied.
+    // The App.tsx layer should already skip this call for such targets, but guard defensively.
+    if (recipientId.startsWith('p-') || recipientId === 'sample-target') {
+      throw new Error(
+        `Cannot persist message to Firestore: recipientId '${recipientId}' is a sample/demo profile ID, not a real Firebase Auth UID. This conversation is local-only.`
+      );
+    }
+    if (senderId.startsWith('p-')) {
+      throw new Error(
+        `Cannot persist message to Firestore: senderId '${senderId}' is a sample/demo profile ID, not a real Firebase Auth UID.`
+      );
+    }
 
     const now = new Date().toISOString();
     const formattedTime = formatMessageTime(now);
@@ -367,6 +380,10 @@ export const messageService = {
    */
   async markConversationAsRead(conversationId: string, userId: string): Promise<void> {
     if (!conversationId || !userId) return;
+    // Guard: skip conversations that involve sample/demo profile IDs.
+    // These conversations don't exist in Firestore — the conversation ID embeds the profile ID
+    // (e.g. conv_realUID_p-maya) so we can detect them reliably.
+    if (conversationId.includes('_p-') || conversationId.startsWith('conv_p-')) return;
     const path = `conversations/${conversationId}`;
 
     try {

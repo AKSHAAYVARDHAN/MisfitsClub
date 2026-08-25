@@ -198,9 +198,33 @@ service cloud.firestore {
     }
 
     match /conversations/{conversationId} {
-      allow read: if isSignedIn() && (request.auth.uid in resource.data.participantIds);
-      allow create: if isSignedIn() && isValidConversationId(conversationId) && isValidConversation(incoming()) && incoming().id == conversationId && (request.auth.uid in incoming().participantIds);
-      allow update: if isSignedIn() && isValidConversationId(conversationId) && isValidConversation(incoming()) && (request.auth.uid in resource.data.participantIds) && incoming().participantIds == existing().participantIds;
+      // Allow reading non-existent conversation documents (resource == null) so getDoc()
+      // can safely check snap.exists() without a permission-denied error.
+      allow read: if isSignedIn() && (resource == null || request.auth.uid in resource.data.participantIds);
+
+      allow create: if isSignedIn() &&
+                       isValidConversationId(conversationId) &&
+                       isValidConversation(incoming()) &&
+                       incoming().id == conversationId &&
+                       (request.auth.uid in incoming().participantIds);
+
+      // Full update (e.g. participant modifying their own profile summary)
+      // OR partial metadata update (lastMessage, unreadCounts, timestamps) which may
+      // use server-side increment() — only affectedKeys are validated in that path.
+      allow update: if isSignedIn() &&
+                       isValidConversationId(conversationId) &&
+                       (request.auth.uid in resource.data.participantIds) &&
+                       incoming().participantIds == existing().participantIds &&
+                       (
+                         // Path 1: Full schema-validated update
+                         isValidConversation(incoming()) ||
+                         // Path 2: Metadata-only partial update (handles increment() for unreadCounts)
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'lastMessage', 'lastMessageAt', 'lastMessageSenderId',
+                           'updatedAt', 'unreadCounts'
+                         ])
+                       );
+
       allow delete: if isSignedIn() && (request.auth.uid in resource.data.participantIds);
 
       match /messages/{messageId} {

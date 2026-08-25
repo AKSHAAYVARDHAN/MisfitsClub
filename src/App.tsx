@@ -173,16 +173,24 @@ function MainApp() {
   const connectionsRef = useRef<Connection[]>(connections);
   connectionsRef.current = connections;
 
-  // Synchronize live members directory from Firestore
+  // Synchronize live members directory from Firestore.
+  // IMPORTANT: Only subscribe after Firebase Auth has fully resolved.
+  // Subscribing while isLoading=true means request.auth is null in Firestore rules
+  // → publicProfiles read gets permission-denied even though rules require isSignedIn().
   useEffect(() => {
+    if (isLoading) return; // Wait for auth state to resolve before subscribing
     const currentUserId = user?.uid || user?.id;
+    if (!currentUserId) {
+      // Unauthenticated: keep SAMPLE_PROFILES, do NOT attempt a Firestore read
+      return;
+    }
     const unsub = firestoreService.subscribeUsers((liveUsers) => {
       if (liveUsers && liveUsers.length > 0) {
         setProfiles(liveUsers);
       }
     }, currentUserId);
     return () => unsub();
-  }, [user?.uid, user?.id]);
+  }, [user?.uid, user?.id, isLoading]);
 
   // Synchronize live community curiosity / Spark board from Firestore
   useEffect(() => {
@@ -271,6 +279,11 @@ function MainApp() {
 
     const targetUserId = getOtherParticipantId(activeConn, currentUserId);
     if (!targetUserId) return;
+
+    // IMPORTANT: Skip all Firestore operations for sample/demo profile IDs (p-maya, p-elena etc.).
+    // These are not real Firebase users — attempting Firestore reads/writes for them
+    // produces permission-denied errors. Sample connections remain interactive via local state only.
+    if (targetUserId.startsWith('p-') || targetUserId === 'sample-target') return;
 
     let conversationId: string;
     try {
@@ -634,21 +647,22 @@ function MainApp() {
       )
     );
 
-    // 2. Persist to Firestore subcollection & dispatch notification
-    try {
-      await messageService.sendMessage({
-        conversationId,
-        senderId: currentUserId,
-        senderProfile: user || INITIAL_USER,
-        recipientId: targetUserId,
-        recipientProfile: conn.profile,
-        text,
-        connectionId,
-      });
-    } catch (e: any) {
-      console.error('Error sending message to Firestore:', e);
-      // Only suppress if testing with a sample profile
-      if (!targetUserId.startsWith('p-') && targetUserId !== 'sample-target') {
+    // 2. Persist to Firestore subcollection & dispatch notification.
+    // Only write to Firestore for real Firebase users — sample/demo profile IDs (p-*, sample-target)
+    // are not real Firestore participants and will always produce permission-denied errors.
+    if (!targetUserId.startsWith('p-') && targetUserId !== 'sample-target') {
+      try {
+        await messageService.sendMessage({
+          conversationId,
+          senderId: currentUserId,
+          senderProfile: user || INITIAL_USER,
+          recipientId: targetUserId,
+          recipientProfile: conn.profile,
+          text,
+          connectionId,
+        });
+      } catch (e: any) {
+        console.error('Error sending message to Firestore:', e);
         const errorMsg = e?.message || 'Failed to send message';
         console.warn('Firestore message persistence error:', errorMsg);
       }

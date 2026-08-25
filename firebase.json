@@ -1,0 +1,7 @@
+{
+  "firestore": {
+    "database": "ai-studio-misfitsclub-57e30f81-5c9b-4f18-972a-37eb415312f3",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}

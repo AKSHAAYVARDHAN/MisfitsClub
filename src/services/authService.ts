@@ -85,6 +85,12 @@ export const authService = {
             });
           }
           localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(profile));
+          // Always ensure public profile exists in Firestore publicProfiles collection
+          if (profile && profile.uid && !profile.uid.startsWith('p-')) {
+            discoveryService.syncPublicProfile(profile).catch((syncErr) => {
+              console.warn('Background public profile sync on authStateChanged:', syncErr);
+            });
+          }
           callback(profile);
         } catch (e) {
           console.warn('Failed to load profile from Firestore on auth change', e);
@@ -115,6 +121,11 @@ export const authService = {
           });
         }
         localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(profile));
+        if (profile && profile.uid && !profile.uid.startsWith('p-')) {
+          discoveryService.syncPublicProfile(profile).catch((syncErr) => {
+            console.warn('Background public profile sync on signIn:', syncErr);
+          });
+        }
         return profile;
       }
     } catch (firebaseErr: any) {
@@ -204,6 +215,11 @@ export const authService = {
         });
       }
       localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(profile));
+      if (profile && profile.uid && !profile.uid.startsWith('p-')) {
+        discoveryService.syncPublicProfile(profile).catch((syncErr) => {
+          console.warn('Background public profile sync on signInWithGoogle:', syncErr);
+        });
+      }
       return profile;
     } catch (err: any) {
       if (

@@ -12,24 +12,13 @@ import {
   limit,
   onSnapshot,
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from './firebase';
+import { db, handleFirestoreError, OperationType, sanitizeFirestoreData } from './firebase';
 import { UserProfile, PublicProfile, CuriousBoardPost, Connection, ChatMessage, AppNotification, NotificationType } from '../types';
 import { SAMPLE_PROFILES, SAMPLE_BOARD_POSTS } from '../data/mockData';
 import { userService } from './userService';
 import { discoveryService } from './discoveryService';
 import { connectionService, SendConnectionParams } from './connectionService';
 import { notificationService, CreateNotificationInput } from './notificationService';
-
-// Helper to sanitize undefined values before writing to Firestore
-function sanitizeData<T extends Record<string, any>>(obj: T): T {
-  const clean: Record<string, any> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
-      clean[key] = value;
-    }
-  }
-  return clean as T;
-}
 
 export const firestoreService = {
   // =========================================================================
@@ -88,7 +77,7 @@ export const firestoreService = {
 
   async addBoardPost(post: CuriousBoardPost): Promise<CuriousBoardPost> {
     const path = `boardPosts/${post.id}`;
-    const sanitized = sanitizeData({
+    const sanitized = sanitizeFirestoreData({
       ...post,
       createdAt: new Date().toISOString(),
     });
@@ -169,7 +158,7 @@ export const firestoreService = {
 
   async saveConnection(conn: Connection): Promise<Connection> {
     const path = `connections/${conn.id}`;
-    const sanitized = sanitizeData({
+    const sanitized = sanitizeFirestoreData({
       ...conn,
       createdAt: conn.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -204,7 +193,7 @@ export const firestoreService = {
 
   async sendMessage(message: ChatMessage): Promise<ChatMessage> {
     const path = `messages/${message.id}`;
-    const sanitized = sanitizeData({
+    const sanitized = sanitizeFirestoreData({
       ...message,
       createdAt: new Date().toISOString(),
     });

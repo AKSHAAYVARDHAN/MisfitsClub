@@ -11,19 +11,9 @@ import {
   onSnapshot,
   increment,
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from './firebase';
+import { db, handleFirestoreError, OperationType, sanitizeFirestoreData } from './firebase';
 import { Conversation, ChatMessage, UserProfile, PublicProfile } from '../types';
 import { notificationService } from './notificationService';
-
-function sanitizePayload<T extends Record<string, any>>(obj: T): T {
-  const clean: Record<string, any> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
-      clean[key] = value;
-    }
-  }
-  return clean as T;
-}
 
 export function formatMessageTime(isoStringOrDate?: string | Date): string {
   if (!isoStringOrDate) return 'Just now';
@@ -110,7 +100,7 @@ export const messageService = {
         updatedAt: now,
       };
 
-      const sanitized = sanitizePayload(conversationData);
+      const sanitized = sanitizeFirestoreData(conversationData);
       await setDoc(docRef, sanitized);
       return conversationData;
     } catch (error) {
@@ -231,7 +221,7 @@ export const messageService = {
       isStarterPrompt: Boolean(isStarterPrompt),
     };
 
-    const sanitizedMessage = sanitizePayload(messageData);
+    const sanitizedMessage = sanitizeFirestoreData(messageData);
 
     try {
       // 1. Ensure the parent conversation document exists in Firestore first
@@ -269,7 +259,7 @@ export const messageService = {
           createdAt: now,
           updatedAt: now,
         };
-        await setDoc(convoDocRef, sanitizePayload(conversationData));
+        await setDoc(convoDocRef, sanitizeFirestoreData(conversationData));
       } else {
         // Update conversation metadata & increment recipient unread count
         await updateDoc(convoDocRef, {

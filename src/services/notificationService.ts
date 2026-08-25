@@ -12,7 +12,7 @@ import {
   onSnapshot,
   writeBatch,
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from './firebase';
+import { db, handleFirestoreError, OperationType, sanitizeFirestoreData } from './firebase';
 import { AppNotification, NotificationType } from '../types';
 
 export interface CreateNotificationInput {
@@ -25,16 +25,6 @@ export interface CreateNotificationInput {
   title: string;
   message: string;
   referenceId: string;
-}
-
-function sanitizePayload<T extends Record<string, any>>(obj: T): T {
-  const clean: Record<string, any> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
-      clean[key] = value;
-    }
-  }
-  return clean as T;
 }
 
 export const notificationService = {
@@ -90,16 +80,9 @@ export const notificationService = {
       updatedAt: now,
     };
 
-    const sanitized = sanitizePayload(notifData);
+    const sanitized = sanitizeFirestoreData(notifData);
 
     try {
-      // Check if notification already exists to preserve existing read state if duplicate action occurs
-      const existingDoc = await getDoc(doc(db, 'notifications', notifId));
-      if (existingDoc.exists()) {
-        const existingData = existingDoc.data() as AppNotification;
-        return existingData;
-      }
-
       await setDoc(doc(db, 'notifications', notifId), sanitized, { merge: true });
       return notifData;
     } catch (error) {

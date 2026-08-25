@@ -66,6 +66,31 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
+/**
+ * Recursively removes all `undefined` fields from objects and arrays
+ * before writing to Firestore to prevent "Unsupported field value: undefined" errors.
+ */
+export function sanitizeFirestoreData<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj
+      .filter((item) => item !== undefined)
+      .map((item) => (typeof item === 'object' && item !== null ? sanitizeFirestoreData(item) : item)) as unknown as T;
+  }
+  if (typeof obj === 'object') {
+    const clean: Record<string, any> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        clean[key] = typeof value === 'object' && value !== null ? sanitizeFirestoreData(value) : value;
+      }
+    }
+    return clean as T;
+  }
+  return obj;
+}
+
 // Connection test according to Firebase Skill
 export async function testFirebaseConnection(): Promise<boolean> {
   try {

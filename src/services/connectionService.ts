@@ -11,20 +11,10 @@ import {
   limit,
   onSnapshot,
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from './firebase';
+import { db, handleFirestoreError, OperationType, sanitizeFirestoreData } from './firebase';
 import { Connection, ConnectionStatus, ProfileSummary, PublicProfile, UserProfile, ConnectionIntent } from '../types';
 import { SAMPLE_PROFILES } from '../data/mockData';
 import { notificationService } from './notificationService';
-
-function sanitizePayload<T extends Record<string, any>>(obj: T): T {
-  const clean: Record<string, any> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
-      clean[key] = value;
-    }
-  }
-  return clean as T;
-}
 
 export function toProfileSummary(p: Partial<UserProfile | PublicProfile> & { id: string; name: string }): ProfileSummary {
   return {
@@ -143,7 +133,7 @@ export const connectionService = {
       updatedAt: now,
     };
 
-    const sanitized = sanitizePayload(connectionData);
+    const sanitized = sanitizeFirestoreData(connectionData);
 
     try {
       await setDoc(doc(db, 'connections', connId), sanitized, { merge: true });

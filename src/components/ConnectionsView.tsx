@@ -84,6 +84,20 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
     }
   };
 
+  // Helper to resolve counterpart profile
+  const getCounterpartProfile = (conn: Connection, tab: TabType) => {
+    if (tab === 'received') {
+      return conn.requesterSummary || (conn.profileId !== currentUserId ? conn.profile : conn.targetSummary) || conn.profile;
+    }
+    if (tab === 'sent') {
+      return conn.targetSummary || (conn.profileId !== currentUserId ? conn.profile : conn.requesterSummary) || conn.profile;
+    }
+    if (currentUserId && conn.requesterId === currentUserId) {
+      return conn.targetSummary || conn.profile;
+    }
+    return conn.requesterSummary || conn.profile;
+  };
+
   // Apply intent and search filter
   const filteredList = getActiveList().filter((conn) => {
     // Intent filter
@@ -95,7 +109,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
     // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      const p = conn.profile;
+      const p = getCounterpartProfile(conn, activeTab);
       const name = (p?.name || '').toLowerCase();
       const role = (p?.role || '').toLowerCase();
       const location = (p?.location || '').toLowerCase();

@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from './firebase';
+import { db, handleFirestoreError, OperationType, sanitizeFirestoreData } from './firebase';
 import { UserProfile } from '../types';
 import { discoveryService } from './discoveryService';
 
@@ -58,17 +58,6 @@ export function validateUserProfile(data: Partial<UserProfile>): ValidationResul
   }
 
   return { isValid: true };
-}
-
-// Sanitize object removing undefined fields
-function cleanPayload<T extends Record<string, any>>(obj: T): T {
-  const clean: Record<string, any> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
-      clean[key] = value;
-    }
-  }
-  return clean as T;
 }
 
 export const userService = {
@@ -158,7 +147,7 @@ export const userService = {
     };
 
     const path = `users/${uid}`;
-    const sanitized = cleanPayload(newProfile);
+    const sanitized = sanitizeFirestoreData(newProfile);
 
     try {
       await setDoc(doc(db, 'users', uid), sanitized);
@@ -191,7 +180,7 @@ export const userService = {
     const photo = data.profilePhoto || data.avatarUrl;
 
     // Prevent changing the UID or ID
-    const sanitized = cleanPayload({
+    const sanitized = sanitizeFirestoreData({
       ...data,
       id: uid,
       uid: uid,

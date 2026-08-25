@@ -9,20 +9,9 @@ import {
   orderBy,
   onSnapshot,
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from './firebase';
+import { db, handleFirestoreError, OperationType, sanitizeFirestoreData } from './firebase';
 import { PublicProfile, UserProfile, DiscoveryFilters } from '../types';
 import { SAMPLE_PROFILES } from '../data/mockData';
-
-// Helper to remove any undefined or null keys before writing to Firestore
-function sanitizePayload<T extends Record<string, any>>(obj: T): T {
-  const clean: Record<string, any> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
-      clean[key] = value;
-    }
-  }
-  return clean as T;
-}
 
 // Convert UserProfile to PublicProfile (strictly omitting private information like email)
 export function sanitizeToPublicProfile(profile: Partial<UserProfile> & { id: string; name: string }): PublicProfile {
@@ -78,7 +67,7 @@ export const discoveryService = {
     if (!uid) throw new Error('UID is required to sync public profile');
 
     const publicData = sanitizeToPublicProfile(userProfile);
-    const sanitized = sanitizePayload(publicData);
+    const sanitized = sanitizeFirestoreData(publicData);
     const path = `publicProfiles/${uid}`;
 
     try {
@@ -112,6 +101,8 @@ export const discoveryService = {
       return fallback || null;
     } catch (error) {
       handleFirestoreError(error, OperationType.GET, path);
+      const fallback = FALLBACK_PUBLIC_PROFILES.find((p) => p.id === uid || p.uid === uid);
+      return fallback || null;
     }
   },
 

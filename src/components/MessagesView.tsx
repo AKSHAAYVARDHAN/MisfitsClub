@@ -376,62 +376,41 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   >
                     {/* LEFT SIDE: Other Person's Message */}
                     {!isMe && (
-                      <div className="flex items-end gap-2.5 max-w-[85%] sm:max-w-[70%]">
-                        {/* Avatar placed strategically beside the last message in a group */}
-                        <div className="w-7 h-7 flex-shrink-0 mb-0.5">
-                          {isLastInGroup ? (
-                            <img
-                              src={activeConnection.profile.avatarUrl}
-                              alt={activeConnection.profile.name}
-                              referrerPolicy="no-referrer"
-                              className="w-7 h-7 object-cover rounded-sm border border-[#242424]"
-                            />
-                          ) : (
-                            <div className="w-7 h-7" />
-                          )}
-                        </div>
-
-                        {/* Message Content & Grouping Container */}
-                        <div className="flex flex-col items-start min-w-0">
-                          {/* Sender Label (on first message of group) */}
-                          {isFirstInGroup && (
-                            <div className="flex items-center gap-2 mb-1 px-1">
-                              <span className="text-[9px] font-mono-code uppercase tracking-wider text-[#8A8A8A] font-semibold">
-                                {activeConnection.profile.name.split(' ')[0]}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Message Bubble */}
-                          <div
-                            className={`p-3.5 sm:p-4 text-xs sm:text-[13px] leading-relaxed transition-colors border rounded-lg bg-[#111111] text-[#F2F2ED] border-[#222222] ${
-                              !isFirstInGroup ? 'rounded-tl-sm' : ''
-                            } ${!isLastInGroup ? 'rounded-bl-sm' : ''}`}
-                          >
-                            {/* Highlighted Starter Header */}
-                            {msg.isStarterPrompt && (
-                              <div className="flex items-center gap-2 pb-1.5 mb-2 border-b border-[#242424]">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]" />
-                                <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#D4FF3F] font-bold">
-                                  CONVERSATION OPENER
-                                </span>
-                              </div>
-                            )}
-
-                            <p className="font-sans-clean whitespace-pre-wrap font-normal text-[#F2F2ED]">
-                              {msg.text}
-                            </p>
+                      <div className="flex flex-col items-start max-w-[85%] sm:max-w-[70%]">
+                        {/* Sender Label (on first message of group) */}
+                        {isFirstInGroup && (
+                          <div className="flex items-center gap-2 mb-1 px-1">
+                            <span className="text-[10px] font-mono-code uppercase tracking-wider text-[#8A8A8A] font-semibold">
+                              {activeConnection.profile?.name ? activeConnection.profile.name.split(' ')[0] : 'Member'}
+                            </span>
                           </div>
+                        )}
 
-                          {/* Subtle Timestamp (after last message of group) */}
-                          {isLastInGroup && (
-                            <div className="flex items-center gap-1.5 mt-1 px-1">
-                              <span className="text-[9px] text-[#7A7A7A] font-mono-code uppercase tracking-wider">
-                                {msg.timestamp}
+                        {/* Message Container: Subtle rectangular with 4px radius */}
+                        <div className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-[13px] leading-relaxed border rounded-[4px] bg-[#121212] text-[#F2F2ED] border-[#222222]">
+                          {/* Highlighted Starter Header */}
+                          {msg.isStarterPrompt && (
+                            <div className="flex items-center gap-2 pb-1.5 mb-2 border-b border-[#242424]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]" />
+                              <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#D4FF3F] font-bold">
+                                CONVERSATION OPENER
                               </span>
                             </div>
                           )}
+
+                          <p className="font-sans-clean whitespace-pre-wrap font-normal text-[#F2F2ED]">
+                            {msg.text}
+                          </p>
                         </div>
+
+                        {/* Subtle Timestamp (after last message of group) */}
+                        {isLastInGroup && (
+                          <div className="flex items-center gap-1.5 mt-1 px-1">
+                            <span className="text-[9px] text-[#7A7A7A] font-mono-code uppercase tracking-wider">
+                              {msg.timestamp}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -441,18 +420,14 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                         {/* Sender Label (on first message of group) */}
                         {isFirstInGroup && (
                           <div className="flex items-center gap-2 mb-1 px-1">
-                            <span className="text-[9px] font-mono-code uppercase tracking-wider text-[#8A8A8A] font-semibold">
+                            <span className="text-[10px] font-mono-code uppercase tracking-wider text-[#8A8A8A] font-semibold">
                               YOU
                             </span>
                           </div>
                         )}
 
-                        {/* Message Bubble */}
-                        <div
-                          className={`p-3.5 sm:p-4 text-xs sm:text-[13px] leading-relaxed transition-colors border rounded-lg bg-[#181818] text-[#F2F2ED] border-[#2C2C2C] hover:border-[#383838] shadow-sm ${
-                            !isFirstInGroup ? 'rounded-tr-sm' : ''
-                          } ${!isLastInGroup ? 'rounded-br-sm' : ''}`}
-                        >
+                        {/* Message Container: Subtle rectangular with 4px radius */}
+                        <div className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-[13px] leading-relaxed border rounded-[4px] bg-[#181818] text-[#F2F2ED] border-[#2C2C2C] hover:border-[#383838]">
                           {/* Highlighted Starter Header */}
                           {msg.isStarterPrompt && (
                             <div className="flex items-center gap-2 pb-1.5 mb-2 border-b border-[#2C2C2C]">

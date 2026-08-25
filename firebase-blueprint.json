@@ -187,6 +187,20 @@
           "description": "Unique connection ID",
           "maxLength": 128
         },
+        "requesterId": {
+          "type": "string",
+          "description": "UID of the member requesting the connection",
+          "maxLength": 128
+        },
+        "targetId": {
+          "type": "string",
+          "description": "UID of the target recipient member",
+          "maxLength": 128
+        },
+        "participants": {
+          "type": "array",
+          "description": "Array of participant UIDs"
+        },
         "profileId": {
           "type": "string",
           "description": "Connected member UID",
@@ -196,15 +210,23 @@
           "type": "object",
           "description": "Member profile snapshot"
         },
+        "requesterSummary": {
+          "type": "object",
+          "description": "Requester profile summary"
+        },
+        "targetSummary": {
+          "type": "object",
+          "description": "Target profile summary"
+        },
         "connectedAt": {
           "type": "string",
-          "description": "Timestamp string",
+          "description": "Timestamp string when accepted",
           "maxLength": 64
         },
         "status": {
           "type": "string",
           "description": "Connection status",
-          "enum": ["pending", "connected", "archived"]
+          "enum": ["pending", "connected", "declined", "archived"]
         },
         "sharedIntents": {
           "type": "array",
@@ -237,9 +259,14 @@
           "type": "string",
           "description": "Creation timestamp",
           "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Update timestamp",
+          "maxLength": 64
         }
       },
-      "required": ["id", "profileId", "status"]
+      "required": ["id", "status"]
     },
     "ChatMessage": {
       "title": "ChatMessage",

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { ConnectionIntent, OrbLocation, UserProfile, Connection } from '../types';
+import { ConnectionIntent, OrbLocation, UserProfile, PublicProfile, Connection } from '../types';
+import { SAMPLE_PROFILES, INITIAL_USER } from '../data/mockData';
 import { OrbGlobe } from './OrbGlobe';
 import { 
   Compass, 
@@ -20,24 +21,28 @@ import {
 } from 'lucide-react';
 
 interface OrbViewProps {
-  currentUser: UserProfile;
-  connections: Connection[];
-  allProfiles: UserProfile[];
-  onExplore: () => void;
-  onOpenOnboarding: () => void;
-  onOpenChatWithProfile: (profileId: string) => void;
-  onSelectProfile: (profile: UserProfile) => void;
+  currentUser?: UserProfile | null;
+  connections?: Connection[];
+  allProfiles?: (UserProfile | PublicProfile)[];
+  profiles?: (UserProfile | PublicProfile)[];
+  onExplore?: () => void;
+  onOpenOnboarding?: () => void;
+  onOpenChatWithProfile?: (profileId: string) => void;
+  onSelectProfile?: (profile: UserProfile | PublicProfile) => void;
+  onConnect?: (profile: UserProfile | PublicProfile) => void;
   onSelectIntentFilter?: (intent: ConnectionIntent) => void;
 }
 
 export const OrbView: React.FC<OrbViewProps> = ({
-  currentUser,
-  connections,
+  currentUser = INITIAL_USER,
+  connections = [],
   allProfiles,
+  profiles,
   onExplore,
   onOpenOnboarding,
   onOpenChatWithProfile,
   onSelectProfile,
+  onConnect,
 }) => {
   const [selectedLocation, setSelectedLocation] = useState<OrbLocation | null>(null);
   const [hoveredLocation, setHoveredLocation] = useState<OrbLocation | null>(null);
@@ -47,56 +52,63 @@ export const OrbView: React.FC<OrbViewProps> = ({
   const [autoRotate, setAutoRotate] = useState(true);
   const [demoZeroState, setDemoZeroState] = useState(false);
 
+  // Profile list resolution with safe fallback
+  const rawProfilesList = allProfiles || profiles || SAMPLE_PROFILES;
+  const safeProfilesList = (rawProfilesList && rawProfilesList.length > 0) ? rawProfilesList : SAMPLE_PROFILES;
+  const safeUser = currentUser || INITIAL_USER;
+
   // User coordinate & city fallback
   const userGeo = useMemo(() => {
     return {
-      lat: currentUser.lat ?? 13.0827,
-      lng: currentUser.lng ?? 80.2707,
-      name: currentUser.name || 'Akshaay Vardhan',
-      city: currentUser.location?.split(',')[0] || 'Chennai',
+      lat: safeUser.lat ?? 13.0827,
+      lng: safeUser.lng ?? 80.2707,
+      name: safeUser.name || 'Akshaay Vardhan',
+      city: safeUser.location?.split(',')[0] || 'Chennai',
     };
-  }, [currentUser]);
+  }, [safeUser]);
 
   // Transform connections and profiles into OrbLocations
   const orbLocations: OrbLocation[] = useMemo(() => {
     if (demoZeroState) return [];
 
+    const safeConns = connections || [];
+
     // Map existing active connections
-    const mappedConns: OrbLocation[] = connections.map((conn) => {
+    const mappedConns: OrbLocation[] = safeConns.map((conn) => {
       const p = conn.profile;
       return {
-        id: p.id,
-        name: p.name,
-        city: p.location.split(',')[0].trim(),
-        country: p.country || 'Global',
-        lat: p.lat ?? 52.52,
-        lng: p.lng ?? 13.40,
+        id: p?.id || conn.id,
+        name: p?.name || 'Member',
+        city: (p?.location || 'Worldwide').split(',')[0].trim(),
+        country: p?.country || 'Global',
+        lat: p?.lat ?? 52.52,
+        lng: p?.lng ?? 13.40,
         profile: p,
-        intents: conn.sharedIntents.length > 0 ? conn.sharedIntents : p.intents,
+        intents: (conn.sharedIntents && conn.sharedIntents.length > 0) ? conn.sharedIntents : (p?.intents || []),
         lastActive: conn.lastMessageTime || 'Recently',
       };
     });
 
     // Add additional curated global network misfits so globe is richly populated across continents
     const existingIds = new Set(mappedConns.map((c) => c.id));
-    allProfiles.forEach((p) => {
-      if (!existingIds.has(p.id) && p.id !== currentUser.id && p.lat !== undefined && p.lng !== undefined) {
+    safeProfilesList.forEach((p) => {
+      if (p && !existingIds.has(p.id) && p.id !== safeUser.id && p.lat !== undefined && p.lng !== undefined) {
         mappedConns.push({
           id: p.id,
-          name: p.name,
-          city: p.location.split(',')[0].trim(),
+          name: p.name || 'Member',
+          city: (p.location || 'Worldwide').split(',')[0].trim(),
           country: p.country || 'Global',
           lat: p.lat,
           lng: p.lng,
-          profile: p,
-          intents: p.intents,
+          profile: p as UserProfile,
+          intents: p.intents || [],
           lastActive: 'Active today',
         });
       }
     });
 
     return mappedConns;
-  }, [connections, allProfiles, currentUser.id, demoZeroState]);
+  }, [connections, safeProfilesList, safeUser.id, demoZeroState]);
 
   // Calculate unique countries and connection stats
   const stats = useMemo(() => {
@@ -129,11 +141,21 @@ export const OrbView: React.FC<OrbViewProps> = ({
   };
 
   const handleOpenConversation = (profileId: string) => {
-    onOpenChatWithProfile(profileId);
+    if (onOpenChatWithProfile) {
+      onOpenChatWithProfile(profileId);
+    } else if (onExplore) {
+      onExplore();
+    }
   };
 
-  const handleViewProfileModal = (profile: UserProfile) => {
-    onSelectProfile(profile);
+  const handleViewProfileModal = (profile: UserProfile | PublicProfile) => {
+    if (onSelectProfile) {
+      onSelectProfile(profile);
+    } else if (onConnect) {
+      onConnect(profile);
+    } else if (onExplore) {
+      onExplore();
+    }
   };
 
   return (
@@ -398,13 +420,13 @@ export const OrbView: React.FC<OrbViewProps> = ({
               </div>
 
               {/* Curious About Tags */}
-              {selectedLocation.profile.curiousAbout && (
+              {selectedLocation.profile.curiousAbout && Array.isArray(selectedLocation.profile.curiousAbout) && selectedLocation.profile.curiousAbout.length > 0 && (
                 <div className="mb-4">
                   <span className="text-[9px] uppercase tracking-widest text-[#969696] block mb-1.5">
                     Currently Questioning
                   </span>
                   <div className="flex flex-wrap gap-1">
-                    {selectedLocation.profile.curiousAbout.slice(0, 3).map((item) => (
+                    {(selectedLocation.profile.curiousAbout || []).slice(0, 3).map((item) => (
                       <span
                         key={item}
                         className="text-[9px] text-[#969696] bg-[#F5F5F0]/5 px-2 py-0.5 border border-[#F5F5F0]/5"

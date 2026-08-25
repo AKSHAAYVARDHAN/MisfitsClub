@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ConnectionIntent, UserProfile, OrbLocation } from '../types';
+import { ConnectionIntent, UserProfile, PublicProfile, OrbLocation } from '../types';
 import { OrbGlobe } from './OrbGlobe';
 import { 
   ArrowRight, 
@@ -23,9 +23,11 @@ interface LandingPageProps {
   onStartOnboarding: () => void;
   onEnterOrb: () => void;
   onExplore: () => void;
-  onSelectProfile: (profile: UserProfile) => void;
-  onSelectIntent: (intent: ConnectionIntent) => void;
-  allProfiles: UserProfile[];
+  onSelectProfile?: (profile: UserProfile | PublicProfile) => void;
+  onSelectIntent?: (intent: ConnectionIntent) => void;
+  onSignIn?: () => void;
+  onOpenMemberProfile?: (profile: UserProfile | PublicProfile) => void;
+  allProfiles?: (UserProfile | PublicProfile)[];
   currentUser?: UserProfile | null;
 }
 
@@ -35,7 +37,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onExplore,
   onSelectProfile,
   onSelectIntent,
-  allProfiles,
+  onSignIn,
+  onOpenMemberProfile,
+  allProfiles = SAMPLE_PROFILES,
   currentUser,
 }) => {
   const [activeIntentTab, setActiveIntentTab] = useState<ConnectionIntent>('Exchange Ideas');
@@ -47,15 +51,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     city: 'Chennai',
   };
 
-  const orbLocations: OrbLocation[] = (allProfiles || []).map((p) => ({
+  const safeProfilesList = (allProfiles && allProfiles.length > 0) ? allProfiles : SAMPLE_PROFILES;
+
+  const orbLocations: OrbLocation[] = safeProfilesList.map((p) => ({
     id: p.id,
-    name: p.name,
-    city: p.location.split(',')[0].trim(),
+    name: p.name || 'Member',
+    city: (p.location || 'Worldwide').split(',')[0].trim(),
     country: p.country || 'Global',
     lat: p.lat ?? 52.52,
     lng: p.lng ?? 13.40,
     profile: p,
-    intents: p.intents,
+    intents: p.intents || [],
     lastActive: 'Active now',
   }));
 
@@ -261,7 +267,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             return (
               <div
                 key={snippet.id}
-                onClick={() => onSelectIntent(snippet.intent)}
+                onClick={() => (onSelectIntent ? onSelectIntent(snippet.intent) : onExplore())}
                 className={`group cursor-pointer p-6 border transition-all duration-300 ${
                   isLightCard
                     ? 'bg-[#F5F5F0] text-[#0B0B0C] border-[#F5F5F0]/10 shadow-2xl'
@@ -385,7 +391,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
             <button
               id="filter-intent-cta"
-              onClick={() => onSelectIntent(activeIntentTab)}
+              onClick={() => (onSelectIntent ? onSelectIntent(activeIntentTab) : onExplore())}
               className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#D4FF3F] hover:underline"
             >
               <span>Explore people seeking to {activeIntentTab}</span>
@@ -423,17 +429,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           {/* Real Human Cards Showcase */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {allProfiles.slice(0, 4).map((person) => (
+            {safeProfilesList.slice(0, 4).map((person) => (
               <div
                 key={person.id}
-                onClick={() => onSelectProfile(person)}
+                onClick={() => {
+                  if (onOpenMemberProfile) {
+                    onOpenMemberProfile(person);
+                  } else if (onSelectProfile) {
+                    onSelectProfile(person);
+                  } else {
+                    onExplore();
+                  }
+                }}
                 className="group cursor-pointer border border-[#F5F5F0]/10 bg-[#151516] p-6 flex flex-col justify-between transition-all duration-300 hover:border-[#D4FF3F]/40"
               >
                 <div>
                   {/* Avatar & Location */}
                   <div className="flex items-center gap-3.5 mb-4">
                     <img
-                      src={person.avatarUrl}
+                      src={person.avatarUrl || person.profilePhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
                       alt={person.name}
                       referrerPolicy="no-referrer"
                       className="w-10 h-10 object-cover border border-[#F5F5F0]/10"
@@ -443,20 +457,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         {person.name}
                       </h3>
                       <p className="text-[10px] text-[#969696] uppercase tracking-widest">
-                        {person.location} · {person.role}
+                        {person.location || 'Worldwide'} · {person.role || 'Explorer'}
                       </p>
                     </div>
                   </div>
 
                   {/* Tagline / Obsession */}
                   <p className="font-editorial text-base text-[#969696] group-hover:text-[#F5F5F0] italic leading-snug mb-4">
-                    “{person.tagline}”
+                    “{person.tagline || person.bio || 'Curiosity over credentials'}”
                   </p>
 
                   {/* Interests */}
                   <div className="mb-4">
                     <div className="flex flex-wrap gap-1.5">
-                      {person.interests.slice(0, 3).map((item) => (
+                      {(person.interests || []).slice(0, 3).map((item) => (
                         <span
                           key={item}
                           className="text-[9px] text-[#969696] bg-[#F5F5F0]/5 px-2 py-0.5 border border-[#F5F5F0]/5"
@@ -471,7 +485,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 {/* Looking for */}
                 <div className="pt-3 border-t border-[#F5F5F0]/10">
                   <div className="flex flex-wrap gap-1.5">
-                    {person.intents.slice(0, 2).map((intent) => (
+                    {(person.intents || []).slice(0, 2).map((intent) => (
                       <span
                         key={intent}
                         className="text-[10px] text-[#D4FF3F] border border-[#D4FF3F]/30 px-2 py-0.5"
@@ -598,7 +612,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <button onClick={onExplore} className="hover:text-[#D4FF3F] transition-colors">
               Discover
             </button>
-            <button onClick={() => onSelectIntent('Exchange Ideas')} className="hover:text-[#D4FF3F] transition-colors">
+            <button onClick={() => (onSelectIntent ? onSelectIntent('Exchange Ideas') : onExplore())} className="hover:text-[#D4FF3F] transition-colors">
               Intentions
             </button>
             <button onClick={onStartOnboarding} className="hover:text-[#D4FF3F] transition-colors">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ActiveTab, 
   UserProfile, 
+  PublicProfile,
   Connection, 
   ChatMessage, 
   CuriousBoardPost, 
@@ -14,6 +15,7 @@ import {
 } from './data/mockData';
 import { authService } from './services/authService';
 import { firestoreService } from './services/firestoreService';
+import { connectionService } from './services/connectionService';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { RouterProvider, useRouter, AppRoute } from './context/RouterContext';
 import { Navbar } from './components/Navbar';
@@ -22,6 +24,7 @@ import { OrbView } from './components/OrbView';
 import { OnboardingFlow } from './components/OnboardingFlow';
 import { DiscoverView } from './components/DiscoverView';
 import { ConnectModal } from './components/ConnectModal';
+import { MemberProfileModal } from './components/MemberProfileModal';
 import { MessagesView } from './components/MessagesView';
 import { ConnectionsView } from './components/ConnectionsView';
 import { ExploreBoardView } from './components/ExploreBoardView';
@@ -29,60 +32,70 @@ import { ProfileView } from './components/ProfileView';
 import { SignInView } from './components/SignInView';
 import { SignUpView } from './components/SignUpView';
 
+const INITIAL_SAMPLE_CONNECTIONS: Connection[] = [
+  {
+    id: 'conn-maya',
+    profileId: 'p-maya',
+    profile: SAMPLE_PROFILES[0], // Maya
+    connectedAt: 'Yesterday',
+    status: 'connected',
+    sharedIntents: ['Build Together', 'Exchange Ideas'],
+    sharedInterests: ['Audio Synthesis', 'Creative Coding'],
+    introNote: 'Loved your exploration of tactile audio interfaces.',
+    lastMessage: 'Exactly. The acoustics of old tape degradation is something neural models still struggle to capture accurately.',
+    lastMessageTime: '12:40 PM',
+    unreadCount: 0,
+  },
+  {
+    id: 'conn-elena',
+    profileId: 'p-elena',
+    profile: SAMPLE_PROFILES[1], // Elena
+    connectedAt: '3 days ago',
+    status: 'connected',
+    sharedIntents: ['Find a Co-founder', 'Collaborate'],
+    sharedInterests: ['Robotics', 'Physical Computing'],
+    introNote: 'Building micro-satellites sounds incredible. Would love to swap notes on kinematics.',
+    lastMessage: 'I am testing the new brushless gimbal motors this afternoon at the lab if you want to see the torque benchmarks.',
+    lastMessageTime: 'Tuesday',
+    unreadCount: 1,
+  },
+  {
+    id: 'conn-tariq',
+    profileId: 'p-tariq',
+    profile: SAMPLE_PROFILES[3], // Tariq
+    connectedAt: '5 days ago',
+    status: 'connected',
+    sharedIntents: ['Learn Together', 'Just Talk'],
+    sharedInterests: ['Computational Biology', 'Systems Theory'],
+    introNote: 'Your work on synthetic fungal networks blew my mind.',
+    lastMessage: 'Let us hop on a sync when you have 15 minutes.',
+    lastMessageTime: 'Oct 14',
+    unreadCount: 0,
+  },
+];
+
 function MainApp() {
   const { user, isAuthenticated, isLoading, signOut, completeOnboarding, updateUser } = useAuth();
   const { currentPath, navigate } = useRouter();
 
-  const [profiles, setProfiles] = useState<UserProfile[]>(SAMPLE_PROFILES);
+  const [profiles, setProfiles] = useState<(UserProfile | PublicProfile)[]>(SAMPLE_PROFILES);
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
-  const [connectModalTarget, setConnectModalTarget] = useState<UserProfile | null>(null);
+  const [connectModalTarget, setConnectModalTarget] = useState<UserProfile | PublicProfile | null>(null);
+  const [selectedMemberProfile, setSelectedMemberProfile] = useState<PublicProfile | null>(null);
+  const [isLoadingProfiles, setIsLoadingProfiles] = useState<boolean>(false);
 
-  // Initial connections
-  const [connections, setConnections] = useState<Connection[]>(() => [
-    {
-      id: 'conn-maya',
-      profileId: 'p-maya',
-      profile: SAMPLE_PROFILES[0], // Maya
-      connectedAt: 'Yesterday',
-      status: 'connected',
-      sharedIntents: ['Exchange Ideas', 'Just Talk'],
-      sharedInterests: ['Design', 'AI', 'Film'],
-      introNote: '“What is an idea you believe deeply that almost everyone in your field ignores?”',
-      lastMessage: 'The acoustics of old tape degradation is something neural models still struggle to capture accurately.',
-      lastMessageTime: '12:40 PM',
-      unreadCount: 1,
-    },
-    {
-      id: 'conn-arjun',
-      profileId: 'p-arjun',
-      profile: SAMPLE_PROFILES[1], // Arjun
-      connectedAt: '3 days ago',
-      status: 'connected',
-      sharedIntents: ['Build Together', 'Collaborate'],
-      sharedInterests: ['AI', 'Startups', 'Technology'],
-      introNote: '“What are you building right now that feels slightly irrational?”',
-      lastMessage: 'Soldered the first PCB for the keystroke biometric monitor. Will upload schematics tonight.',
-      lastMessageTime: 'Yesterday',
-      unreadCount: 0,
-    },
-  ]);
+  // Connections list synchronized from Firestore with local fallback
+  const [connections, setConnections] = useState<Connection[]>(INITIAL_SAMPLE_CONNECTIONS);
 
-  // Initial messages
-  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+  // Active chat & messages
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'm-1',
       connectionId: 'conn-maya',
-      senderId: 'currentUser',
-      text: 'What is an idea you believe deeply that almost everyone in your field ignores?',
-      timestamp: 'Yesterday 10:15 AM',
-      isStarterPrompt: true,
-    },
-    {
-      id: 'm-2',
-      connectionId: 'conn-maya',
       senderId: 'p-maya',
-      text: 'That imperfection and mechanical decay are what give memories emotional weight. When we clean up 16mm film or generate pristine 4K video, we accidentally sterilize the nostalgic texture.',
+      text: 'Loved your exploration of tactile audio interfaces.',
       timestamp: 'Yesterday 10:42 AM',
+      isStarterPrompt: true,
     },
     {
       id: 'm-2b',
@@ -119,15 +132,16 @@ function MainApp() {
 
   // Synchronize live members directory from Firestore
   useEffect(() => {
+    const currentUserId = user?.uid || user?.id;
     const unsub = firestoreService.subscribeUsers((liveUsers) => {
       if (liveUsers && liveUsers.length > 0) {
         setProfiles(liveUsers);
       }
-    });
+    }, currentUserId);
     return () => unsub();
-  }, []);
+  }, [user?.uid, user?.id]);
 
-  // Synchronize live community curiosity board from Firestore
+  // Synchronize live community curiosity / Spark board from Firestore
   useEffect(() => {
     const unsub = firestoreService.subscribeBoardPosts((livePosts) => {
       if (livePosts && livePosts.length > 0) {
@@ -136,6 +150,30 @@ function MainApp() {
     });
     return () => unsub();
   }, []);
+
+  // Synchronize real-time user connections from Firestore
+  useEffect(() => {
+    const currentUserId = user?.uid || user?.id;
+    if (!currentUserId) return;
+
+    const unsub = connectionService.subscribeUserConnections(currentUserId, (liveConns) => {
+      if (liveConns && liveConns.length > 0) {
+        // Merge with initial sample connections if user has few to provide immediate rich state
+        const liveIds = new Set(liveConns.map((c) => c.id));
+        const merged = [...liveConns];
+        for (const sample of INITIAL_SAMPLE_CONNECTIONS) {
+          if (!liveIds.has(sample.id)) {
+            merged.push(sample);
+          }
+        }
+        setConnections(merged);
+      } else {
+        setConnections(INITIAL_SAMPLE_CONNECTIONS);
+      }
+    });
+
+    return () => unsub();
+  }, [user?.uid, user?.id]);
 
   // Map route to activeTab
   const getActiveTabFromPath = (path: AppRoute): ActiveTab => {
@@ -219,69 +257,136 @@ function MainApp() {
     );
   };
 
-  const handleOpenConnectModal = (target: UserProfile) => {
+  const handleOpenConnectModal = (target: UserProfile | PublicProfile) => {
     if (!isAuthenticated) {
       navigate('/signin');
       return;
     }
-    setConnectModalTarget(target);
+    setConnectModalTarget(target as UserProfile);
   };
 
-  // Start new conversation from connect modal
-  const handleStartConversation = async (target: UserProfile, introPrompt: string) => {
-    const existingConn = connections.find((c) => c.profileId === target.id);
-    if (existingConn) {
+  // Start new conversation / Send connection request
+  const handleStartConversation = async (target: UserProfile | PublicProfile, introPrompt: string) => {
+    const currentUserId = user?.uid || user?.id || 'current-user';
+    const targetUserId = target.uid || target.id;
+
+    // Check if a connection already exists
+    const existingConn = connections.find(
+      (c) =>
+        c.profileId === targetUserId ||
+        c.targetId === targetUserId ||
+        c.requesterId === targetUserId ||
+        (c.participants && c.participants.includes(targetUserId))
+    );
+
+    if (existingConn && existingConn.status === 'connected') {
       setActiveConnectionId(existingConn.id);
       navigate('/messages');
       setConnectModalTarget(null);
       return;
     }
 
-    const newConnId = `conn-${Date.now()}`;
-    const newConnection: Connection = {
-      id: newConnId,
-      profileId: target.id,
-      profile: target,
-      connectedAt: 'Just now',
-      status: 'connected',
-      sharedIntents: target.intents.filter((i) => (user?.intents || []).includes(i)),
-      sharedInterests: target.interests.filter((i) => (user?.interests || []).includes(i)),
-      introNote: introPrompt,
-      lastMessage: introPrompt,
-      lastMessageTime: 'Just now',
-      unreadCount: 0,
-    };
-
-    const starterMessage: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      connectionId: newConnId,
-      senderId: user?.id || 'currentUser',
-      text: introPrompt,
-      timestamp: 'Just now',
-      isStarterPrompt: true,
-    };
-
-    setConnections((prev) => [newConnection, ...prev]);
-    setMessages((prev) => [...prev, starterMessage]);
-    setActiveConnectionId(newConnId);
-    setConnectModalTarget(null);
-    navigate('/messages');
-
-    // Persist to Firestore asynchronously
+    const currentUserObj = user || INITIAL_USER;
+    
+    // Create / send in Firestore via connectionService
     try {
-      await firestoreService.saveConnection(newConnection);
+      const createdConn = await connectionService.sendConnectionRequest({
+        requester: currentUserObj,
+        target,
+        introNote: introPrompt,
+      });
+
+      const starterMessage: ChatMessage = {
+        id: `msg-${Date.now()}`,
+        connectionId: createdConn.id,
+        senderId: currentUserId,
+        text: introPrompt,
+        timestamp: 'Just now',
+        isStarterPrompt: true,
+      };
+
+      // Optimistic local state update
+      setConnections((prev) => [
+        createdConn,
+        ...prev.filter((c) => c.id !== createdConn.id),
+      ]);
+      setMessages((prev) => [...prev, starterMessage]);
+      setActiveConnectionId(createdConn.id);
+      setConnectModalTarget(null);
+      setSelectedMemberProfile(null);
+
       await firestoreService.sendMessage(starterMessage);
+      navigate('/connections');
     } catch (e) {
-      console.warn('Persisted connection locally', e);
+      console.warn('Error starting connection, applied optimistically', e);
+      setConnectModalTarget(null);
+      setSelectedMemberProfile(null);
+      navigate('/connections');
+    }
+  };
+
+  // Accept Connection Request
+  const handleAcceptConnection = async (connectionId: string) => {
+    const currentUserId = user?.uid || user?.id || 'current-user';
+    // Optimistic update
+    setConnections((prev) =>
+      prev.map((c) =>
+        c.id === connectionId
+          ? { ...c, status: 'connected', connectedAt: 'Just now' }
+          : c
+      )
+    );
+    try {
+      await connectionService.acceptConnection(connectionId, currentUserId);
+    } catch (e) {
+      console.warn('Failed to accept connection in Firestore', e);
+    }
+  };
+
+  // Decline Connection Request
+  const handleDeclineConnection = async (connectionId: string) => {
+    const currentUserId = user?.uid || user?.id || 'current-user';
+    setConnections((prev) =>
+      prev.map((c) =>
+        c.id === connectionId ? { ...c, status: 'declined' } : c
+      )
+    );
+    try {
+      await connectionService.declineConnection(connectionId, currentUserId);
+    } catch (e) {
+      console.warn('Failed to decline connection in Firestore', e);
+    }
+  };
+
+  // Cancel Pending Outgoing Request
+  const handleCancelConnectionRequest = async (connectionId: string) => {
+    const currentUserId = user?.uid || user?.id || 'current-user';
+    setConnections((prev) => prev.filter((c) => c.id !== connectionId));
+    try {
+      await connectionService.cancelConnectionRequest(connectionId, currentUserId);
+    } catch (e) {
+      console.warn('Failed to cancel connection request in Firestore', e);
+    }
+  };
+
+  // Remove Connection
+  const handleRemoveConnection = async (connectionId: string) => {
+    const currentUserId = user?.uid || user?.id || 'current-user';
+    setConnections((prev) => prev.filter((c) => c.id !== connectionId));
+    try {
+      await connectionService.removeConnection(connectionId, currentUserId);
+    } catch (e) {
+      console.warn('Failed to remove connection in Firestore', e);
     }
   };
 
   // Send message inside conversation
   const handleSendMessage = async (connectionId: string, text: string) => {
+    const currentUserId = user?.uid || user?.id || 'currentUser';
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       connectionId,
-      senderId: user?.id || 'currentUser',
+      senderId: currentUserId,
       text,
       timestamp: 'Just now',
     };
@@ -302,7 +407,7 @@ function MainApp() {
       console.warn('Stored message locally', e);
     }
 
-    // Simulated reply from other user for engaging interactive demo
+    // Simulated reply from other user for engaging interactive demo if talking to sample profiles
     const conn = connections.find((c) => c.id === connectionId);
     if (conn) {
       setTimeout(async () => {
@@ -333,15 +438,16 @@ function MainApp() {
     }
   };
 
-  const handleConnectWithBoardAuthor = (authorId: string, contextPostText: string) => {
+  const handleConnectWithBoardAuthor = (authorId: string, contextPostText?: string) => {
     if (!isAuthenticated) {
       navigate('/signin');
       return;
     }
     const authorProfile = profiles.find((p) => p.id === authorId) || profiles[0];
+    const previewText = (contextPostText || '').slice(0, 60);
     handleStartConversation(
       authorProfile,
-      `Saw your note on the Curiosity Board: “${contextPostText.slice(0, 60)}...” — I would love to talk about this.`
+      `Saw your note on Spark: “${previewText}...” — I would love to talk about this.`
     );
   };
 
@@ -385,7 +491,7 @@ function MainApp() {
         onOpenSignIn={() => navigate('/signin')}
         onSignOut={handleSignOut}
         unreadCount={connections.reduce((sum, c) => sum + (c.unreadCount || 0), 0)}
-        connectionsCount={connections.length}
+        connectionsCount={connections.filter((c) => c.status === 'connected').length}
       />
 
       {/* Main View Router */}
@@ -422,6 +528,7 @@ function MainApp() {
         {currentPath === '/' && (
           <LandingPage
             currentUser={user}
+            allProfiles={profiles}
             onStartOnboarding={() => {
               if (user) {
                 if (user.onboardingCompleted === false) {
@@ -441,65 +548,70 @@ function MainApp() {
               }
             }}
             onExplore={() => {
-              if (user) {
-                navigate('/discover');
-              } else {
-                navigate('/signin');
-              }
+              navigate('/discover');
             }}
-            onSelectProfile={(profile) => {
-              handleOpenConnectModal(profile);
+            onSignIn={() => navigate('/signin')}
+            onOpenMemberProfile={(profile) => setSelectedMemberProfile(profile as PublicProfile)}
+            onSelectProfile={(profile) => setSelectedMemberProfile(profile as PublicProfile)}
+            onSelectIntent={(_intent) => {
+              navigate('/discover');
             }}
-            onSelectIntent={(_intent: ConnectionIntent) => {
-              if (user) {
-                navigate('/discover');
-              } else {
-                navigate('/signin');
-              }
-            }}
-            allProfiles={profiles}
           />
         )}
 
-        {/* 3D Orb View */}
+        {/* Interactive 3D Orbit View */}
         {currentPath === '/orb' && (
           <OrbView
-            currentUser={user || INITIAL_USER}
-            connections={connections}
+            profiles={profiles}
             allProfiles={profiles}
+            connections={connections}
+            currentUser={user || INITIAL_USER}
+            onConnect={handleOpenConnectModal}
             onExplore={() => navigate('/discover')}
-            onOpenOnboarding={() => navigate('/onboarding')}
             onOpenChatWithProfile={(profileId) => {
-              const existing = connections.find((c) => c.profileId === profileId);
-              if (existing) {
-                setActiveConnectionId(existing.id);
+              const matchedConn = connections.find(
+                (c) => c.profileId === profileId || c.profile?.id === profileId || c.targetId === profileId
+              );
+              if (matchedConn) {
+                setActiveConnectionId(matchedConn.id);
                 navigate('/messages');
               } else {
-                const targetProfile = profiles.find((p) => p.id === profileId);
-                if (targetProfile) {
-                  handleOpenConnectModal(targetProfile);
+                const p = profiles.find((prof) => prof.id === profileId);
+                if (p) {
+                  handleOpenConnectModal(p as PublicProfile);
+                } else {
+                  navigate('/messages');
                 }
               }
             }}
-            onSelectProfile={(profile) => {
-              handleOpenConnectModal(profile);
-            }}
+            onSelectProfile={(profile) => setSelectedMemberProfile(profile as PublicProfile)}
+            onOpenOnboarding={() => navigate('/onboarding')}
           />
         )}
 
-        {/* Discover View */}
+        {/* Discovery & Member Directory View */}
         {currentPath === '/discover' && (
           <DiscoverView
             profiles={profiles}
             currentUser={user || INITIAL_USER}
+            connections={connections}
+            isLoading={isLoadingProfiles}
             onConnect={handleOpenConnectModal}
+            onOpenChat={(connId) => {
+              setActiveConnectionId(connId);
+              navigate('/messages');
+            }}
+            onAcceptRequest={handleAcceptConnection}
+            onDeclineRequest={handleDeclineConnection}
+            onCancelRequest={handleCancelConnectionRequest}
+            onRemoveConnection={handleRemoveConnection}
             onOpenOnboarding={() => navigate('/onboarding')}
             bookmarkedIds={bookmarkedIds}
             onToggleBookmark={handleToggleBookmark}
           />
         )}
 
-        {/* Explore / Curiosity Board View */}
+        {/* Explore / Curiosity Spark Board View */}
         {currentPath === '/board' && (
           <ExploreBoardView
             posts={boardPosts}
@@ -514,19 +626,25 @@ function MainApp() {
         {currentPath === '/connections' && (
           <ConnectionsView
             connections={connections}
+            currentUser={user || INITIAL_USER}
             onOpenChat={(connId) => {
               setActiveConnectionId(connId);
               navigate('/messages');
             }}
             onExplore={() => navigate('/discover')}
             onOpenOrb={() => navigate('/orb')}
+            onAcceptRequest={handleAcceptConnection}
+            onDeclineRequest={handleDeclineConnection}
+            onCancelRequest={handleCancelConnectionRequest}
+            onRemoveConnection={handleRemoveConnection}
+            onSelectProfile={(p) => setSelectedMemberProfile(p as PublicProfile)}
           />
         )}
 
         {/* Intimate Messages View */}
         {currentPath === '/messages' && (
           <MessagesView
-            connections={connections}
+            connections={connections.filter((c) => c.status === 'connected')}
             activeConnectionId={activeConnectionId}
             onSelectConnection={(id) => setActiveConnectionId(id)}
             messages={messages}
@@ -549,6 +667,30 @@ function MainApp() {
           />
         )}
       </main>
+
+      {/* Public Member Profile Dedicated View Modal */}
+      <MemberProfileModal
+        isOpen={!!selectedMemberProfile}
+        profile={selectedMemberProfile}
+        currentUser={user || INITIAL_USER}
+        connections={connections}
+        isBookmarked={selectedMemberProfile ? bookmarkedIds.includes(selectedMemberProfile.id) : false}
+        onClose={() => setSelectedMemberProfile(null)}
+        onConnect={(target) => {
+          setSelectedMemberProfile(null);
+          handleOpenConnectModal(target);
+        }}
+        onOpenChat={(connId) => {
+          setSelectedMemberProfile(null);
+          setActiveConnectionId(connId);
+          navigate('/messages');
+        }}
+        onAcceptRequest={handleAcceptConnection}
+        onDeclineRequest={handleDeclineConnection}
+        onCancelRequest={handleCancelConnectionRequest}
+        onRemoveConnection={handleRemoveConnection}
+        onToggleBookmark={handleToggleBookmark}
+      />
 
       {/* Connect & Conversation Starter Modal */}
       <ConnectModal

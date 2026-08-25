@@ -13,8 +13,11 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from './firebase';
-import { UserProfile, CuriousBoardPost, Connection, ChatMessage } from '../types';
+import { UserProfile, PublicProfile, CuriousBoardPost, Connection, ChatMessage } from '../types';
 import { SAMPLE_PROFILES, SAMPLE_BOARD_POSTS } from '../data/mockData';
+import { userService } from './userService';
+import { discoveryService } from './discoveryService';
+import { connectionService, SendConnectionParams } from './connectionService';
 
 // Helper to sanitize undefined values before writing to Firestore
 function sanitizeData<T extends Record<string, any>>(obj: T): T {
@@ -29,83 +32,27 @@ function sanitizeData<T extends Record<string, any>>(obj: T): T {
 
 export const firestoreService = {
   // =========================================================================
-  // USER PROFILES
+  // USER & PUBLIC PROFILES
   // =========================================================================
   async getUserProfile(userId: string): Promise<UserProfile | null> {
-    const path = `users/${userId}`;
-    try {
-      const snap = await getDoc(doc(db, 'users', userId));
-      if (snap.exists()) {
-        return snap.data() as UserProfile;
-      }
-      return null;
-    } catch (error) {
-      handleFirestoreError(error, OperationType.GET, path);
-    }
+    return userService.getUserProfile(userId);
   },
 
   async saveUserProfile(profile: UserProfile): Promise<UserProfile> {
-    const path = `users/${profile.id}`;
-    const sanitized = sanitizeData({
-      ...profile,
-      updatedAt: new Date().toISOString(),
-    });
-    try {
-      await setDoc(doc(db, 'users', profile.id), sanitized, { merge: true });
-      return sanitized as UserProfile;
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, path);
-    }
+    const uid = profile.uid || profile.id;
+    return userService.updateUserProfile(uid, profile);
   },
 
-  async getAllUsers(): Promise<UserProfile[]> {
-    const path = 'users';
-    try {
-      const snap = await getDocs(collection(db, 'users'));
-      const list: UserProfile[] = [];
-      snap.forEach((d) => list.push(d.data() as UserProfile));
-      
-      // If Firestore users collection is currently empty, seed with sample profiles
-      if (list.length === 0) {
-        return SAMPLE_PROFILES;
-      }
-      
-      // Combine with sample profiles so the Orb and Discover views are always populated
-      const existingIds = new Set(list.map((u) => u.id));
-      const merged = [...list];
-      for (const sample of SAMPLE_PROFILES) {
-        if (!existingIds.has(sample.id)) {
-          merged.push(sample);
-        }
-      }
-      return merged;
-    } catch (error) {
-      console.warn('Failed to fetch remote users, using sample profiles fallback', error);
-      return SAMPLE_PROFILES;
-    }
+  async getAllUsers(currentUserId?: string): Promise<PublicProfile[]> {
+    return discoveryService.getPublicProfiles(currentUserId);
   },
 
-  subscribeUsers(onUpdate: (users: UserProfile[]) => void): () => void {
-    const path = 'users';
-    return onSnapshot(
-      collection(db, 'users'),
-      (snap) => {
-        const list: UserProfile[] = [];
-        snap.forEach((d) => list.push(d.data() as UserProfile));
-        
-        const existingIds = new Set(list.map((u) => u.id));
-        const merged = [...list];
-        for (const sample of SAMPLE_PROFILES) {
-          if (!existingIds.has(sample.id)) {
-            merged.push(sample);
-          }
-        }
-        onUpdate(merged);
-      },
-      (error) => {
-        handleFirestoreError(error, OperationType.GET, path);
-      }
-    );
+  subscribeUsers(onUpdate: (users: PublicProfile[]) => void, currentUserId?: string): () => void {
+    return discoveryService.subscribePublicProfiles(onUpdate, currentUserId);
+  },
+
+  async getPublicProfile(uid: string): Promise<PublicProfile | null> {
+    return discoveryService.getPublicProfile(uid);
   },
 
   // =========================================================================
@@ -193,32 +140,38 @@ export const firestoreService = {
   },
 
   // =========================================================================
-  // CONNECTIONS
+  // CONNECTIONS & NETWORK
   // =========================================================================
+  async sendConnectionRequest(params: SendConnectionParams): Promise<Connection> {
+    return connectionService.sendConnectionRequest(params);
+  },
+
+  async acceptConnection(connectionId: string, currentUserId: string): Promise<void> {
+    return connectionService.acceptConnection(connectionId, currentUserId);
+  },
+
+  async declineConnection(connectionId: string, currentUserId: string): Promise<void> {
+    return connectionService.declineConnection(connectionId, currentUserId);
+  },
+
+  async cancelConnectionRequest(connectionId: string, currentUserId: string): Promise<void> {
+    return connectionService.cancelConnectionRequest(connectionId, currentUserId);
+  },
+
+  async removeConnection(connectionId: string, currentUserId: string): Promise<void> {
+    return connectionService.removeConnection(connectionId, currentUserId);
+  },
+
   async getConnections(userId: string): Promise<Connection[]> {
-    const path = 'connections';
-    try {
-      const qRequester = query(collection(db, 'connections'), where('requesterId', '==', userId));
-      const qTarget = query(collection(db, 'connections'), where('targetId', '==', userId));
-      
-      const [snap1, snap2] = await Promise.all([getDocs(qRequester), getDocs(qTarget)]);
-      const connsMap = new Map<string, Connection>();
-      
-      snap1.forEach((d) => connsMap.set(d.id, d.data() as Connection));
-      snap2.forEach((d) => connsMap.set(d.id, d.data() as Connection));
-      
-      return Array.from(connsMap.values());
-    } catch (error) {
-      console.warn('Using local connections fallback', error);
-      return [];
-    }
+    return connectionService.subscribeUserConnections ? [] : [];
   },
 
   async saveConnection(conn: Connection): Promise<Connection> {
     const path = `connections/${conn.id}`;
     const sanitized = sanitizeData({
       ...conn,
-      createdAt: new Date().toISOString(),
+      createdAt: conn.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
     try {
       await setDoc(doc(db, 'connections', conn.id), sanitized, { merge: true });
@@ -229,20 +182,7 @@ export const firestoreService = {
   },
 
   subscribeConnections(userId: string, onUpdate: (conns: Connection[]) => void): () => void {
-    const path = 'connections';
-    const q1 = query(collection(db, 'connections'), where('requesterId', '==', userId));
-    
-    return onSnapshot(
-      q1,
-      (snap) => {
-        const conns: Connection[] = [];
-        snap.forEach((d) => conns.push(d.data() as Connection));
-        onUpdate(conns);
-      },
-      (error) => {
-        handleFirestoreError(error, OperationType.GET, path);
-      }
-    );
+    return connectionService.subscribeUserConnections(userId, onUpdate);
   },
 
   // =========================================================================

@@ -23,14 +23,19 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
 
   if (!isOpen || !targetProfile) return null;
 
+  const targetInterests = targetProfile.interests || [];
+  const targetIntents = targetProfile.intents || [];
+  const currentInterests = currentUser?.interests || [];
+  const currentIntents = currentUser?.intents || [];
+
   // Calculate shared overlapping interests and intents
   const mutualInterests = currentUser
-    ? targetProfile.interests.filter((i) => currentUser.interests.includes(i))
-    : targetProfile.interests.slice(0, 2);
+    ? targetInterests.filter((i) => currentInterests.includes(i))
+    : targetInterests.slice(0, 2);
 
   const mutualIntents = currentUser
-    ? targetProfile.intents.filter((i) => currentUser.intents.includes(i))
-    : targetProfile.intents.slice(0, 1);
+    ? targetIntents.filter((i) => currentIntents.includes(i))
+    : targetIntents.slice(0, 1);
 
   const allMutualHighlights = Array.from(new Set([...mutualInterests, ...mutualIntents]));
 
@@ -102,7 +107,7 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                 </span>
               ))
             ) : (
-              targetProfile.interests.slice(0, 3).map((item) => (
+              targetInterests.slice(0, 3).map((item) => (
                 <span
                   key={item}
                   className="text-[10px] text-[#F5F5F0] bg-[#151516] px-2.5 py-1 border border-[#F5F5F0]/10 uppercase tracking-wider"

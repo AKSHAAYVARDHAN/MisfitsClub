@@ -6,6 +6,7 @@ export interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isProfileComplete: boolean;
   error: string | null;
   signIn: (email: string, password?: string) => Promise<UserProfile>;
   signUp: (name: string, email: string, password: string, avatarUrl?: string) => Promise<UserProfile>;
@@ -24,6 +25,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<UserProfile | null>(() => authService.getCurrentUser());
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const isProfileComplete = Boolean(user && user.onboardingCompleted);
 
   // Subscribe to Firebase Auth state changes
   useEffect(() => {
@@ -128,6 +131,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     user,
     isAuthenticated: !!user,
     isLoading,
+    isProfileComplete,
     error,
     signIn,
     signUp,

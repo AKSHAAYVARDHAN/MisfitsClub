@@ -11,7 +11,7 @@ interface ExploreBoardViewProps {
 }
 
 export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
-  posts,
+  posts = [],
   onAddPost,
   currentUser,
   onConnectWithAuthor,
@@ -24,9 +24,9 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
 
   const allTags = ['All', 'AI', 'Philosophy', 'Hardware', 'Design', 'Architecture', 'Books', 'Psychology', 'Film'];
 
-  const filteredPosts = posts.filter((p) => {
+  const filteredPosts = (posts || []).filter((p) => {
     if (selectedTag === 'All') return true;
-    return p.tags.includes(selectedTag);
+    return (p.tags || []).includes(selectedTag);
   });
 
   const handleCreatePost = (e: React.FormEvent) => {
@@ -66,7 +66,7 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
           <div className="flex items-center gap-2 mb-1.5">
             <Sparkles className="w-4 h-4 text-[#D4FF3F]" />
             <span className="text-[10px] text-[#D4FF3F] uppercase tracking-widest font-bold">
-              Live Curiosity Board
+              Live Curiosity Spark
             </span>
           </div>
           <h1 className="font-editorial text-4xl sm:text-5xl text-[#F5F5F0] font-light">
@@ -146,7 +146,7 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
 
               {/* Tags */}
               <div className="flex flex-wrap gap-1.5 mb-4">
-                {post.tags.map((tag) => (
+                {(post.tags || []).map((tag) => (
                   <span
                     key={tag}
                     className="text-[10px] text-[#969696] bg-[#0B0B0C] border border-[#F5F5F0]/5 px-2.5 py-0.5 uppercase tracking-wider"
@@ -243,7 +243,7 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
                   className="flex items-center gap-2 bg-[#D4FF3F] px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-[#0B0B0C] hover:bg-[#F5F5F0] disabled:opacity-40"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>Publish to Board</span>
+                  <span>Publish to Spark</span>
                 </button>
               </div>
             </form>

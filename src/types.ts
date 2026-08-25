@@ -21,24 +21,29 @@ export interface UserProfile {
   uid?: string;
   email?: string;
   name: string;
-  handle: string;
-  location: string;
+  handle?: string;
+  profilePhoto?: string;
+  avatarUrl?: string;
+  bio: string;
+  college?: string;
+  department?: string;
+  year?: string;
+  skills?: string[];
+  interests: string[];
+  role: string;
+  location?: string;
   city?: string;
-  country: string;
+  country?: string;
   lat?: number;
   lng?: number;
-  role: string;
-  roleEmoji: string;
-  tagline: string;
-  bio: string;
-  curiousAbout: string[];
+  roleEmoji?: string;
+  tagline?: string;
+  curiousAbout?: string[];
   building?: string;
   learning?: string;
   openQuestion?: string;
-  interests: string[];
-  intents: ConnectionIntent[];
-  archetypesToMeet: MeetArchetype[];
-  avatarUrl?: string;
+  intents?: ConnectionIntent[];
+  archetypesToMeet?: MeetArchetype[];
   accentColor?: string;
   links?: {
     website?: string;
@@ -56,10 +61,69 @@ export interface UserProfile {
   updatedAt?: string;
 }
 
+/**
+ * Public profile data model stored in publicProfiles/{uid}
+ * Strictly excludes private information such as email or account auth credentials
+ */
+export interface PublicProfile {
+  id: string; // Firebase Auth UID
+  uid: string; // Firebase Auth UID
+  name: string;
+  handle?: string;
+  profilePhoto?: string;
+  avatarUrl?: string;
+  bio: string;
+  college?: string;
+  department?: string;
+  year?: string;
+  skills: string[];
+  interests: string[];
+  role: string;
+  roleEmoji?: string;
+  tagline?: string;
+  curiousAbout?: string[];
+  building?: string;
+  learning?: string;
+  openQuestion?: string;
+  intents: ConnectionIntent[];
+  archetypesToMeet?: MeetArchetype[];
+  location?: string;
+  city?: string;
+  country?: string;
+  lat?: number;
+  lng?: number;
+  links?: {
+    website?: string;
+    github?: string;
+    twitter?: string;
+    substack?: string;
+    readcv?: string;
+  };
+  whyMatch?: string;
+  isOnline?: boolean;
+  timeZone?: string;
+  joinedDate?: string;
+  onboardingCompleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DiscoveryFilters {
+  searchQuery: string;
+  college: string;
+  department: string;
+  year: string;
+  skill: string;
+  interest: string;
+  intent: ConnectionIntent | 'All';
+  archetype: MeetArchetype | 'All';
+}
+
 export interface AuthState {
   user: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isProfileComplete: boolean;
   onboardingDraft?: Partial<UserProfile> | null;
 }
 
@@ -77,18 +141,44 @@ export interface OrbLocation {
   lastActive?: string;
 }
 
+export type ConnectionStatus = 'pending' | 'connected' | 'declined' | 'archived';
+
+export interface ProfileSummary {
+  id: string;
+  uid?: string;
+  name: string;
+  role: string;
+  roleEmoji?: string;
+  avatarUrl?: string;
+  profilePhoto?: string;
+  location?: string;
+  college?: string;
+  department?: string;
+  tagline?: string;
+  skills?: string[];
+  interests?: string[];
+  intents?: ConnectionIntent[];
+}
+
 export interface Connection {
   id: string;
+  requesterId?: string;
+  targetId?: string;
+  participants?: string[];
   profileId: string;
-  profile: UserProfile;
-  connectedAt: string;
-  status: 'connected' | 'pending' | 'archived';
+  profile: UserProfile | PublicProfile;
+  requesterSummary?: ProfileSummary;
+  targetSummary?: ProfileSummary;
+  connectedAt?: string;
+  status: ConnectionStatus;
   sharedIntents: ConnectionIntent[];
   sharedInterests: string[];
   introNote?: string;
   lastMessage?: string;
   lastMessageTime?: string;
   unreadCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ChatMessage {

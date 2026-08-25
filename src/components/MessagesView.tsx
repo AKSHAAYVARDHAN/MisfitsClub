@@ -26,10 +26,10 @@ interface MessagesViewProps {
 }
 
 export const MessagesView: React.FC<MessagesViewProps> = ({
-  connections,
+  connections = [],
   activeConnectionId,
   onSelectConnection,
-  messages,
+  messages = [],
   onSendMessage,
   currentUser,
   onExplore,
@@ -38,11 +38,14 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  const safeConnections = connections || [];
+  const safeMessages = messages || [];
+
   // Active connection
-  const activeConnection = connections.find((c) => c.id === activeConnectionId) || connections[0];
+  const activeConnection = safeConnections.find((c) => c.id === activeConnectionId) || safeConnections[0];
 
   // Messages for active connection
-  const activeMessages = messages.filter((m) => m.connectionId === activeConnection?.id);
+  const activeMessages = safeMessages.filter((m) => m.connectionId === activeConnection?.id);
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -61,7 +64,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     onSendMessage(activeConnection.id, starterText);
   };
 
-  if (connections.length === 0) {
+  if (safeConnections.length === 0) {
     return (
       <div className="min-h-[75vh] flex flex-col items-center justify-center text-center px-6 max-w-md mx-auto py-20 bg-[#080808] text-[#F2F2ED] selection:bg-[#D4FF3F] selection:text-[#080808]">
         <div className="w-12 h-12 rounded-full bg-[#141414] border border-[#242424] flex items-center justify-center mb-6">
@@ -102,15 +105,15 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               </h2>
             </div>
             <span className="text-[10px] font-mono-code text-[#8A8A8A] uppercase tracking-wider">
-              {connections.length} ACTIVE
+              {safeConnections.length} ACTIVE
             </span>
           </div>
 
           {/* Conversations List */}
           <div className="flex-1 overflow-y-auto divide-y divide-[#1A1A1A]/80">
-            {connections.map((conn) => {
+            {safeConnections.map((conn) => {
               const isSelected = activeConnection?.id === conn.id;
-              const allConvoMsgs = messages.filter((m) => m.connectionId === conn.id);
+              const allConvoMsgs = safeMessages.filter((m) => m.connectionId === conn.id);
               const lastMsg = allConvoMsgs.slice(-1)[0]?.text || conn.introNote || 'Connected on Misfits Club';
               const lastTime = allConvoMsgs.slice(-1)[0]?.timestamp || conn.lastMessageTime || 'Just now';
 
@@ -133,12 +136,12 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   {/* Avatar */}
                   <div className="relative flex-shrink-0 mt-0.5">
                     <img
-                      src={conn.profile.avatarUrl}
-                      alt={conn.profile.name}
+                      src={conn.profile?.avatarUrl || conn.profile?.profilePhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
+                      alt={conn.profile?.name || 'Member'}
                       referrerPolicy="no-referrer"
                       className="w-10 h-10 object-cover rounded-sm border border-[#242424]"
                     />
-                    {conn.profile.isOnline && (
+                    {conn.profile?.isOnline && (
                       <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#D4FF3F] ring-2 ring-[#101010]"></span>
                     )}
                   </div>
@@ -149,7 +152,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                       <h4 className={`text-xs uppercase tracking-wider truncate font-bold ${
                         isSelected ? 'text-[#F2F2ED]' : 'text-[#F2F2ED]/90 group-hover:text-[#F2F2ED]'
                       }`}>
-                        {conn.profile.name}
+                        {conn.profile?.name || 'Member'}
                       </h4>
                       <span className="text-[9px] text-[#8A8A8A] font-mono-code uppercase tracking-wider whitespace-nowrap">
                         {lastTime}
@@ -157,7 +160,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                     </div>
 
                     <p className="text-[10px] text-[#8A8A8A] truncate font-sans-clean mb-1">
-                      {conn.profile.role} · {conn.profile.location.split(',')[0]}
+                      {conn.profile?.role || 'Explorer'} · {(conn.profile?.location || 'Worldwide').split(',')[0]}
                     </p>
 
                     <p className="text-[11px] text-[#8A8A8A] truncate font-sans-clean leading-relaxed">
@@ -165,7 +168,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                     </p>
 
                     {/* Shared Intent pill */}
-                    {conn.sharedIntents.length > 0 && (
+                    {(conn.sharedIntents || []).length > 0 && (
                       <div className="mt-2 flex items-center gap-1.5">
                         <span className="text-[9px] font-mono-code text-[#D4FF3F] uppercase tracking-wider">
                           {conn.sharedIntents[0]}
@@ -197,8 +200,8 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 </button>
 
                 <img
-                  src={activeConnection.profile.avatarUrl}
-                  alt={activeConnection.profile.name}
+                  src={activeConnection.profile?.avatarUrl || activeConnection.profile?.profilePhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
+                  alt={activeConnection.profile?.name || 'Member'}
                   referrerPolicy="no-referrer"
                   className="w-9 h-9 object-cover rounded-sm border border-[#242424] flex-shrink-0"
                 />
@@ -206,14 +209,14 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#F2F2ED] truncate">
-                      {activeConnection.profile.name}
+                      {activeConnection.profile?.name || 'Member'}
                     </h3>
                     <span className="hidden sm:inline text-[10px] text-[#8A8A8A] uppercase tracking-widest font-mono-code">
-                      · {activeConnection.profile.location}
+                      · {activeConnection.profile?.location || 'Worldwide'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-[10px] text-[#8A8A8A] uppercase tracking-wider truncate mt-0.5">
-                    <span>{activeConnection.profile.role}</span>
+                    <span>{activeConnection.profile?.role || 'Explorer'}</span>
                     <span className="text-[#242424]">|</span>
                     <span className="text-[#D4FF3F] flex items-center gap-1 font-mono-code text-[9px]">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]"></span>
@@ -247,18 +250,18 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 </span>
                 <span className="text-[#292929]">·</span>
                 <span className="text-[#F2F2ED] font-medium tracking-wide uppercase text-[10px] font-mono-code">
-                  {activeConnection.sharedIntents.join(' · ') || 'EXCHANGE IDEAS'}
+                  {(activeConnection.sharedIntents || []).join(' · ') || 'EXCHANGE IDEAS'}
                 </span>
               </div>
               
-              {activeConnection.sharedInterests.length > 0 && (
+              {(activeConnection.sharedInterests || []).length > 0 && (
                 <div className="hidden lg:flex items-center gap-2">
                   <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#8A8A8A]">
                     SHARED CURIOSITIES
                   </span>
                   <span className="text-[#292929]">·</span>
                   <div className="flex items-center gap-1.5">
-                    {activeConnection.sharedInterests.slice(0, 3).map((item) => (
+                    {(activeConnection.sharedInterests || []).slice(0, 3).map((item) => (
                       <span
                         key={item}
                         className="text-[9px] text-[#8A8A8A] border border-[#242424] px-2 py-0.5 uppercase tracking-wider font-mono-code bg-[#111111]"
@@ -462,7 +465,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   type="text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder={`Write a thoughtful note to ${activeConnection.profile.name.split(' ')[0]}...`}
+                  placeholder={`Write a thoughtful note to ${(activeConnection.profile?.name || 'them').split(' ')[0]}...`}
                   className="flex-1 border border-[#242424] bg-[#0B0B0B] px-4 py-3.5 text-xs sm:text-sm text-[#F2F2ED] placeholder-[#8A8A8A]/50 focus:border-[#383838] focus:outline-none transition-colors"
                 />
                 <button
@@ -500,25 +503,25 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 <div className="space-y-5 text-left">
                   <div className="flex items-center gap-3.5">
                     <img
-                      src={activeConnection.profile.avatarUrl}
-                      alt={activeConnection.profile.name}
+                      src={activeConnection.profile?.avatarUrl || activeConnection.profile?.profilePhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
+                      alt={activeConnection.profile?.name || 'Member'}
                       referrerPolicy="no-referrer"
                       className="w-12 h-12 object-cover rounded-sm border border-[#242424]"
                     />
                     <div>
                       <h4 className="text-sm font-bold uppercase tracking-wider text-[#F2F2ED]">
-                        {activeConnection.profile.name}
+                        {activeConnection.profile?.name || 'Member'}
                       </h4>
                       <p className="text-[11px] text-[#8A8A8A] font-sans-clean mt-0.5">
-                        {activeConnection.profile.role}
+                        {activeConnection.profile?.role || 'Explorer'}
                       </p>
                       <p className="text-[10px] text-[#8A8A8A] font-mono-code uppercase tracking-wider">
-                        {activeConnection.profile.location}
+                        {activeConnection.profile?.location || 'Worldwide'}
                       </p>
                     </div>
                   </div>
 
-                  {activeConnection.profile.tagline && (
+                  {activeConnection.profile?.tagline && (
                     <div className="p-3.5 bg-[#141414] border border-[#202020]">
                       <p className="text-xs text-[#F2F2ED] italic font-editorial leading-relaxed">
                         “{activeConnection.profile.tagline}”
@@ -531,11 +534,11 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                       ABOUT
                     </span>
                     <p className="text-xs text-[#8A8A8A] leading-relaxed font-sans-clean">
-                      {activeConnection.profile.bio}
+                      {activeConnection.profile?.bio || 'Member of Misfits Club.'}
                     </p>
                   </div>
 
-                  {activeConnection.profile.building && (
+                  {activeConnection.profile?.building && (
                     <div className="bg-[#141414] p-3.5 border border-[#202020]">
                       <span className="text-[9px] text-[#D4FF3F] uppercase tracking-widest font-mono-code block mb-1 font-bold">
                         CURRENTLY BUILDING
@@ -546,7 +549,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                     </div>
                   )}
 
-                  {activeConnection.profile.openQuestion && (
+                  {activeConnection.profile?.openQuestion && (
                     <div className="bg-[#141414] p-3.5 border border-[#202020]">
                       <span className="text-[9px] text-[#8A8A8A] uppercase tracking-widest font-mono-code block mb-1 font-bold">
                         OPEN QUESTION
@@ -562,7 +565,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                       INTERESTS & TOPICS
                     </span>
                     <div className="flex flex-wrap gap-1.5">
-                      {activeConnection.profile.interests.map((i) => (
+                      {(activeConnection.profile?.interests || []).map((i) => (
                         <span
                           key={i}
                           className="text-[9px] text-[#8A8A8A] bg-[#141414] px-2.5 py-1 border border-[#242424] uppercase font-mono-code"

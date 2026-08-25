@@ -79,6 +79,11 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   // Step 4: About you & Location
   const [city, setCity] = useState<string>(draft?.city || currentUser.city || 'Berlin');
   const [country, setCountry] = useState<string>(draft?.country || currentUser.country || 'Germany');
+  const [college, setCollege] = useState<string>(draft?.college || currentUser.college || '');
+  const [department, setDepartment] = useState<string>(draft?.department || currentUser.department || '');
+  const [year, setYear] = useState<string>(draft?.year || currentUser.year || '');
+  const [skills, setSkills] = useState<string[]>(draft?.skills || currentUser.skills || ['DESIGN', 'IDEATION']);
+  const [skillInput, setSkillInput] = useState<string>('');
   const [bio, setBio] = useState<string>(
     draft?.bio || currentUser.bio || 
     'Currently exploring how visual storytelling and artificial intelligence can turn complex mental models into intuitive tools.'
@@ -98,12 +103,16 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
       interests: selectedInterests,
       city,
       country,
+      college,
+      department,
+      year,
+      skills,
       location: `${city}, ${country}`,
       bio,
       building,
       openQuestion,
     });
-  }, [currentUser.id, selectedIntents, selectedArchetypes, selectedInterests, city, country, bio, building, openQuestion]);
+  }, [currentUser.id, selectedIntents, selectedArchetypes, selectedInterests, city, country, college, department, year, skills, bio, building, openQuestion]);
 
   // Step 1 toggle
   const toggleIntent = (intent: ConnectionIntent) => {
@@ -152,6 +161,19 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
     }
   };
 
+  const handleAddSkill = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = skillInput.trim().toUpperCase();
+    if (clean && !skills.includes(clean) && skills.length < 15) {
+      setSkills([...skills, clean]);
+      setSkillInput('');
+    }
+  };
+
+  const handleRemoveSkill = (skillToRemove: string) => {
+    setSkills(skills.filter((s) => s !== skillToRemove));
+  };
+
   // Final submit
   const handleCompleteAll = async () => {
     setIsSaving(true);
@@ -167,6 +189,10 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
       location: locationString,
       city,
       country,
+      college: college.trim() || undefined,
+      department: department.trim() || undefined,
+      year: year.trim() || undefined,
+      skills,
       bio: bio.trim(),
       building: building.trim() || undefined,
       openQuestion: openQuestion.trim() || undefined,
@@ -451,6 +477,92 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
                   placeholder="Germany or India"
                   className="w-full bg-[#101010] border border-[#242424] px-4 py-3 text-xs sm:text-sm text-[#F2F2ED] placeholder-[#8A8A8A]/50 focus:border-[#D4FF3F] focus:outline-none"
                 />
+              </div>
+            </div>
+
+            {/* Academic & College Background */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#8A8A8A] mb-1.5">
+                  College / University
+                </label>
+                <input
+                  type="text"
+                  value={college}
+                  onChange={(e) => setCollege(e.target.value)}
+                  placeholder="e.g. MIT or IIT"
+                  className="w-full bg-[#101010] border border-[#242424] px-3.5 py-2.5 text-xs text-[#F2F2ED] placeholder-[#8A8A8A]/40 focus:border-[#D4FF3F] focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#8A8A8A] mb-1.5">
+                  Department / Major
+                </label>
+                <input
+                  type="text"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  placeholder="e.g. Computer Science"
+                  className="w-full bg-[#101010] border border-[#242424] px-3.5 py-2.5 text-xs text-[#F2F2ED] placeholder-[#8A8A8A]/40 focus:border-[#D4FF3F] focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#8A8A8A] mb-1.5">
+                  Year / Cohort
+                </label>
+                <input
+                  type="text"
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  placeholder="e.g. 2026 / 3rd Year"
+                  className="w-full bg-[#101010] border border-[#242424] px-3.5 py-2.5 text-xs text-[#F2F2ED] placeholder-[#8A8A8A]/40 focus:border-[#D4FF3F] focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Skills & Superpowers */}
+            <div>
+              <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#8A8A8A] mb-1.5">
+                Skills & Superpowers
+              </label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {skills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="inline-flex items-center gap-1.5 bg-[#151516] text-[#D4FF3F] border border-[#D4FF3F]/30 px-2.5 py-1 text-xs font-mono-code uppercase"
+                  >
+                    <span>{skill}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSkill(skill)}
+                      className="text-[#D4FF3F] hover:text-white"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  placeholder="Add skill (e.g. REACT, PYTHON, FIGMA, SYSTEMS)..."
+                  className="flex-1 bg-[#101010] border border-[#242424] px-3.5 py-2 text-xs text-[#F2F2ED] placeholder-[#8A8A8A]/40 focus:border-[#D4FF3F] focus:outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddSkill(e);
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddSkill}
+                  className="bg-[#D4FF3F] text-[#080808] px-4 py-2 text-xs font-bold uppercase tracking-wider font-mono-code hover:bg-white transition-colors"
+                >
+                  ADD
+                </button>
               </div>
             </div>
 

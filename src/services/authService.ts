@@ -8,9 +8,11 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
+import { userService } from './userService';
 import { firestoreService } from './firestoreService';
+import { discoveryService } from './discoveryService';
 import { UserProfile } from '../types';
-import { SAMPLE_PROFILES, INITIAL_USER } from '../data/mockData';
+import { INITIAL_USER } from '../data/mockData';
 
 const CURRENT_USER_KEY = 'misfits_current_user';
 const DRAFT_PREFIX = 'misfits_onboarding_draft_';
@@ -18,31 +20,39 @@ const DRAFT_PREFIX = 'misfits_onboarding_draft_';
 // Seed profile mapping fallback
 function buildDefaultProfileFromFirebase(user: FirebaseUser, isNew = false): UserProfile {
   const displayName = user.displayName || user.email?.split('@')[0] || 'Misfit Explorer';
-  const handle = displayName.toLowerCase().replace(/[^a-z0-9]/g, '') || `misfit_${user.uid.slice(-4)}`;
-  
+  const uidShort = user.uid ? user.uid.slice(-4) : 'user';
+  const handle = displayName.toLowerCase().replace(/[^a-z0-9]/g, '') || `misfit_${uidShort}`;
+  const photo = user.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80';
+  const now = new Date().toISOString();
+
   return {
     id: user.uid,
     uid: user.uid,
     name: displayName,
     email: user.email || '',
     handle,
+    profilePhoto: photo,
+    avatarUrl: photo,
+    bio: isNew ? '' : 'Exploring ideas at the edge of craft, systems, and creative thought.',
+    college: '',
+    department: '',
+    year: '',
+    skills: [],
+    interests: ['AI', 'Philosophy', 'Design', 'Technology'],
+    role: 'Explorer & Creator',
+    roleEmoji: '✨',
     location: 'Worldwide',
     city: 'San Francisco',
     country: 'United States',
-    role: 'Explorer & Creator',
-    roleEmoji: '✨',
     tagline: 'Here to find people worth talking to',
-    bio: 'Exploring ideas at the edge of craft, systems, and creative thought.',
     curiousAbout: ['Artificial Intelligence', 'Philosophy of Technology', 'Digital Craft'],
-    interests: ['AI', 'Philosophy', 'Design', 'Technology'],
     intents: ['Exchange Ideas', 'Just Talk'],
     archetypesToMeet: ['Builders', 'Creatives', 'Anyone interesting'],
-    avatarUrl: user.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
     isOnline: true,
     joinedDate: 'August 2026',
     onboardingCompleted: !isNew,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: now,
+    updatedAt: now,
   };
 }
 
@@ -61,11 +71,18 @@ export const authService = {
     return onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
         try {
-          // Fetch existing user document from Firestore
-          let profile = await firestoreService.getUserProfile(fbUser.uid);
+          // Fetch existing user document from Firestore users/{uid}
+          let profile = await userService.getUserProfile(fbUser.uid);
           if (!profile) {
-            profile = buildDefaultProfileFromFirebase(fbUser, true);
-            await firestoreService.saveUserProfile(profile);
+            // Profile does not exist yet: create skeleton document for onboarding
+            profile = await userService.createUserProfile(fbUser.uid, {
+              uid: fbUser.uid,
+              name: fbUser.displayName || fbUser.email?.split('@')[0] || 'New Misfit',
+              email: fbUser.email || '',
+              profilePhoto: fbUser.photoURL || undefined,
+              avatarUrl: fbUser.photoURL || undefined,
+              onboardingCompleted: false,
+            });
           }
           localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(profile));
           callback(profile);
@@ -88,10 +105,14 @@ export const authService = {
       if (password) {
         const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
         const fbUser = userCredential.user;
-        let profile = await firestoreService.getUserProfile(fbUser.uid);
+        let profile = await userService.getUserProfile(fbUser.uid);
         if (!profile) {
-          profile = buildDefaultProfileFromFirebase(fbUser);
-          await firestoreService.saveUserProfile(profile);
+          profile = await userService.createUserProfile(fbUser.uid, {
+            uid: fbUser.uid,
+            name: fbUser.displayName || cleanEmail.split('@')[0],
+            email: cleanEmail,
+            onboardingCompleted: false,
+          });
         }
         localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(profile));
         return profile;
@@ -104,8 +125,12 @@ export const authService = {
         try {
           const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password || 'password123');
           const fbUser = userCredential.user;
-          const profile = buildDefaultProfileFromFirebase(fbUser, false);
-          await firestoreService.saveUserProfile(profile);
+          const profile = await userService.createUserProfile(fbUser.uid, {
+            uid: fbUser.uid,
+            name: cleanEmail.split('@')[0],
+            email: cleanEmail,
+            onboardingCompleted: false,
+          });
           localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(profile));
           return profile;
         } catch (createErr) {
@@ -119,6 +144,7 @@ export const authService = {
     const fallbackUser: UserProfile = {
       ...INITIAL_USER,
       id: `user-${Date.now()}`,
+      uid: `user-${Date.now()}`,
       email: cleanEmail,
       onboardingCompleted: true,
     };
@@ -133,32 +159,23 @@ export const authService = {
       const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
       const fbUser = userCredential.user;
       
-      const newProfile: UserProfile = {
-        id: fbUser.uid,
+      const newProfile = await userService.createUserProfile(fbUser.uid, {
         uid: fbUser.uid,
         name: name.trim() || 'New Misfit',
         email: cleanEmail,
-        handle: name.trim().toLowerCase().replace(/\s+/g, '') || `misfit_${fbUser.uid.slice(-4)}`,
-        location: 'Worldwide',
-        city: 'Worldwide',
-        country: 'Worldwide',
-        role: 'Explorer',
-        roleEmoji: '✨',
-        tagline: 'New member at Misfits Club',
-        bio: '',
-        curiousAbout: [],
-        interests: [],
-        intents: ['Exchange Ideas'],
-        archetypesToMeet: ['Anyone worldwide'],
+        handle: name.trim().toLowerCase().replace(/\s+/g, '') || (fbUser.uid ? `misfit_${fbUser.uid.slice(-4)}` : 'misfit_user'),
+        profilePhoto: avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
         avatarUrl: avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-        isOnline: true,
-        joinedDate: 'August 2026',
-        onboardingCompleted: false, // Triggers onboarding flow
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+        bio: '',
+        college: '',
+        department: '',
+        year: '',
+        skills: [],
+        interests: ['AI', 'DESIGN', 'PHILOSOPHY'],
+        role: 'Explorer & Builder',
+        onboardingCompleted: false, // Explicitly false to trigger profile setup flow
+      });
 
-      await firestoreService.saveUserProfile(newProfile);
       localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(newProfile));
       return newProfile;
     } catch (err: any) {
@@ -175,11 +192,16 @@ export const authService = {
       const result = await signInWithPopup(auth, googleProvider);
       const fbUser = result.user;
       
-      let profile = await firestoreService.getUserProfile(fbUser.uid);
+      let profile = await userService.getUserProfile(fbUser.uid);
       if (!profile) {
-        profile = buildDefaultProfileFromFirebase(fbUser, true); // new Google user needs onboarding
-        profile.onboardingCompleted = false;
-        await firestoreService.saveUserProfile(profile);
+        profile = await userService.createUserProfile(fbUser.uid, {
+          uid: fbUser.uid,
+          name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Google Explorer',
+          email: fbUser.email || '',
+          profilePhoto: fbUser.photoURL || undefined,
+          avatarUrl: fbUser.photoURL || undefined,
+          onboardingCompleted: false,
+        });
       }
       localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(profile));
       return profile;
@@ -217,22 +239,25 @@ export const authService = {
 
   async saveOnboarding(userId: string, data: Partial<UserProfile>): Promise<UserProfile> {
     const current = this.getCurrentUser();
+    const uid = userId || current?.uid || current?.id || auth.currentUser?.uid || `user-${Date.now()}`;
+    
     const updated: UserProfile = {
       ...(current || ({} as UserProfile)),
       ...data,
-      id: userId || current?.id || auth.currentUser?.uid || `user-${Date.now()}`,
+      id: uid,
+      uid: uid,
       onboardingCompleted: true,
       updatedAt: new Date().toISOString(),
     };
 
     try {
-      await firestoreService.saveUserProfile(updated);
+      await userService.updateUserProfile(uid, updated);
     } catch (e) {
-      console.warn('Failed to save onboarding to Firestore, saved to local cache', e);
+      console.warn('Failed to save profile to Firestore, saved to local cache', e);
     }
 
     localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updated));
-    this.clearOnboardingDraft(userId);
+    this.clearOnboardingDraft(uid);
     return updated;
   },
 
@@ -265,3 +290,4 @@ export const authService = {
     return firestoreService.getAllUsers();
   },
 };
+

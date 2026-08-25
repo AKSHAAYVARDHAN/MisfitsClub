@@ -89,7 +89,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Board</span>
+            <span>Spark</span>
           </button>
 
           <button
@@ -226,7 +226,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <Sparkles className="h-4 w-4 mb-0.5" />
-            <span>Board</span>
+            <span>Spark</span>
           </button>
 
           <button

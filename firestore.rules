@@ -35,10 +35,10 @@ service cloud.firestore {
     }
 
     // =========================================================================
-    // USERS COLLECTION
+    // PRIVATE USERS COLLECTION (Owner Only - Contains Email & Private Data)
     // =========================================================================
     function isValidUser(data) {
-      return data.id is string && data.id.size() <= 128 &&
+      return (data.id is string || data.uid is string) &&
              data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
              data.email is string && data.email.size() > 0 && data.email.size() <= 120 &&
              (!('handle' in data) || (data.handle is string && data.handle.size() <= 60)) &&
@@ -46,19 +46,63 @@ service cloud.firestore {
              (!('role' in data) || (data.role is string && data.role.size() <= 120)) &&
              (!('roleEmoji' in data) || (data.roleEmoji is string && data.roleEmoji.size() <= 16)) &&
              (!('tagline' in data) || (data.tagline is string && data.tagline.size() <= 300)) &&
-             (!('bio' in data) || (data.bio is string && data.bio.size() <= 1000)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 2000)) &&
+             (!('college' in data) || (data.college is string && data.college.size() <= 150)) &&
+             (!('department' in data) || (data.department is string && data.department.size() <= 150)) &&
+             (!('year' in data) || (data.year is string && data.year.size() <= 50)) &&
+             (!('skills' in data) || (data.skills is list && data.skills.size() <= 50)) &&
              (!('location' in data) || (data.location is string && data.location.size() <= 120)) &&
              (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500)) &&
+             (!('profilePhoto' in data) || (data.profilePhoto is string && data.profilePhoto.size() <= 500)) &&
              (!('onboardingCompleted' in data) || data.onboardingCompleted is bool) &&
              (!('intents' in data) || (data.intents is list && data.intents.size() <= 20)) &&
              (!('interests' in data) || (data.interests is list && data.interests.size() <= 40)) &&
-             (!('curiousAbout' in data) || (data.curiousAbout is list && data.curiousAbout.size() <= 20));
+             (!('curiousAbout' in data) || (data.curiousAbout is list && data.curiousAbout.size() <= 20)) &&
+             (!('building' in data) || (data.building is string && data.building.size() <= 300)) &&
+             (!('learning' in data) || (data.learning is string && data.learning.size() <= 300)) &&
+             (!('openQuestion' in data) || (data.openQuestion is string && data.openQuestion.size() <= 500));
     }
 
     match /users/{userId} {
-      allow read: if true; // Publicly readable for Discover & Orb directory
-      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming()) && incoming().id == userId;
-      allow update: if isOwner(userId) && isValidId(userId) && isValidUser(incoming()) && incoming().id == userId;
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
+      allow delete: if isOwner(userId);
+    }
+
+    // =========================================================================
+    // PUBLIC PROFILES COLLECTION (Discovery - Strictly NO Emails or Secrets)
+    // =========================================================================
+    function isValidPublicProfile(data) {
+      return (data.id is string || data.uid is string) &&
+             !('email' in data) && // Enforce that private email is strictly excluded
+             !('password' in data) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             (!('handle' in data) || (data.handle is string && data.handle.size() <= 60)) &&
+             (!('role' in data) || (data.role is string && data.role.size() <= 120)) &&
+             (!('roleEmoji' in data) || (data.roleEmoji is string && data.roleEmoji.size() <= 16)) &&
+             (!('tagline' in data) || (data.tagline is string && data.tagline.size() <= 300)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 2000)) &&
+             (!('college' in data) || (data.college is string && data.college.size() <= 150)) &&
+             (!('department' in data) || (data.department is string && data.department.size() <= 150)) &&
+             (!('year' in data) || (data.year is string && data.year.size() <= 50)) &&
+             (!('skills' in data) || (data.skills is list && data.skills.size() <= 50)) &&
+             (!('location' in data) || (data.location is string && data.location.size() <= 120)) &&
+             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500)) &&
+             (!('profilePhoto' in data) || (data.profilePhoto is string && data.profilePhoto.size() <= 500)) &&
+             (!('onboardingCompleted' in data) || data.onboardingCompleted is bool) &&
+             (!('intents' in data) || (data.intents is list && data.intents.size() <= 20)) &&
+             (!('interests' in data) || (data.interests is list && data.interests.size() <= 40)) &&
+             (!('curiousAbout' in data) || (data.curiousAbout is list && data.curiousAbout.size() <= 20)) &&
+             (!('building' in data) || (data.building is string && data.building.size() <= 300)) &&
+             (!('learning' in data) || (data.learning is string && data.learning.size() <= 300)) &&
+             (!('openQuestion' in data) || (data.openQuestion is string && data.openQuestion.size() <= 500));
+    }
+
+    match /publicProfiles/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId) && isValidId(userId) && isValidPublicProfile(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidPublicProfile(incoming());
       allow delete: if isOwner(userId);
     }
 
@@ -95,9 +139,14 @@ service cloud.firestore {
     // =========================================================================
     function isValidConnection(data) {
       return data.id is string && data.id.size() <= 128 &&
-             data.status is string && (data.status == 'pending' || data.status == 'connected' || data.status == 'archived') &&
+             data.status is string && (data.status == 'pending' || data.status == 'connected' || data.status == 'declined' || data.status == 'archived') &&
+             (!('requesterId' in data) || (data.requesterId is string && data.requesterId.size() <= 128)) &&
+             (!('targetId' in data) || (data.targetId is string && data.targetId.size() <= 128)) &&
+             (!('profileId' in data) || (data.profileId is string && data.profileId.size() <= 128)) &&
+             (!('participants' in data) || (data.participants is list && data.participants.size() <= 10)) &&
              (!('introNote' in data) || (data.introNote is string && data.introNote.size() <= 1000)) &&
              (!('lastMessage' in data) || (data.lastMessage is string && data.lastMessage.size() <= 500)) &&
+             (!('lastMessageTime' in data) || (data.lastMessageTime is string && data.lastMessageTime.size() <= 64)) &&
              (!('unreadCount' in data) || data.unreadCount is number);
     }
 

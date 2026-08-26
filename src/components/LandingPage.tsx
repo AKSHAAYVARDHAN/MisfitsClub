@@ -145,9 +145,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             {/* Main Headline */}
-            <h1 className="font-editorial text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-light text-[#F5F5F0] leading-[1.04] tracking-tight">
-              Find someone <br />
-              <span className="italic font-normal">worth talking</span> to.
+            <h1 className="font-editorial text-4xl sm:text-6xl lg:text-6xl xl:text-7xl font-light text-[#F5F5F0] leading-[1.06] tracking-tight">
+              To the ones who are <br />
+              <span className="italic font-normal">built different.</span>
             </h1>
 
             {/* Subtitle */}

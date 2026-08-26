@@ -1,0 +1,327 @@
+import React, { useState, useEffect } from 'react';
+import { AppRoute } from '../context/RouterContext';
+import { UserProfile, AppNotification } from '../types';
+import { PlatformSidebar } from './PlatformSidebar';
+import { NotificationPanel } from './NotificationPanel';
+import { Bell, Menu, X, Globe, Compass, Sparkles, Layers, Users, MessageSquare, User } from 'lucide-react';
+
+interface PlatformShellProps {
+  currentPath: AppRoute;
+  onNavigate: (route: AppRoute) => void;
+  currentUser: UserProfile | null;
+  connectionsCount?: number;
+  unreadMessagesCount?: number;
+  notifications?: AppNotification[];
+  unreadNotificationsCount?: number;
+  onMarkNotificationAsRead?: (id: string) => void;
+  onMarkAllNotificationsAsRead?: () => void;
+  onNotificationClick?: (notification: AppNotification) => void;
+  isLoadingNotifications?: boolean;
+  onSignOut?: () => void;
+  children: React.ReactNode;
+}
+
+const STORAGE_KEY = 'misfits_sidebar_collapsed';
+
+export const PlatformShell: React.FC<PlatformShellProps> = ({
+  currentPath,
+  onNavigate,
+  currentUser,
+  connectionsCount = 0,
+  unreadMessagesCount = 0,
+  notifications = [],
+  unreadNotificationsCount = 0,
+  onMarkNotificationAsRead,
+  onMarkAllNotificationsAsRead,
+  onNotificationClick,
+  isLoadingNotifications = false,
+  onSignOut,
+  children,
+}) => {
+  // Sidebar collapsed state initialized from localStorage
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored === 'true';
+    }
+    return false;
+  });
+
+  // Mobile drawer state
+  const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
+
+  // Toggle collapse and persist to localStorage
+  const handleToggleCollapse = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEY, String(next));
+      }
+      return next;
+    });
+  };
+
+  const handleNotificationItemClick = (notif: AppNotification) => {
+    if (onNotificationClick) {
+      onNotificationClick(notif);
+    }
+    setIsNotificationsOpen(false);
+  };
+
+  const getSectionTitle = (path: AppRoute): string => {
+    switch (path) {
+      case '/orb': return 'ORB GLOBE';
+      case '/discover': return 'DISCOVER MEMBERS';
+      case '/board': return 'SPARK CURIOSITY';
+      case '/spaces': return 'HUB';
+      case '/connections': return 'CONNECTIONS CIRCLE';
+      case '/messages': return 'CONVERSATIONS';
+      case '/my-space': return 'MY SPACE';
+      case '/profile': return 'MY PROFILE';
+      default: return 'PLATFORM';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#080808] text-[#F2F2ED] flex flex-col font-sans-clean selection:bg-[#D4FF3F] selection:text-[#080808]">
+      
+      {/* 1. Collapsable Left Sidebar */}
+      <PlatformSidebar
+        currentPath={currentPath}
+        onNavigate={onNavigate}
+        currentUser={currentUser}
+        connectionsCount={connectionsCount}
+        unreadMessagesCount={unreadMessagesCount}
+        onSignOut={onSignOut}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={handleToggleCollapse}
+        isMobileOpen={isMobileOpen}
+        onCloseMobile={() => setIsMobileOpen(false)}
+      />
+
+      {/* Mobile Sidebar Overlay Backdrop */}
+      {isMobileOpen && (
+        <div
+          id="sidebar-mobile-backdrop"
+          onClick={() => setIsMobileOpen(false)}
+          className="fixed inset-0 z-30 bg-black/70 backdrop-blur-sm md:hidden transition-opacity"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* 2. Platform Main Content Area (Offset by sidebar width on desktop) */}
+      <div
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${
+          isCollapsed ? 'md:ml-20' : 'md:ml-64'
+        }`}
+      >
+        {/* Platform Header Bar */}
+        <header className="sticky top-0 z-20 h-16 border-b border-[#F5F5F0]/10 bg-[#0B0B0C]/90 backdrop-blur-md px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+          
+          {/* Left: Mobile Toggle & Context Breadcrumb */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Mobile Hamburger Toggle */}
+            <button
+              id="platform-mobile-menu-toggle-btn"
+              onClick={() => setIsMobileOpen(!isMobileOpen)}
+              className="md:hidden p-2 border border-[#242424] text-[#8A8A8A] hover:text-[#F5F5F0] hover:border-[#D4FF3F]/50 bg-[#121214] focus:outline-none"
+              aria-label="Toggle navigation menu"
+            >
+              {isMobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
+
+            {/* Platform Brand / Section Breadcrumb */}
+            <div className="flex items-center gap-2 font-mono-code text-xs">
+              <button
+                id="platform-header-logo-btn"
+                onClick={() => onNavigate('/orb')}
+                className="font-bold text-[#F5F5F0] hover:text-[#D4FF3F] transition-colors focus:outline-none hidden sm:inline-block"
+                title="Go to Orb"
+              >
+                MISFITS CLUB
+              </button>
+              <span className="text-[#444] hidden sm:inline-block">/</span>
+              <span className="text-[#D4FF3F] font-bold tracking-wider uppercase text-[11px] sm:text-xs">
+                {getSectionTitle(currentPath)}
+              </span>
+            </div>
+          </div>
+
+          {/* Right: Live online status, Notifications & Profile Badge */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Online Members Indicator */}
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-[#121214] border border-[#222]">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D4FF3F] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#D4FF3F]"></span>
+              </span>
+              <span className="font-mono-code text-[10px] text-[#8A8A8A] uppercase tracking-wider whitespace-nowrap">
+                1,420 online
+              </span>
+            </div>
+
+            {/* Notifications Dropdown */}
+            <div className="relative">
+              <button
+                id="platform-notification-bell-btn"
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className={`relative p-2 rounded-none border transition-all focus:outline-none ${
+                  isNotificationsOpen
+                    ? 'border-[#D4FF3F] text-[#D4FF3F] bg-[#D4FF3F]/10'
+                    : unreadNotificationsCount > 0
+                    ? 'border-[#333] text-[#F5F5F0] hover:border-[#D4FF3F]/60 bg-[#101010]'
+                    : 'border-[#242424] text-[#8A8A8A] hover:text-[#F5F5F0] hover:border-[#444] bg-[#0E0E10]'
+                }`}
+                title="Notifications"
+                aria-label="View notifications"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadNotificationsCount > 0 && (
+                  <span
+                    id="platform-unread-notifications-badge"
+                    className="absolute -top-1.5 -right-1.5 bg-[#D4FF3F] text-[#080808] text-[9px] font-mono-code font-bold px-1 py-0.2 rounded-none min-w-[15px] h-[15px] flex items-center justify-center shadow-md"
+                  >
+                    {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Dropdown Panel */}
+              <NotificationPanel
+                isOpen={isNotificationsOpen}
+                onClose={() => setIsNotificationsOpen(false)}
+                notifications={notifications}
+                unreadCount={unreadNotificationsCount}
+                onMarkAsRead={(id) => onMarkNotificationAsRead && onMarkNotificationAsRead(id)}
+                onMarkAllAsRead={() => onMarkAllNotificationsAsRead && onMarkAllNotificationsAsRead()}
+                onNotificationClick={handleNotificationItemClick}
+                isLoading={isLoadingNotifications}
+              />
+            </div>
+
+            {/* User Avatar header shortcut */}
+            {currentUser && (
+              <button
+                id="platform-header-avatar-btn"
+                onClick={() => onNavigate('/profile')}
+                className={`flex items-center gap-2 p-1 border transition-all focus:outline-none ${
+                  currentPath === '/profile'
+                    ? 'border-[#D4FF3F] bg-[#D4FF3F]/10'
+                    : 'border-[#242424] hover:border-[#D4FF3F]/60 bg-[#101010]'
+                }`}
+                title={`Logged in as ${currentUser.name}`}
+              >
+                <img
+                  src={currentUser.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
+                  alt={currentUser.name}
+                  referrerPolicy="no-referrer"
+                  className="h-6 w-6 rounded-sm object-cover border border-[#333]"
+                />
+                <span className="hidden sm:inline-block text-xs font-mono-code text-[#E5E5E0] pr-1.5 font-medium">
+                  {currentUser.name.split(' ')[0]}
+                </span>
+              </button>
+            )}
+          </div>
+        </header>
+
+        {/* Main View Content */}
+        <main className="flex-1 pb-20 md:pb-10 overflow-x-hidden">
+          {children}
+        </main>
+      </div>
+
+      {/* 3. Mobile Bottom Navigation Bar (< md screens) */}
+      <nav
+        id="platform-mobile-bottom-nav"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-[#F5F5F0]/10 bg-[#0B0B0C]/95 backdrop-blur-lg px-2 py-1.5"
+      >
+        <div className="grid grid-cols-7 gap-1 text-center">
+          <button
+            id="mobile-nav-orb"
+            onClick={() => onNavigate('/orb')}
+            className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
+              currentPath === '/orb' ? 'text-[#D4FF3F] font-bold' : 'text-[#8A8A8A]'
+            }`}
+          >
+            <Globe className="h-4 w-4 mb-0.5" />
+            <span>Orb</span>
+          </button>
+
+          <button
+            id="mobile-nav-discover"
+            onClick={() => onNavigate('/discover')}
+            className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
+              currentPath === '/discover' ? 'text-[#D4FF3F] font-bold' : 'text-[#8A8A8A]'
+            }`}
+          >
+            <Compass className="h-4 w-4 mb-0.5" />
+            <span>Find</span>
+          </button>
+
+          <button
+            id="mobile-nav-spark"
+            onClick={() => onNavigate('/board')}
+            className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
+              currentPath === '/board' ? 'text-[#D4FF3F] font-bold' : 'text-[#8A8A8A]'
+            }`}
+          >
+            <Sparkles className="h-4 w-4 mb-0.5" />
+            <span>Spark</span>
+          </button>
+
+          <button
+            id="mobile-nav-spaces"
+            onClick={() => onNavigate('/spaces')}
+            className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
+              currentPath === '/spaces' ? 'text-[#D4FF3F] font-bold' : 'text-[#8A8A8A]'
+            }`}
+          >
+            <Layers className="h-4 w-4 mb-0.5" />
+            <span>Hub</span>
+          </button>
+
+          <button
+            id="mobile-nav-connections"
+            onClick={() => onNavigate('/connections')}
+            className={`relative flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
+              currentPath === '/connections' ? 'text-[#D4FF3F] font-bold' : 'text-[#8A8A8A]'
+            }`}
+          >
+            <Users className="h-4 w-4 mb-0.5" />
+            <span>Circle</span>
+            {connectionsCount > 0 && (
+              <span className="absolute top-0 right-2 h-1.5 w-1.5 rounded-full bg-[#F5F5F0]"></span>
+            )}
+          </button>
+
+          <button
+            id="mobile-nav-messages"
+            onClick={() => onNavigate('/messages')}
+            className={`relative flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
+              currentPath === '/messages' ? 'text-[#D4FF3F] font-bold' : 'text-[#8A8A8A]'
+            }`}
+          >
+            <MessageSquare className="h-4 w-4 mb-0.5" />
+            <span>Chat</span>
+            {unreadMessagesCount > 0 && (
+              <span className="absolute top-0 right-2 h-2 w-2 rounded-full bg-[#D4FF3F]"></span>
+            )}
+          </button>
+
+          <button
+            id="mobile-nav-profile"
+            onClick={() => onNavigate('/profile')}
+            className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
+              currentPath === '/profile' ? 'text-[#D4FF3F] font-bold' : 'text-[#8A8A8A]'
+            }`}
+          >
+            <User className="h-4 w-4 mb-0.5" />
+            <span>Profile</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  );
+};

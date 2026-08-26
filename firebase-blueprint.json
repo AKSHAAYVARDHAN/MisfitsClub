@@ -382,6 +382,208 @@
       },
       "required": ["id", "recipientId", "type", "title", "message", "referenceId", "read", "createdAt"]
     },
+    "Space": {
+      "title": "Space",
+      "description": "Interest-based community space for misfits to gather",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique Space identifier (space-*)",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Space title",
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed space mission and scope",
+          "maxLength": 2000
+        },
+        "category": {
+          "type": "string",
+          "description": "Space thematic category",
+          "maxLength": 50
+        },
+        "tags": {
+          "type": "array",
+          "description": "Exploration tags"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Host member UID",
+          "maxLength": 128
+        },
+        "ownerName": {
+          "type": "string",
+          "description": "Host member display name",
+          "maxLength": 100
+        },
+        "ownerAvatar": {
+          "type": "string",
+          "description": "Host avatar URL",
+          "maxLength": 500
+        },
+        "ownerRole": {
+          "type": "string",
+          "description": "Host role descriptor",
+          "maxLength": 120
+        },
+        "profilePhoto": {
+          "type": "string",
+          "description": "Hub display avatar or banner photo URL",
+          "maxLength": 500000
+        },
+        "memberIds": {
+          "type": "array",
+          "description": "List of joined member UIDs"
+        },
+        "memberCount": {
+          "type": "number",
+          "description": "Total number of members"
+        },
+        "visibility": {
+          "type": "string",
+          "description": "Space visibility ('public' or 'private')",
+          "enum": ["public", "private"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "name", "description", "category", "ownerId", "memberIds", "memberCount", "visibility"]
+    },
+    "SpacePost": {
+      "title": "SpacePost",
+      "description": "Discussion post within a Space",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique post ID",
+          "maxLength": 128
+        },
+        "spaceId": {
+          "type": "string",
+          "description": "Parent Space ID",
+          "maxLength": 128
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Post author UID",
+          "maxLength": 128
+        },
+        "type": {
+          "type": "string",
+          "description": "Post category type",
+          "enum": ["Discussion", "Question", "Idea"]
+        },
+        "title": {
+          "type": "string",
+          "description": "Optional post title",
+          "maxLength": 200
+        },
+        "content": {
+          "type": "string",
+          "description": "Post narrative content",
+          "maxLength": 5000
+        },
+        "commentCount": {
+          "type": "number",
+          "description": "Total number of replies"
+        },
+        "reactionCount": {
+          "type": "number",
+          "description": "Total number of appreciations"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "spaceId", "authorId", "type", "content", "createdAt", "updatedAt"]
+    },
+    "SpaceComment": {
+      "title": "SpaceComment",
+      "description": "Comment reply to a discussion post",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique comment ID",
+          "maxLength": 128
+        },
+        "postId": {
+          "type": "string",
+          "description": "Parent discussion post ID",
+          "maxLength": 128
+        },
+        "spaceId": {
+          "type": "string",
+          "description": "Parent Space ID",
+          "maxLength": 128
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Comment author UID",
+          "maxLength": 128
+        },
+        "content": {
+          "type": "string",
+          "description": "Reply content text",
+          "maxLength": 3000
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "postId", "spaceId", "authorId", "content", "createdAt", "updatedAt"]
+    },
+    "SpaceReaction": {
+      "title": "SpaceReaction",
+      "description": "Appreciation reaction to a discussion post",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Member UID who reacted",
+          "maxLength": 128
+        },
+        "type": {
+          "type": "string",
+          "description": "Reaction type",
+          "enum": ["appreciate"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["uid", "type", "createdAt"]
+    },
     "Conversation": {
       "title": "Conversation",
       "description": "Direct dialogue channel between two connected members",
@@ -470,6 +672,22 @@
     "/notifications/{notificationId}": {
       "schema": "Notification",
       "description": "User notifications"
+    },
+    "/spaces/{spaceId}": {
+      "schema": "Space",
+      "description": "Misfits Club Spaces collection"
+    },
+    "/spaces/{spaceId}/posts/{postId}": {
+      "schema": "SpacePost",
+      "description": "Discussion posts inside a space"
+    },
+    "/spaces/{spaceId}/posts/{postId}/comments/{commentId}": {
+      "schema": "SpaceComment",
+      "description": "Comments and replies on a discussion post"
+    },
+    "/spaces/{spaceId}/posts/{postId}/reactions/{uid}": {
+      "schema": "SpaceReaction",
+      "description": "Appreciation reactions on a discussion post"
     }
   }
 }

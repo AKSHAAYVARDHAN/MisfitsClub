@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  ActiveTab, 
   UserProfile, 
   PublicProfile,
   Connection, 
   ChatMessage, 
   CuriousBoardPost, 
-  ConnectionIntent,
   AppNotification
 } from './types';
 import { 
@@ -14,7 +12,6 @@ import {
   SAMPLE_PROFILES, 
   SAMPLE_BOARD_POSTS 
 } from './data/mockData';
-import { authService } from './services/authService';
 import { firestoreService } from './services/firestoreService';
 import { connectionService, getOtherParticipantId } from './services/connectionService';
 import { notificationService } from './services/notificationService';
@@ -22,6 +19,7 @@ import { messageService } from './services/messageService';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { RouterProvider, useRouter, AppRoute } from './context/RouterContext';
 import { Navbar } from './components/Navbar';
+import { PlatformShell } from './components/PlatformShell';
 import { LandingPage } from './components/LandingPage';
 import { OrbView } from './components/OrbView';
 import { OnboardingFlow } from './components/OnboardingFlow';
@@ -31,6 +29,8 @@ import { MemberProfileModal } from './components/MemberProfileModal';
 import { MessagesView } from './components/MessagesView';
 import { ConnectionsView } from './components/ConnectionsView';
 import { ExploreBoardView } from './components/ExploreBoardView';
+import { SpacesView } from './components/SpacesView';
+import { MySpaceView } from './components/MySpaceView';
 import { ProfileView } from './components/ProfileView';
 import { SignInView } from './components/SignInView';
 import { SignUpView } from './components/SignUpView';
@@ -168,6 +168,7 @@ function MainApp() {
 
   const [activeConnectionId, setActiveConnectionId] = useState<string>('conn-maya');
   const [boardPosts, setBoardPosts] = useState<CuriousBoardPost[]>(SAMPLE_BOARD_POSTS);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
 
   // Keep ref for connections to avoid re-triggering effects on state updates
   const connectionsRef = useRef<Connection[]>(connections);
@@ -175,13 +176,10 @@ function MainApp() {
 
   // Synchronize live members directory from Firestore.
   // IMPORTANT: Only subscribe after Firebase Auth has fully resolved.
-  // Subscribing while isLoading=true means request.auth is null in Firestore rules
-  // → publicProfiles read gets permission-denied even though rules require isSignedIn().
   useEffect(() => {
-    if (isLoading) return; // Wait for auth state to resolve before subscribing
+    if (isLoading) return;
     const currentUserId = user?.uid || user?.id;
     if (!currentUserId) {
-      // Unauthenticated: keep SAMPLE_PROFILES, do NOT attempt a Firestore read
       return;
     }
     const unsub = firestoreService.subscribeUsers((liveUsers) => {
@@ -209,7 +207,6 @@ function MainApp() {
 
     const unsub = connectionService.subscribeUserConnections(currentUserId, (liveConns) => {
       if (liveConns && liveConns.length > 0) {
-        // Merge with initial sample connections if user has few to provide immediate rich state
         const liveIds = new Set(liveConns.map((c) => c.id));
         const merged = [...liveConns];
         for (const sample of INITIAL_SAMPLE_CONNECTIONS) {
@@ -280,9 +277,6 @@ function MainApp() {
     const targetUserId = getOtherParticipantId(activeConn, currentUserId);
     if (!targetUserId) return;
 
-    // IMPORTANT: Skip all Firestore operations for sample/demo profile IDs (p-maya, p-elena etc.).
-    // These are not real Firebase users — attempting Firestore reads/writes for them
-    // produces permission-denied errors. Sample connections remain interactive via local state only.
     if (targetUserId.startsWith('p-') || targetUserId === 'sample-target') return;
 
     let conversationId: string;
@@ -292,7 +286,6 @@ function MainApp() {
       return;
     }
 
-    // If on messages page, clear unread count for this conversation if not already cleared
     if (currentPath === '/messages') {
       messageService.markConversationAsRead(conversationId, currentUserId);
       setConnections((prev) => {
@@ -307,7 +300,6 @@ function MainApp() {
     const unsub = messageService.subscribeConversationMessages(conversationId, (liveMsgs) => {
       if (liveMsgs && liveMsgs.length > 0) {
         setMessages((prev) => {
-          // Merge live messages for this conversation with messages from other conversations
           const otherMsgs = prev.filter(
             (m) => m.connectionId !== activeConnectionId && m.conversationId !== conversationId
           );
@@ -363,10 +355,8 @@ function MainApp() {
   };
 
   const handleNotificationClick = async (notif: AppNotification) => {
-    // 1. Mark as read immediately
     await handleMarkNotificationAsRead(notif.id);
 
-    // 2. Navigate based on notification category
     if (notif.type === 'CONNECTION_REQUEST') {
       setConnectionsInitialTab('received');
       navigate('/connections');
@@ -398,64 +388,6 @@ function MainApp() {
       navigate('/messages');
     } else {
       navigate('/connections');
-    }
-  };
-
-  // Map route to activeTab
-  const getActiveTabFromPath = (path: AppRoute): ActiveTab => {
-    switch (path) {
-      case '/': return 'landing';
-      case '/signin': return 'signin';
-      case '/signup': return 'signup';
-      case '/orb': return 'orb';
-      case '/discover': return 'discover';
-      case '/board': return 'board';
-      case '/connections': return 'connections';
-      case '/messages': return 'messages';
-      case '/profile': return 'profile';
-      case '/onboarding': return 'onboarding';
-      default: return 'landing';
-    }
-  };
-
-  const activeTab = getActiveTabFromPath(currentPath);
-
-  // Map tab clicks to route navigation
-  const handleTabChange = (tab: ActiveTab) => {
-    switch (tab) {
-      case 'landing':
-        navigate('/');
-        break;
-      case 'signin':
-        navigate('/signin');
-        break;
-      case 'signup':
-        navigate('/signup');
-        break;
-      case 'orb':
-        navigate('/orb');
-        break;
-      case 'discover':
-        navigate('/discover');
-        break;
-      case 'board':
-      case 'explore':
-        navigate('/board');
-        break;
-      case 'connections':
-        navigate('/connections');
-        break;
-      case 'messages':
-        navigate('/messages');
-        break;
-      case 'profile':
-        navigate('/profile');
-        break;
-      case 'onboarding':
-        navigate('/onboarding');
-        break;
-      default:
-        navigate('/');
     }
   };
 
@@ -496,7 +428,6 @@ function MainApp() {
     const currentUserId = user?.uid || user?.id || 'current-user';
     const targetUserId = target.uid || target.id;
 
-    // Check if a connection already exists
     const existingConn = connections.find(
       (c) =>
         c.profileId === targetUserId ||
@@ -514,7 +445,6 @@ function MainApp() {
 
     const currentUserObj = user || INITIAL_USER;
     
-    // Create / send in Firestore via connectionService
     try {
       const createdConn = await connectionService.sendConnectionRequest({
         requester: currentUserObj,
@@ -531,7 +461,6 @@ function MainApp() {
         isStarterPrompt: true,
       };
 
-      // Optimistic local state update
       setConnections((prev) => [
         createdConn,
         ...prev.filter((c) => c.id !== createdConn.id),
@@ -554,7 +483,6 @@ function MainApp() {
   // Accept Connection Request
   const handleAcceptConnection = async (connectionId: string) => {
     const currentUserId = user?.uid || user?.id || 'current-user';
-    // Optimistic update
     setConnections((prev) =>
       prev.map((c) =>
         c.id === connectionId
@@ -611,7 +539,6 @@ function MainApp() {
     const currentUserId = user?.uid || user?.id || 'currentUser';
     const conn = connections.find((c) => c.id === connectionId);
     
-    // Only users who are connected can message each other
     if (!conn) {
       console.warn('Cannot send message: conversation connection not found.');
       return;
@@ -627,7 +554,6 @@ function MainApp() {
       return;
     }
 
-    // 1. Optimistic message creation
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       conversationId,
@@ -647,9 +573,6 @@ function MainApp() {
       )
     );
 
-    // 2. Persist to Firestore subcollection & dispatch notification.
-    // Only write to Firestore for real Firebase users — sample/demo profile IDs (p-*, sample-target)
-    // are not real Firestore participants and will always produce permission-denied errors.
     if (!targetUserId.startsWith('p-') && targetUserId !== 'sample-target') {
       try {
         await messageService.sendMessage({
@@ -663,12 +586,9 @@ function MainApp() {
         });
       } catch (e: any) {
         console.error('Error sending message to Firestore:', e);
-        const errorMsg = e?.message || 'Failed to send message';
-        console.warn('Firestore message persistence error:', errorMsg);
       }
     }
 
-    // 3. Simulated reply from sample profile for engaging interactive testing
     if (conn.profileId && conn.profileId.startsWith('p-')) {
       setTimeout(async () => {
         const replies = [
@@ -735,207 +655,257 @@ function MainApp() {
     );
   }
 
+  // Count unread notifications & messages
+  const unreadMessagesCount = connections.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  const activeConnectionsCount = connections.filter((c) => c.status === 'connected').length;
+  const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
+
+  const isPublicView = currentPath === '/' || currentPath === '/signin' || currentPath === '/signup';
+  const isOnboardingView = currentPath === '/onboarding';
+
   return (
     <div className="min-h-screen bg-[#080808] text-[#F2F2ED] flex flex-col font-sans-clean selection:bg-[#D4FF3F] selection:text-[#080808]">
       
-      {/* Top Persistent Navigation */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={handleTabChange}
-        currentUser={user}
-        onOpenOnboarding={() => {
-          if (user) {
-            navigate('/onboarding');
-          } else {
-            navigate('/signup');
-          }
-        }}
-        onOpenSignIn={() => navigate('/signin')}
-        onSignOut={handleSignOut}
-        unreadCount={connections.reduce((sum, c) => sum + (c.unreadCount || 0), 0)}
-        connectionsCount={connections.filter((c) => c.status === 'connected').length}
-        notifications={notifications}
-        unreadNotificationsCount={notifications.filter((n) => !n.read).length}
-        onMarkNotificationAsRead={handleMarkNotificationAsRead}
-        onMarkAllNotificationsAsRead={handleMarkAllNotificationsAsRead}
-        onNotificationClick={handleNotificationClick}
-        isLoadingNotifications={isLoadingNotifications}
-      />
+      {/* 1. PUBLIC MARKETING & AUTHENTICATION VIEWS (Signed Out) */}
+      {isPublicView && (
+        <div className="flex-1 flex flex-col">
+          {/* Public Navbar shown ONLY for Landing Page */}
+          {currentPath === '/' && (
+            <Navbar
+              onNavigateHome={() => navigate('/')}
+              onOpenSignIn={() => navigate('/signin')}
+              onOpenSignUp={() => navigate('/signup')}
+              onEnterOrb={() => navigate('/signin')}
+            />
+          )}
 
-      {/* Main View Router */}
-      <main className="flex-1">
-        
-        {/* Sign In View */}
-        {currentPath === '/signin' && (
-          <SignInView
-            onSuccess={handleAuthSuccess}
-            onNavigateToSignUp={() => navigate('/signup')}
-            onClose={() => navigate('/')}
-          />
-        )}
+          <main className="flex-1">
+            {/* Public Landing Page */}
+            {currentPath === '/' && (
+              <LandingPage
+                currentUser={null}
+                allProfiles={profiles}
+                onStartOnboarding={() => navigate('/signup')}
+                onEnterOrb={() => navigate('/signin')}
+                onExplore={() => navigate('/signin')}
+                onSignIn={() => navigate('/signin')}
+                onOpenMemberProfile={(profile) => setSelectedMemberProfile(profile as PublicProfile)}
+                onSelectProfile={(profile) => setSelectedMemberProfile(profile as PublicProfile)}
+                onSelectIntent={(_intent) => navigate('/signin')}
+              />
+            )}
 
-        {/* Sign Up View */}
-        {currentPath === '/signup' && (
-          <SignUpView
-            onSuccess={handleAuthSuccess}
-            onNavigateToSignIn={() => navigate('/signin')}
-            onClose={() => navigate('/')}
-          />
-        )}
+            {/* Sign In View */}
+            {currentPath === '/signin' && (
+              <SignInView
+                onSuccess={handleAuthSuccess}
+                onNavigateToSignUp={() => navigate('/signup')}
+                onClose={() => navigate('/')}
+              />
+            )}
 
-        {/* Dedicated Onboarding Flow */}
-        {currentPath === '/onboarding' && (
+            {/* Sign Up View */}
+            {currentPath === '/signup' && (
+              <SignUpView
+                onSuccess={handleAuthSuccess}
+                onNavigateToSignIn={() => navigate('/signin')}
+                onClose={() => navigate('/')}
+              />
+            )}
+          </main>
+        </div>
+      )}
+
+      {/* 2. ONBOARDING FLOW */}
+      {isOnboardingView && (
+        <main className="flex-1">
           <OnboardingFlow
             currentUser={user || INITIAL_USER}
             onComplete={handleCompleteOnboarding}
             onCancel={() => navigate(user?.onboardingCompleted ? '/orb' : '/')}
           />
-        )}
+        </main>
+      )}
 
-        {/* Public / Landing Page */}
-        {currentPath === '/' && (
-          <LandingPage
-            currentUser={user}
-            allProfiles={profiles}
-            onStartOnboarding={() => {
-              if (user) {
-                if (user.onboardingCompleted === false) {
-                  navigate('/onboarding');
-                } else {
-                  navigate('/discover');
-                }
-              } else {
-                navigate('/signup');
-              }
-            }}
-            onEnterOrb={() => {
-              if (user) {
-                navigate('/orb');
-              } else {
-                navigate('/signin');
-              }
-            }}
-            onExplore={() => {
-              navigate('/discover');
-            }}
-            onSignIn={() => navigate('/signin')}
-            onOpenMemberProfile={(profile) => setSelectedMemberProfile(profile as PublicProfile)}
-            onSelectProfile={(profile) => setSelectedMemberProfile(profile as PublicProfile)}
-            onSelectIntent={(_intent) => {
-              navigate('/discover');
-            }}
-          />
-        )}
-
-        {/* Interactive 3D Orbit View */}
-        {currentPath === '/orb' && (
-          <OrbView
-            profiles={profiles}
-            allProfiles={profiles}
-            connections={connections}
-            currentUser={user || INITIAL_USER}
-            onConnect={handleOpenConnectModal}
-            onExplore={() => navigate('/discover')}
-            onOpenChatWithProfile={(profileId) => {
-              const matchedConn = connections.find(
-                (c) => c.profileId === profileId || c.profile?.id === profileId || c.targetId === profileId
-              );
-              if (matchedConn) {
-                setActiveConnectionId(matchedConn.id);
-                navigate('/messages');
-              } else {
-                const p = profiles.find((prof) => prof.id === profileId);
-                if (p) {
-                  handleOpenConnectModal(p as PublicProfile);
-                } else {
+      {/* 3. AUTHENTICATED PLATFORM SHELL (Signed In) */}
+      {!isPublicView && !isOnboardingView && (
+        <PlatformShell
+          currentPath={currentPath}
+          onNavigate={(route) => navigate(route)}
+          currentUser={user}
+          connectionsCount={activeConnectionsCount}
+          unreadMessagesCount={unreadMessagesCount}
+          notifications={notifications}
+          unreadNotificationsCount={unreadNotificationsCount}
+          onMarkNotificationAsRead={handleMarkNotificationAsRead}
+          onMarkAllNotificationsAsRead={handleMarkAllNotificationsAsRead}
+          onNotificationClick={handleNotificationClick}
+          isLoadingNotifications={isLoadingNotifications}
+          onSignOut={handleSignOut}
+        >
+          {/* Interactive 3D Orbit View */}
+          {currentPath === '/orb' && (
+            <OrbView
+              profiles={profiles}
+              allProfiles={profiles}
+              connections={connections}
+              currentUser={user || INITIAL_USER}
+              onConnect={handleOpenConnectModal}
+              onExplore={() => navigate('/discover')}
+              onOpenChatWithProfile={(profileId) => {
+                const matchedConn = connections.find(
+                  (c) => c.profileId === profileId || c.profile?.id === profileId || c.targetId === profileId
+                );
+                if (matchedConn) {
+                  setActiveConnectionId(matchedConn.id);
                   navigate('/messages');
+                } else {
+                  const p = profiles.find((prof) => prof.id === profileId);
+                  if (p) {
+                    handleOpenConnectModal(p as PublicProfile);
+                  } else {
+                    navigate('/messages');
+                  }
                 }
-              }
-            }}
-            onSelectProfile={(profile) => setSelectedMemberProfile(profile as PublicProfile)}
-            onOpenOnboarding={() => navigate('/onboarding')}
-          />
-        )}
+              }}
+              onSelectProfile={(profile) => setSelectedMemberProfile(profile as PublicProfile)}
+              onOpenOnboarding={() => navigate('/onboarding')}
+            />
+          )}
 
-        {/* Discovery & Member Directory View */}
-        {currentPath === '/discover' && (
-          <DiscoverView
-            profiles={profiles}
-            currentUser={user || INITIAL_USER}
-            connections={connections}
-            isLoading={isLoadingProfiles}
-            onConnect={handleOpenConnectModal}
-            onOpenChat={(connId) => {
-              setActiveConnectionId(connId);
-              navigate('/messages');
-            }}
-            onAcceptRequest={handleAcceptConnection}
-            onDeclineRequest={handleDeclineConnection}
-            onCancelRequest={handleCancelConnectionRequest}
-            onRemoveConnection={handleRemoveConnection}
-            onOpenOnboarding={() => navigate('/onboarding')}
-            bookmarkedIds={bookmarkedIds}
-            onToggleBookmark={handleToggleBookmark}
-          />
-        )}
+          {/* Discovery & Member Directory View */}
+          {currentPath === '/discover' && (
+            <DiscoverView
+              profiles={profiles}
+              currentUser={user || INITIAL_USER}
+              connections={connections}
+              isLoading={isLoadingProfiles}
+              onConnect={handleOpenConnectModal}
+              onOpenChat={(connId) => {
+                setActiveConnectionId(connId);
+                navigate('/messages');
+              }}
+              onAcceptRequest={handleAcceptConnection}
+              onDeclineRequest={handleDeclineConnection}
+              onCancelRequest={handleCancelConnectionRequest}
+              onRemoveConnection={handleRemoveConnection}
+              onOpenOnboarding={() => navigate('/onboarding')}
+              bookmarkedIds={bookmarkedIds}
+              onToggleBookmark={handleToggleBookmark}
+            />
+          )}
 
-        {/* Explore / Curiosity Spark Board View */}
-        {currentPath === '/board' && (
-          <ExploreBoardView
-            posts={boardPosts}
-            onAddPost={handleAddBoardPost}
-            currentUser={user || INITIAL_USER}
-            onConnectWithAuthor={handleConnectWithBoardAuthor}
-            onOpenOnboarding={() => navigate('/onboarding')}
-          />
-        )}
+          {/* Spark Curiosity Board View */}
+          {currentPath === '/board' && (
+            <ExploreBoardView
+              posts={boardPosts}
+              onAddPost={handleAddBoardPost}
+              currentUser={user || INITIAL_USER}
+              onConnectWithAuthor={handleConnectWithBoardAuthor}
+              onOpenOnboarding={() => navigate('/onboarding')}
+            />
+          )}
 
-        {/* Connections / Circle View */}
-        {currentPath === '/connections' && (
-          <ConnectionsView
-            connections={connections}
-            currentUser={user || INITIAL_USER}
-            initialTab={connectionsInitialTab}
-            onOpenChat={(connId) => {
-              setActiveConnectionId(connId);
-              navigate('/messages');
-            }}
-            onExplore={() => navigate('/discover')}
-            onOpenOrb={() => navigate('/orb')}
-            onAcceptRequest={handleAcceptConnection}
-            onDeclineRequest={handleDeclineConnection}
-            onCancelRequest={handleCancelConnectionRequest}
-            onRemoveConnection={handleRemoveConnection}
-            onSelectProfile={(p) => setSelectedMemberProfile(p as PublicProfile)}
-          />
-        )}
+          {/* Spaces View */}
+          {currentPath === '/spaces' && (
+            <SpacesView
+              currentUser={user || INITIAL_USER}
+              selectedSpaceId={selectedSpaceId}
+              onSelectSpaceId={(id) => setSelectedSpaceId(id)}
+              onSelectMember={(member) => setSelectedMemberProfile(member)}
+              onStartMessage={(targetUid) => {
+                const matchedConn = connections.find(
+                  (c) => c.profileId === targetUid || c.profile?.id === targetUid || c.targetId === targetUid
+                );
+                if (matchedConn) {
+                  setActiveConnectionId(matchedConn.id);
+                  navigate('/messages');
+                } else {
+                  const p = profiles.find((prof) => prof.id === targetUid);
+                  if (p) {
+                    handleOpenConnectModal(p as PublicProfile);
+                  } else {
+                    navigate('/messages');
+                  }
+                }
+              }}
+            />
+          )}
 
-        {/* Intimate Messages View */}
-        {currentPath === '/messages' && (
-          <MessagesView
-            connections={connections.filter((c) => c.status === 'connected')}
-            activeConnectionId={activeConnectionId}
-            onSelectConnection={(id) => setActiveConnectionId(id)}
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            currentUser={user || INITIAL_USER}
-            onExplore={() => navigate('/discover')}
-          />
-        )}
+          {/* My Space Personal Dashboard View */}
+          {currentPath === '/my-space' && (
+            <MySpaceView
+              currentUser={user || INITIAL_USER}
+              connections={connections}
+              onOpenChat={(connId) => {
+                setActiveConnectionId(connId);
+                navigate('/messages');
+              }}
+              onSelectProfile={(profile) => setSelectedMemberProfile(profile as PublicProfile)}
+              onOpenSpace={(spaceId) => {
+                setSelectedSpaceId(spaceId);
+                navigate('/spaces');
+              }}
+              onExploreMembers={() => navigate('/discover')}
+              onExploreSpaces={() => {
+                setSelectedSpaceId(null);
+                navigate('/spaces');
+              }}
+              onOpenSpark={() => navigate('/board')}
+              onAcceptRequest={handleAcceptConnection}
+              onDeclineRequest={handleDeclineConnection}
+              onCancelRequest={handleCancelConnectionRequest}
+              onRemoveConnection={handleRemoveConnection}
+            />
+          )}
 
-        {/* Profile View */}
-        {currentPath === '/profile' && (
-          <ProfileView
-            currentUser={user || INITIAL_USER}
-            onUpdateProfile={async (updated) => {
-              await updateUser(updated);
-            }}
-            onOpenOnboarding={() => navigate('/onboarding')}
-            onExplore={() => navigate('/discover')}
-            onSignOut={handleSignOut}
-          />
-        )}
-      </main>
+          {/* Connections / Circle View */}
+          {currentPath === '/connections' && (
+            <ConnectionsView
+              connections={connections}
+              currentUser={user || INITIAL_USER}
+              initialTab={connectionsInitialTab}
+              onOpenChat={(connId) => {
+                setActiveConnectionId(connId);
+                navigate('/messages');
+              }}
+              onExplore={() => navigate('/discover')}
+              onOpenOrb={() => navigate('/orb')}
+              onAcceptRequest={handleAcceptConnection}
+              onDeclineRequest={handleDeclineConnection}
+              onCancelRequest={handleCancelConnectionRequest}
+              onRemoveConnection={handleRemoveConnection}
+              onSelectProfile={(p) => setSelectedMemberProfile(p as PublicProfile)}
+            />
+          )}
+
+          {/* Intimate Messages View */}
+          {currentPath === '/messages' && (
+            <MessagesView
+              connections={connections.filter((c) => c.status === 'connected')}
+              activeConnectionId={activeConnectionId}
+              onSelectConnection={(id) => setActiveConnectionId(id)}
+              messages={messages}
+              onSendMessage={handleSendMessage}
+              currentUser={user || INITIAL_USER}
+              onExplore={() => navigate('/discover')}
+            />
+          )}
+
+          {/* Profile View */}
+          {currentPath === '/profile' && (
+            <ProfileView
+              currentUser={user || INITIAL_USER}
+              onUpdateProfile={async (updated) => {
+                await updateUser(updated);
+              }}
+              onOpenOnboarding={() => navigate('/onboarding')}
+              onExplore={() => navigate('/discover')}
+              onSignOut={handleSignOut}
+            />
+          )}
+        </PlatformShell>
+      )}
 
       {/* Public Member Profile Dedicated View Modal */}
       <MemberProfileModal

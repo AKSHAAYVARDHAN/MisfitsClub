@@ -8,8 +8,10 @@ export type AppRoute =
   | '/orb'
   | '/discover'
   | '/board'
+  | '/spaces'
   | '/connections'
   | '/messages'
+  | '/my-space'
   | '/profile'
   | '/onboarding';
 
@@ -29,9 +31,11 @@ function normalizePath(rawPath: string): AppRoute {
   if (path === '/signup' || path === '/register' || path === '/join') return '/signup';
   if (path === '/orb') return '/orb';
   if (path === '/discover') return '/discover';
-  if (path === '/board' || path === '/explore') return '/board';
+  if (path === '/board' || path === '/explore' || path === '/spark') return '/board';
+  if (path.startsWith('/spaces')) return '/spaces';
   if (path === '/connections' || path === '/circle') return '/connections';
   if (path === '/messages' || path === '/chat') return '/messages';
+  if (path === '/my-space' || path === '/myspace' || path === '/my_space') return '/my-space';
   if (path === '/profile') return '/profile';
   if (path === '/onboarding') return '/onboarding';
   
@@ -84,7 +88,6 @@ export const RouterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     if (isLoading) return;
 
     const publicRoutes: AppRoute[] = ['/', '/signin', '/signup'];
-    const authenticatedAppRoutes: AppRoute[] = ['/orb', '/discover', '/board', '/connections', '/messages', '/profile'];
 
     // CASE 1: Signed-Out User
     if (!isAuthenticated || !userId) {
@@ -97,28 +100,21 @@ export const RouterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     // CASE 2: Signed-In User with INCOMPLETE Onboarding
     if (onboardingCompleted === false) {
-      // If they are on signin/signup or any protected app route, redirect to /onboarding
-      if (currentPath === '/signin' || currentPath === '/signup' || authenticatedAppRoutes.includes(currentPath)) {
+      // If incomplete and on public routes or any app route other than onboarding, redirect to /onboarding
+      if (currentPath !== '/onboarding') {
         navigate('/onboarding', { replace: true });
       }
-      // Note: landing page '/' remains accessible!
       return;
     }
 
     // CASE 3: Signed-In User with COMPLETED Onboarding
-    // If they visit /signin or /signup, redirect them to /orb
-    if (currentPath === '/signin' || currentPath === '/signup') {
+    // Landing page '/' is NOT part of the authenticated platform. Redirect to /orb.
+    if (currentPath === '/' || currentPath === '/signin' || currentPath === '/signup' || currentPath === '/onboarding') {
       navigate('/orb', { replace: true });
       return;
     }
 
-    // If they visit /onboarding while already completed, redirect them to /orb
-    if (currentPath === '/onboarding') {
-      navigate('/orb', { replace: true });
-      return;
-    }
-
-    // Landing page '/' and all authenticated routes remain accessible!
+    // Authenticated routes (/orb, /discover, /board, /connections, /messages, /profile) remain directly accessible.
   }, [isLoading, isAuthenticated, userId, onboardingCompleted, currentPath, navigate]);
 
   const isPublicRoute = currentPath === '/' || currentPath === '/signin' || currentPath === '/signup';

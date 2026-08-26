@@ -1,4 +1,4 @@
-import { UserProfile, ThoughtSnippet, CuriousBoardPost, Connection, OrbLocation } from '../types';
+import { UserProfile, ThoughtSnippet, CuriousBoardPost, Connection, OrbLocation, Space } from '../types';
 
 export const INITIAL_USER: UserProfile = {
   id: 'me',
@@ -634,3 +634,5 @@ export const SAMPLE_BOARD_POSTS: CuriousBoardPost[] = [
     repliesCount: 9,
   },
 ];
+
+

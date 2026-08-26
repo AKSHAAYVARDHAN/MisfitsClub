@@ -5,6 +5,7 @@ import {
   doc, 
   getDocFromServer 
 } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase App
@@ -17,6 +18,9 @@ googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 // Initialize Firestore (CRITICAL: passing explicit firestoreDatabaseId as required)
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+
+// Initialize Storage
+export const storage = getStorage(app, firebaseConfig.storageBucket);
 
 // Error Handling according to Firebase Integration Skill
 export enum OperationType {

@@ -242,7 +242,88 @@ export interface CuriousBoardPost {
   repliesCount: number;
 }
 
-export type ActiveTab = 'landing' | 'orb' | 'discover' | 'board' | 'explore' | 'connections' | 'messages' | 'profile' | 'signin' | 'signup' | 'onboarding';
+export type ActiveTab = 'landing' | 'orb' | 'discover' | 'board' | 'explore' | 'spaces' | 'connections' | 'messages' | 'profile' | 'signin' | 'signup' | 'onboarding';
+
+export type SpaceCategory = 
+  | 'Building'
+  | 'Technology'
+  | 'Design'
+  | 'Art'
+  | 'Science'
+  | 'Business'
+  | 'Learning'
+  | 'Writing'
+  | 'Gaming'
+  | 'Other';
+
+export type SpaceVisibility = 'public' | 'private';
+
+export interface Space {
+  id: string;
+  name: string;
+  description: string;
+  category: SpaceCategory;
+  tags: string[];
+  ownerId: string;
+  ownerName?: string;
+  ownerAvatar?: string;
+  ownerRole?: string;
+  profilePhoto?: string;
+  memberIds: string[];
+  memberCount: number;
+  visibility: SpaceVisibility;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateSpaceInput {
+  name: string;
+  description: string;
+  category: SpaceCategory;
+  tags: string[];
+  profilePhoto?: string;
+}
+
+export interface SpaceFilters {
+  searchQuery: string;
+  category: SpaceCategory | 'All';
+  tag: string;
+  membershipTab: 'all' | 'my-spaces';
+}
+
+export type DiscussionPostType = 'Discussion' | 'Question' | 'Idea';
+
+export interface SpacePost {
+  id: string;
+  spaceId: string;
+  authorId: string;
+  type: DiscussionPostType;
+  title?: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  commentCount: number;
+  reactionCount: number;
+  hasReacted?: boolean;
+  authorProfile?: PublicProfile | null;
+}
+
+export interface SpaceComment {
+  id: string;
+  postId: string;
+  spaceId: string;
+  authorId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  authorProfile?: PublicProfile | null;
+}
+
+export interface SpaceReaction {
+  uid: string;
+  createdAt: string;
+  type: 'appreciate';
+}
 
 export type NotificationType =
   | 'CONNECTION_REQUEST'

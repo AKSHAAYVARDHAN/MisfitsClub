@@ -286,5 +286,170 @@ service cloud.firestore {
       );
       allow delete: if isSignedIn() && resource.data.recipientId == request.auth.uid;
     }
+
+    // =========================================================================
+    // SPACES & DISCUSSIONS
+    // =========================================================================
+    function isValidSpace(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.description is string && data.description.size() > 0 && data.description.size() <= 2000 &&
+             data.category is string && data.category.size() > 0 && data.category.size() <= 50 &&
+             (!('tags' in data) || (data.tags is list && data.tags.size() <= 20)) &&
+             data.ownerId is string && data.ownerId.size() <= 128 &&
+             (!('ownerName' in data) || (data.ownerName is string && data.ownerName.size() <= 100)) &&
+             (!('ownerAvatar' in data) || (data.ownerAvatar is string && data.ownerAvatar.size() <= 500)) &&
+             (!('ownerRole' in data) || (data.ownerRole is string && data.ownerRole.size() <= 120)) &&
+             (!('profilePhoto' in data) || (data.profilePhoto is string && data.profilePhoto.size() <= 500000)) &&
+             data.memberIds is list && data.memberIds.size() <= 2000 &&
+             data.memberCount is number && data.memberCount >= 0 &&
+             data.visibility is string && (data.visibility == 'public' || data.visibility == 'private') &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    function isSpaceMember(spaceId) {
+      return request.auth.uid in get(/databases/$(database)/documents/spaces/$(spaceId)).data.memberIds ||
+             get(/databases/$(database)/documents/spaces/$(spaceId)).data.ownerId == request.auth.uid;
+    }
+
+    function isSpaceOwner(spaceId) {
+      return get(/databases/$(database)/documents/spaces/$(spaceId)).data.ownerId == request.auth.uid;
+    }
+
+    function isValidPost(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.spaceId is string && data.spaceId.size() <= 128 &&
+             data.authorId is string && data.authorId.size() <= 128 &&
+             data.type is string && (data.type == 'Discussion' || data.type == 'Question' || data.type == 'Idea') &&
+             (!('title' in data) || (data.title is string && data.title.size() <= 200)) &&
+             data.content is string && data.content.size() > 0 && data.content.size() <= 5000 &&
+             (!('commentCount' in data) || (data.commentCount is number && data.commentCount >= 0)) &&
+             (!('reactionCount' in data) || (data.reactionCount is number && data.reactionCount >= 0)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    function isValidComment(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.postId is string && data.postId.size() <= 128 &&
+             data.spaceId is string && data.spaceId.size() <= 128 &&
+             data.authorId is string && data.authorId.size() <= 128 &&
+             data.content is string && data.content.size() > 0 && data.content.size() <= 3000 &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    match /spaces/{spaceId} {
+      allow read: if isSignedIn();
+      
+      // Create: Owner must be request.auth.uid, memberCount must be 1, owner in memberIds
+      allow create: if isSignedIn() &&
+                       isValidId(spaceId) &&
+                       isValidSpace(incoming()) &&
+                       incoming().id == spaceId &&
+                       incoming().ownerId == request.auth.uid &&
+                       (request.auth.uid in incoming().memberIds) &&
+                       incoming().memberCount == 1;
+
+      // Update:
+      // Option 1: Owner modifying metadata (ownerId unchanged)
+      // Option 2: Member joining (adding self to memberIds, incrementing memberCount by 1)
+      // Option 3: Member leaving (removing self from memberIds, decrementing memberCount by 1, cannot be owner)
+      allow update: if isSignedIn() &&
+                       isValidId(spaceId) &&
+                       isValidSpace(incoming()) &&
+                       incoming().ownerId == existing().ownerId &&
+                       (
+                         // Owner updating
+                         (existing().ownerId == request.auth.uid) ||
+                         // Member joining
+                         (
+                           !(request.auth.uid in existing().memberIds) &&
+                           (request.auth.uid in incoming().memberIds) &&
+                           incoming().memberCount == existing().memberCount + 1 &&
+                           incoming().name == existing().name &&
+                           incoming().description == existing().description &&
+                           incoming().category == existing().category
+                         ) ||
+                         // Member leaving (cannot be owner)
+                         (
+                           request.auth.uid != existing().ownerId &&
+                           (request.auth.uid in existing().memberIds) &&
+                           !(request.auth.uid in incoming().memberIds) &&
+                           incoming().memberCount == existing().memberCount - 1 &&
+                           incoming().name == existing().name &&
+                           incoming().description == existing().description &&
+                           incoming().category == existing().category
+                         )
+                       );
+
+      // Delete: Only owner can delete
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid;
+
+      // -----------------------------------------------------------------------
+      // POSTS SUBCOLLECTION
+      // -----------------------------------------------------------------------
+      match /posts/{postId} {
+        allow read: if isSignedIn();
+        
+        allow create: if isSignedIn() &&
+                         isValidId(postId) &&
+                         isValidPost(incoming()) &&
+                         incoming().id == postId &&
+                         incoming().authorId == request.auth.uid &&
+                         incoming().spaceId == spaceId &&
+                         isSpaceMember(spaceId);
+
+        allow update: if isSignedIn() &&
+                         isValidId(postId) &&
+                         isValidPost(incoming()) &&
+                         incoming().authorId == existing().authorId &&
+                         incoming().spaceId == existing().spaceId &&
+                         (
+                           // Author editing content/title/type
+                           (existing().authorId == request.auth.uid &&
+                            incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'type', 'updatedAt'])) ||
+                           // Atomic counters update (comments / reactions count)
+                           incoming().diff(existing()).affectedKeys().hasOnly(['commentCount', 'reactionCount', 'updatedAt'])
+                         );
+
+        allow delete: if isSignedIn() && (existing().authorId == request.auth.uid || isSpaceOwner(spaceId));
+
+        // ---------------------------------------------------------------------
+        // COMMENTS SUBCOLLECTION
+        // ---------------------------------------------------------------------
+        match /comments/{commentId} {
+          allow read: if isSignedIn();
+
+          allow create: if isSignedIn() &&
+                           isValidId(commentId) &&
+                           isValidComment(incoming()) &&
+                           incoming().id == commentId &&
+                           incoming().authorId == request.auth.uid &&
+                           incoming().postId == postId &&
+                           incoming().spaceId == spaceId &&
+                           isSpaceMember(spaceId);
+
+          allow update: if isSignedIn() &&
+                           isValidId(commentId) &&
+                           isValidComment(incoming()) &&
+                           existing().authorId == request.auth.uid &&
+                           incoming().authorId == request.auth.uid &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['content', 'updatedAt']);
+
+          allow delete: if isSignedIn() && (existing().authorId == request.auth.uid || isSpaceOwner(spaceId));
+        }
+
+        // ---------------------------------------------------------------------
+        // REACTIONS SUBCOLLECTION
+        // ---------------------------------------------------------------------
+        match /reactions/{uid} {
+          allow read: if isSignedIn();
+          allow create: if isSignedIn() && uid == request.auth.uid && isSpaceMember(spaceId);
+          allow delete: if isSignedIn() && uid == request.auth.uid;
+        }
+      }
+    }
   }
 }

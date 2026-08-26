@@ -107,19 +107,37 @@ service cloud.firestore {
     }
 
     // =========================================================================
-    // CURIOSITY BOARD POSTS
+    // CURIOSITY BOARD POSTS & PUBLIC SPARK DISCUSSIONS
     // =========================================================================
     function isValidBoardPost(data) {
       return data.id is string && data.id.size() <= 128 &&
              data.authorId is string && data.authorId.size() <= 128 &&
              data.authorName is string && data.authorName.size() > 0 && data.authorName.size() <= 100 &&
              data.content is string && data.content.size() > 0 && data.content.size() <= 3000 &&
-             (!('tags' in data) || (data.tags is list && data.tags.size() <= 15)) &&
+             (!('title' in data) || (data.title is string && data.title.size() <= 300)) &&
+             (!('tags' in data) || (data.tags is list && data.tags.size() <= 20)) &&
              (!('intents' in data) || (data.intents is list && data.intents.size() <= 10)) &&
              (!('authorRole' in data) || (data.authorRole is string && data.authorRole.size() <= 120)) &&
              (!('authorLocation' in data) || (data.authorLocation is string && data.authorLocation.size() <= 120)) &&
              (!('authorAvatar' in data) || (data.authorAvatar is string && data.authorAvatar.size() <= 500)) &&
-             (!('repliesCount' in data) || data.repliesCount is number);
+             (!('repliesCount' in data) || data.repliesCount is number) &&
+             (!('thinkerIds' in data) || (data.thinkerIds is list && data.thinkerIds.size() <= 500)) &&
+             (!('thinkersSummary' in data) || data.thinkersSummary is map) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    function isValidSparkReply(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.sparkId is string && data.sparkId.size() <= 128 &&
+             data.authorId is string && data.authorId.size() <= 128 &&
+             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() <= 100 &&
+             data.content is string && data.content.size() > 0 && data.content.size() <= 4000 &&
+             (!('authorRole' in data) || (data.authorRole is string && data.authorRole.size() <= 120)) &&
+             (!('authorLocation' in data) || (data.authorLocation is string && data.authorLocation.size() <= 120)) &&
+             (!('authorAvatar' in data) || (data.authorAvatar is string && data.authorAvatar.size() <= 500)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
     }
 
     match /boardPosts/{postId} {
@@ -128,10 +146,18 @@ service cloud.firestore {
       allow update: if isSignedIn() && isValidId(postId) && (
         // Author full update
         (existing().authorId == request.auth.uid && isValidBoardPost(incoming())) ||
-        // Community reaction incrementing repliesCount
-        (incoming().diff(existing()).affectedKeys().hasOnly(['repliesCount']))
+        // Community reaction updating repliesCount and thinkers
+        (incoming().diff(existing()).affectedKeys().hasOnly(['repliesCount', 'thinkerIds', 'thinkersSummary', 'updatedAt']))
       );
       allow delete: if isSignedIn() && existing().authorId == request.auth.uid;
+
+      // Public Spark Replies Subcollection
+      match /replies/{replyId} {
+        allow read: if true;
+        allow create: if isSignedIn() && isValidId(replyId) && isValidSparkReply(incoming()) && incoming().authorId == request.auth.uid && incoming().sparkId == postId;
+        allow update: if isSignedIn() && isValidId(replyId) && existing().authorId == request.auth.uid && incoming().authorId == request.auth.uid;
+        allow delete: if isSignedIn() && existing().authorId == request.auth.uid;
+      }
     }
 
     // =========================================================================

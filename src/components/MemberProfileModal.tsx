@@ -246,7 +246,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="w-3.5 h-3.5 text-[#D4FF3F]" />
                 <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#D4FF3F] font-bold">
-                  Points of Synergy
+                  Possible Common Ground
                 </span>
               </div>
               <ul className="space-y-1.5 text-xs text-[#D8D8DC]">

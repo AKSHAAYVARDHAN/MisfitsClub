@@ -29,6 +29,7 @@ import { MemberProfileModal } from './components/MemberProfileModal';
 import { MessagesView } from './components/MessagesView';
 import { ConnectionsView } from './components/ConnectionsView';
 import { ExploreBoardView } from './components/ExploreBoardView';
+import { SparkDetailView } from './components/SparkDetailView';
 import { SpacesView } from './components/SpacesView';
 import { MySpaceView } from './components/MySpaceView';
 import { ProfileView } from './components/ProfileView';
@@ -169,6 +170,21 @@ function MainApp() {
   const [activeConnectionId, setActiveConnectionId] = useState<string>('conn-maya');
   const [boardPosts, setBoardPosts] = useState<CuriousBoardPost[]>(SAMPLE_BOARD_POSTS);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+  const [selectedSparkId, setSelectedSparkId] = useState<string | null>(null);
+
+  // Sync selectedSparkId from URL pathname (e.g. /spark/bp-1 or /board/bp-1)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path.startsWith('/spark/')) {
+        const id = path.replace('/spark/', '').split('/')[0].split('?')[0];
+        if (id) setSelectedSparkId(id);
+      } else if (path.startsWith('/board/')) {
+        const id = path.replace('/board/', '').split('/')[0].split('?')[0];
+        if (id) setSelectedSparkId(id);
+      }
+    }
+  }, [currentPath]);
 
   // Keep ref for connections to avoid re-triggering effects on state updates
   const connectionsRef = useRef<Connection[]>(connections);
@@ -369,7 +385,13 @@ function MainApp() {
         navigate('/connections');
       }
     } else if (notif.type === 'SPARK_INTERACTION') {
-      navigate('/board');
+      if (notif.referenceId) {
+        setSelectedSparkId(notif.referenceId);
+        navigate(`/spark/${notif.referenceId}`);
+      } else {
+        setSelectedSparkId(null);
+        navigate('/board');
+      }
     } else if (notif.type === 'MESSAGE') {
       if (notif.referenceId) {
         const matched = connections.find(
@@ -400,6 +422,8 @@ function MainApp() {
   };
 
   const handleSignOut = async () => {
+    setSelectedSparkId(null);
+    setSelectedSpaceId(null);
     await signOut();
     navigate('/', { replace: true });
   };
@@ -731,7 +755,15 @@ function MainApp() {
       {!isPublicView && !isOnboardingView && (
         <PlatformShell
           currentPath={currentPath}
-          onNavigate={(route) => navigate(route)}
+          onNavigate={(route) => {
+            if (route === '/board') {
+              setSelectedSparkId(null);
+            }
+            if (route === '/spaces') {
+              setSelectedSpaceId(null);
+            }
+            navigate(route);
+          }}
           currentUser={user}
           connectionsCount={activeConnectionsCount}
           unreadMessagesCount={unreadMessagesCount}
@@ -795,15 +827,44 @@ function MainApp() {
             />
           )}
 
-          {/* Spark Curiosity Board View */}
+          {/* Spark Curiosity Board & Public Discussion View */}
           {currentPath === '/board' && (
-            <ExploreBoardView
-              posts={boardPosts}
-              onAddPost={handleAddBoardPost}
-              currentUser={user || INITIAL_USER}
-              onConnectWithAuthor={handleConnectWithBoardAuthor}
-              onOpenOnboarding={() => navigate('/onboarding')}
-            />
+            selectedSparkId ? (
+              <SparkDetailView
+                sparkId={selectedSparkId}
+                currentUser={user || INITIAL_USER}
+                connections={connections}
+                allProfiles={profiles}
+                onBack={() => {
+                  setSelectedSparkId(null);
+                  navigate('/board');
+                }}
+                onSelectProfile={(profile) => setSelectedMemberProfile(profile)}
+                onConnect={handleOpenConnectModal}
+                onOpenChat={(connId) => {
+                  setActiveConnectionId(connId);
+                  navigate('/messages');
+                }}
+                onOpenOnboarding={() => navigate('/onboarding')}
+                onDeleteSparkSuccess={(deletedId) => {
+                  setBoardPosts((prev) => prev.filter((p) => p.id !== deletedId));
+                  setSelectedSparkId(null);
+                }}
+              />
+            ) : (
+              <ExploreBoardView
+                posts={boardPosts}
+                onAddPost={handleAddBoardPost}
+                currentUser={user || INITIAL_USER}
+                onOpenSpark={(id) => {
+                  setSelectedSparkId(id);
+                  navigate(`/spark/${id}`);
+                }}
+                onSelectProfile={(profile) => setSelectedMemberProfile(profile)}
+                allProfiles={profiles}
+                onOpenOnboarding={() => navigate('/onboarding')}
+              />
+            )
           )}
 
           {/* Spaces View */}
@@ -851,7 +912,15 @@ function MainApp() {
                 setSelectedSpaceId(null);
                 navigate('/spaces');
               }}
-              onOpenSpark={() => navigate('/board')}
+              onOpenSpark={(sparkId) => {
+                if (sparkId) {
+                  setSelectedSparkId(sparkId);
+                  navigate(`/spark/${sparkId}`);
+                } else {
+                  setSelectedSparkId(null);
+                  navigate('/board');
+                }
+              }}
               onAcceptRequest={handleAcceptConnection}
               onDeclineRequest={handleDeclineConnection}
               onCancelRequest={handleCancelConnectionRequest}

@@ -31,7 +31,7 @@ function normalizePath(rawPath: string): AppRoute {
   if (path === '/signup' || path === '/register' || path === '/join') return '/signup';
   if (path === '/orb') return '/orb';
   if (path === '/discover') return '/discover';
-  if (path === '/board' || path === '/explore' || path === '/spark') return '/board';
+  if (path === '/board' || path === '/explore' || path === '/spark' || path.startsWith('/spark/') || path.startsWith('/board/')) return '/board';
   if (path.startsWith('/spaces')) return '/spaces';
   if (path === '/connections' || path === '/circle') return '/connections';
   if (path === '/messages' || path === '/chat') return '/messages';
@@ -57,10 +57,11 @@ export const RouterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const targetRoute = normalizePath(to);
     
     if (typeof window !== 'undefined') {
+      const urlToPush = to.startsWith('/') ? to : targetRoute;
       if (options?.replace) {
-        window.history.replaceState({}, '', targetRoute);
+        window.history.replaceState({}, '', urlToPush);
       } else {
-        window.history.pushState({}, '', targetRoute);
+        window.history.pushState({}, '', urlToPush);
       }
     }
     

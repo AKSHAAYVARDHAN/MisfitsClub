@@ -228,6 +228,29 @@ export interface ThoughtSnippet {
   intent: ConnectionIntent;
 }
 
+export interface SparkThinker {
+  id: string;
+  name: string;
+  role?: string;
+  location?: string;
+  avatarUrl?: string;
+  profilePhoto?: string;
+}
+
+export interface SparkReply {
+  id: string;
+  sparkId: string;
+  authorId: string;
+  authorName: string;
+  authorRole?: string;
+  authorLocation?: string;
+  authorAvatar?: string;
+  content: string;
+  createdAt: string;
+  updatedAt?: string;
+  authorProfile?: PublicProfile | null;
+}
+
 export interface CuriousBoardPost {
   id: string;
   authorId: string;
@@ -235,11 +258,18 @@ export interface CuriousBoardPost {
   authorLocation: string;
   authorRole: string;
   authorAvatar?: string;
+  title?: string;
   content: string;
   intents: ConnectionIntent[];
   tags: string[];
   timestamp: string;
+  createdAt?: string;
+  updatedAt?: string;
   repliesCount: number;
+  thinkerIds?: string[];
+  thinkersSummary?: {
+    [uid: string]: SparkThinker;
+  };
 }
 
 export type ActiveTab = 'landing' | 'orb' | 'discover' | 'board' | 'explore' | 'spaces' | 'connections' | 'messages' | 'profile' | 'signin' | 'signup' | 'onboarding';

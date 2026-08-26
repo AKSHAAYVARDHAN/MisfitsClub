@@ -660,8 +660,8 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
 
       {/* Floating Canvas UI Controls */}
       {showRecenterButton && (
-        <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 flex items-center gap-2 z-20 pointer-events-auto">
-          <div className="flex items-center border border-[#F5F5F0]/15 bg-[#151516]/90 backdrop-blur-md">
+        <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 flex items-center gap-2 z-10 pointer-events-auto">
+          <div className="flex items-center border border-[#1E1E24] bg-[#0E0E12]/95 backdrop-blur-md">
             <button
               id="orb-zoom-out-btn"
               onClick={(e) => {
@@ -669,7 +669,7 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
                 zoomOut();
               }}
               title="Zoom out"
-              className="p-2 text-[#969696] hover:text-[#D4FF3F] hover:bg-[#202020] transition-colors border-r border-[#F5F5F0]/10"
+              className="p-2 text-[#8E8E93] hover:text-[#D4FF3F] hover:bg-[#141418] transition-colors border-r border-[#1E1E24]"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
@@ -680,7 +680,7 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
                 zoomIn();
               }}
               title="Zoom in"
-              className="p-2 text-[#969696] hover:text-[#D4FF3F] hover:bg-[#202020] transition-colors"
+              className="p-2 text-[#8E8E93] hover:text-[#D4FF3F] hover:bg-[#141418] transition-colors"
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
@@ -693,7 +693,7 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
               resetToHome();
             }}
             title="Recenter to your location"
-            className="bg-[#151516]/90 backdrop-blur-md border border-[#F5F5F0]/15 hover:border-[#D4FF3F] text-[#F5F5F0] hover:text-[#D4FF3F] px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all shadow-xl flex items-center gap-1.5 font-mono-code"
+            className="bg-[#0E0E12]/95 backdrop-blur-md border border-[#1E1E24] hover:border-[#D4FF3F]/50 text-[#F5F5F0] hover:text-[#D4FF3F] px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all shadow-xl flex items-center gap-1.5 font-mono-code"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F] animate-pulse" />
             <span>Recenter ({userLocation.city})</span>

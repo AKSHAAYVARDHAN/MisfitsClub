@@ -105,7 +105,7 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
         <div
           id="sidebar-mobile-backdrop"
           onClick={() => setIsMobileOpen(false)}
-          className="fixed inset-0 z-30 bg-black/70 backdrop-blur-sm md:hidden transition-opacity"
+          className="fixed inset-0 z-35 bg-black/70 backdrop-blur-sm md:hidden transition-opacity"
           aria-hidden="true"
         />
       )}
@@ -116,8 +116,8 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
           isCollapsed ? 'md:ml-20' : 'md:ml-64'
         }`}
       >
-        {/* Platform Header Bar */}
-        <header className="sticky top-0 z-20 h-16 border-b border-[#F5F5F0]/10 bg-[#0B0B0C]/90 backdrop-blur-md px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+        {/* Platform Header Bar - Always above scrolling page content */}
+        <header className="sticky top-0 z-30 h-16 border-b border-[#1E1E24] bg-[#09090B]/95 backdrop-blur-md px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
           
           {/* Left: Mobile Toggle & Context Breadcrumb */}
           <div className="flex items-center gap-3 sm:gap-4">
@@ -125,7 +125,7 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
             <button
               id="platform-mobile-menu-toggle-btn"
               onClick={() => setIsMobileOpen(!isMobileOpen)}
-              className="md:hidden p-2 border border-[#242424] text-[#8A8A8A] hover:text-[#F5F5F0] hover:border-[#D4FF3F]/50 bg-[#121214] focus:outline-none"
+              className="md:hidden p-2 border border-[#24242C] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#383844] bg-[#121216] focus:outline-none"
               aria-label="Toggle navigation menu"
             >
               {isMobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
@@ -141,7 +141,7 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
               >
                 MISFITS CLUB
               </button>
-              <span className="text-[#444] hidden sm:inline-block">/</span>
+              <span className="text-[#444450] hidden sm:inline-block">/</span>
               <span className="text-[#D4FF3F] font-bold tracking-wider uppercase text-[11px] sm:text-xs">
                 {getSectionTitle(currentPath)}
               </span>
@@ -151,12 +151,12 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
           {/* Right: Live online status, Notifications & Profile Badge */}
           <div className="flex items-center gap-3 sm:gap-4">
             {/* Online Members Indicator */}
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-[#121214] border border-[#222]">
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-[#121216] border border-[#222228]">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D4FF3F] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#D4FF3F]"></span>
               </span>
-              <span className="font-mono-code text-[10px] text-[#8A8A8A] uppercase tracking-wider whitespace-nowrap">
+              <span className="font-mono-code text-[10px] text-[#8E8E93] uppercase tracking-wider whitespace-nowrap">
                 1,420 online
               </span>
             </div>
@@ -168,10 +168,10 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
                 className={`relative p-2 rounded-none border transition-all focus:outline-none ${
                   isNotificationsOpen
-                    ? 'border-[#D4FF3F] text-[#D4FF3F] bg-[#D4FF3F]/10'
+                    ? 'border-[#D4FF3F]/60 text-[#D4FF3F] bg-[#D4FF3F]/10'
                     : unreadNotificationsCount > 0
-                    ? 'border-[#333] text-[#F5F5F0] hover:border-[#D4FF3F]/60 bg-[#101010]'
-                    : 'border-[#242424] text-[#8A8A8A] hover:text-[#F5F5F0] hover:border-[#444] bg-[#0E0E10]'
+                    ? 'border-[#383844] text-[#F5F5F0] hover:border-[#D4FF3F]/50 bg-[#141418]'
+                    : 'border-[#24242C] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#383844] bg-[#101014]'
                 }`}
                 title="Notifications"
                 aria-label="View notifications"
@@ -180,7 +180,7 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
                 {unreadNotificationsCount > 0 && (
                   <span
                     id="platform-unread-notifications-badge"
-                    className="absolute -top-1.5 -right-1.5 bg-[#D4FF3F] text-[#080808] text-[9px] font-mono-code font-bold px-1 py-0.2 rounded-none min-w-[15px] h-[15px] flex items-center justify-center shadow-md"
+                    className="absolute -top-1.5 -right-1.5 bg-lime-grained text-[#080808] text-[9px] font-mono-code font-bold px-1 py-0.2 rounded-none min-w-[15px] h-[15px] flex items-center justify-center shadow-md"
                   >
                     {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                   </span>
@@ -207,8 +207,8 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
                 onClick={() => onNavigate('/profile')}
                 className={`flex items-center gap-2 p-1 border transition-all focus:outline-none ${
                   currentPath === '/profile'
-                    ? 'border-[#D4FF3F] bg-[#D4FF3F]/10'
-                    : 'border-[#242424] hover:border-[#D4FF3F]/60 bg-[#101010]'
+                    ? 'border-[#D4FF3F]/60 bg-[#D4FF3F]/10'
+                    : 'border-[#24242C] hover:border-[#383844] bg-[#121216]'
                 }`}
                 title={`Logged in as ${currentUser.name}`}
               >
@@ -216,7 +216,7 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
                   src={currentUser.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
                   alt={currentUser.name}
                   referrerPolicy="no-referrer"
-                  className="h-6 w-6 rounded-sm object-cover border border-[#333]"
+                  className="h-6 w-6 rounded-none object-cover border border-[#282832]"
                 />
                 <span className="hidden sm:inline-block text-xs font-mono-code text-[#E5E5E0] pr-1.5 font-medium">
                   {currentUser.name.split(' ')[0]}
@@ -235,14 +235,14 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
       {/* 3. Mobile Bottom Navigation Bar (< md screens) */}
       <nav
         id="platform-mobile-bottom-nav"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-[#F5F5F0]/10 bg-[#0B0B0C]/95 backdrop-blur-lg px-2 py-1.5"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-[#1E1E24] bg-[#09090B]/95 backdrop-blur-lg px-2 py-1.5"
       >
         <div className="grid grid-cols-7 gap-1 text-center">
           <button
             id="mobile-nav-orb"
             onClick={() => onNavigate('/orb')}
             className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
-              currentPath === '/orb' ? 'text-[#D4FF3F] font-bold' : 'text-[#8A8A8A]'
+              currentPath === '/orb' ? 'text-[#D4FF3F] font-bold' : 'text-[#8E8E93]'
             }`}
           >
             <Globe className="h-4 w-4 mb-0.5" />
@@ -253,7 +253,7 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
             id="mobile-nav-discover"
             onClick={() => onNavigate('/discover')}
             className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
-              currentPath === '/discover' ? 'text-[#D4FF3F] font-bold' : 'text-[#8A8A8A]'
+              currentPath === '/discover' ? 'text-[#D4FF3F] font-bold' : 'text-[#8E8E93]'
             }`}
           >
             <Compass className="h-4 w-4 mb-0.5" />
@@ -264,7 +264,7 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
             id="mobile-nav-spark"
             onClick={() => onNavigate('/board')}
             className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
-              currentPath === '/board' ? 'text-[#D4FF3F] font-bold' : 'text-[#8A8A8A]'
+              currentPath === '/board' ? 'text-[#D4FF3F] font-bold' : 'text-[#8E8E93]'
             }`}
           >
             <Sparkles className="h-4 w-4 mb-0.5" />
@@ -275,7 +275,7 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
             id="mobile-nav-spaces"
             onClick={() => onNavigate('/spaces')}
             className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
-              currentPath === '/spaces' ? 'text-[#D4FF3F] font-bold' : 'text-[#8A8A8A]'
+              currentPath === '/spaces' ? 'text-[#D4FF3F] font-bold' : 'text-[#8E8E93]'
             }`}
           >
             <Layers className="h-4 w-4 mb-0.5" />
@@ -286,13 +286,13 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
             id="mobile-nav-connections"
             onClick={() => onNavigate('/connections')}
             className={`relative flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
-              currentPath === '/connections' ? 'text-[#D4FF3F] font-bold' : 'text-[#8A8A8A]'
+              currentPath === '/connections' ? 'text-[#D4FF3F] font-bold' : 'text-[#8E8E93]'
             }`}
           >
             <Users className="h-4 w-4 mb-0.5" />
             <span>Circle</span>
             {connectionsCount > 0 && (
-              <span className="absolute top-0 right-2 h-1.5 w-1.5 rounded-full bg-[#F5F5F0]"></span>
+              <span className="absolute top-0 right-2 h-1.5 w-1.5 rounded-full bg-[#D4FF3F]"></span>
             )}
           </button>
 
@@ -300,7 +300,7 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
             id="mobile-nav-messages"
             onClick={() => onNavigate('/messages')}
             className={`relative flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
-              currentPath === '/messages' ? 'text-[#D4FF3F] font-bold' : 'text-[#8A8A8A]'
+              currentPath === '/messages' ? 'text-[#D4FF3F] font-bold' : 'text-[#8E8E93]'
             }`}
           >
             <MessageSquare className="h-4 w-4 mb-0.5" />
@@ -314,7 +314,7 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
             id="mobile-nav-profile"
             onClick={() => onNavigate('/profile')}
             className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
-              currentPath === '/profile' ? 'text-[#D4FF3F] font-bold' : 'text-[#8A8A8A]'
+              currentPath === '/profile' ? 'text-[#D4FF3F] font-bold' : 'text-[#8E8E93]'
             }`}
           >
             <User className="h-4 w-4 mb-0.5" />

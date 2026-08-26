@@ -90,20 +90,20 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
   if (safeConnections.length === 0) {
     return (
-      <div className="min-h-[75vh] flex flex-col items-center justify-center text-center px-6 max-w-md mx-auto py-20 bg-[#080808] text-[#F2F2ED] selection:bg-[#D4FF3F] selection:text-[#080808]">
-        <div className="w-12 h-12 rounded-full bg-[#141414] border border-[#242424] flex items-center justify-center mb-6">
+      <div className="min-h-[75vh] flex flex-col items-center justify-center text-center px-6 max-w-md mx-auto py-20 bg-[#09090B] text-[#F5F5F0] selection:bg-[#D4FF3F] selection:text-[#080808]">
+        <div className="w-12 h-12 bg-[#121216] border border-[#1E1E24] flex items-center justify-center mb-6">
           <Sparkles className="w-5 h-5 text-[#D4FF3F]" />
         </div>
-        <h2 className="font-editorial text-3xl font-light tracking-tight text-[#F2F2ED] mb-3">
+        <h2 className="font-editorial text-3xl font-light tracking-tight text-[#F5F5F0] mb-3">
           No conversations yet
         </h2>
-        <p className="text-xs text-[#8A8A8A] mb-8 leading-relaxed font-sans-clean">
+        <p className="text-xs text-[#8E8E93] mb-8 leading-relaxed font-sans-clean">
           Misfits Club is built for unhurried, authentic dialogue between curious minds. Connect with members on the Orb or explore board to start talking.
         </p>
         <button
           id="empty-messages-discover-btn"
           onClick={onExplore}
-          className="bg-[#F2F2ED] text-[#080808] px-7 py-3 text-xs font-bold uppercase tracking-widest hover:bg-[#D4FF3F] transition-colors"
+          className="btn-primary"
         >
           Discover People
         </button>
@@ -112,29 +112,29 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   }
 
   return (
-    <div className="h-[calc(100vh-5rem)] max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-3 sm:py-5 flex flex-col bg-[#080808] text-[#F2F2ED] selection:bg-[#D4FF3F] selection:text-[#080808]">
-      <div className="flex-1 flex border border-[#242424] bg-[#0B0B0B] overflow-hidden relative shadow-2xl">
+    <div className="h-[calc(100vh-5rem)] max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-3 sm:py-5 flex flex-col bg-[#09090B] text-[#F5F5F0] selection:bg-[#D4FF3F] selection:text-[#080808]">
+      <div className="flex-1 flex border border-[#1E1E24] bg-[#0E0E12] overflow-hidden relative shadow-2xl">
         
         {/* Left Sidebar: Conversations List */}
-        <div className={`w-full md:w-80 lg:w-[340px] border-r border-[#242424] bg-[#101010] flex flex-col flex-shrink-0 ${
+        <div className={`w-full md:w-80 lg:w-[340px] border-r border-[#1E1E24] bg-[#0E0E12] flex flex-col flex-shrink-0 ${
           activeConnectionId && 'hidden md:flex'
         }`}>
           
           {/* Sidebar Header */}
-          <div className="px-5 py-4 border-b border-[#242424] flex items-center justify-between">
+          <div className="px-5 py-4 border-b border-[#1E1E24] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]"></span>
-              <h2 className="text-xs font-mono-code uppercase tracking-widest text-[#F2F2ED] font-bold">
+              <h2 className="text-xs font-mono-code uppercase tracking-widest text-[#F5F5F0] font-bold">
                 Dialogues
               </h2>
             </div>
-            <span className="text-[10px] font-mono-code text-[#8A8A8A] uppercase tracking-wider">
+            <span className="text-[10px] font-mono-code text-[#7A7A82] uppercase tracking-wider">
               {safeConnections.length} ACTIVE
             </span>
           </div>
 
           {/* Conversations List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-[#1A1A1A]/80">
+          <div className="flex-1 overflow-y-auto divide-y divide-[#18181E]">
             {safeConnections.map((conn) => {
               const isSelected = activeConnection?.id === conn.id;
               const allConvoMsgs = getMessagesForConnection(conn);
@@ -148,8 +148,8 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   onClick={() => onSelectConnection(conn.id)}
                   className={`w-full text-left px-4 sm:px-5 py-4 flex items-start gap-3.5 transition-all relative group ${
                     isSelected
-                      ? 'bg-[#161616]'
-                      : 'hover:bg-[#141414]'
+                      ? 'bg-[#141418]'
+                      : 'hover:bg-[#121216]'
                   }`}
                 >
                   {/* Subtle active indicator */}
@@ -163,10 +163,10 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                       src={conn.profile?.avatarUrl || conn.profile?.profilePhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
                       alt={conn.profile?.name || 'Member'}
                       referrerPolicy="no-referrer"
-                      className="w-10 h-10 object-cover rounded-sm border border-[#242424]"
+                      className="w-10 h-10 object-cover border border-[#24242C]"
                     />
                     {conn.profile?.isOnline && (
-                      <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#D4FF3F] ring-2 ring-[#101010]"></span>
+                      <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#D4FF3F] ring-2 ring-[#0E0E12]"></span>
                     )}
                   </div>
 
@@ -174,7 +174,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1 mb-1">
                       <h4 className={`text-xs uppercase tracking-wider truncate font-bold ${
-                        isSelected ? 'text-[#F2F2ED]' : 'text-[#F2F2ED]/90 group-hover:text-[#F2F2ED]'
+                        isSelected ? 'text-[#F5F5F0]' : 'text-[#D0D0CA] group-hover:text-[#F5F5F0]'
                       }`}>
                         {conn.profile?.name || 'Member'}
                       </h4>
@@ -182,22 +182,22 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                         {conn.unreadCount && conn.unreadCount > 0 ? (
                           <span
                             id={`convo-unread-${conn.id}`}
-                            className="bg-[#D4FF3F] text-[#080808] text-[9px] font-mono-code font-bold px-1.5 py-0.2 min-w-[17px] h-[17px] flex items-center justify-center shadow-sm"
+                            className="bg-lime-grained text-[#080808] text-[9px] font-mono-code font-bold px-1.5 py-0.2 min-w-[17px] h-[17px] flex items-center justify-center"
                           >
                             {conn.unreadCount > 9 ? '9+' : conn.unreadCount}
                           </span>
                         ) : null}
-                        <span className="text-[9px] text-[#8A8A8A] font-mono-code uppercase tracking-wider whitespace-nowrap">
+                        <span className="text-[9px] text-[#7A7A82] font-mono-code uppercase tracking-wider whitespace-nowrap">
                           {lastTime}
                         </span>
                       </div>
                     </div>
 
-                    <p className="text-[10px] text-[#8A8A8A] truncate font-sans-clean mb-1">
+                    <p className="text-[10px] text-[#7A7A82] truncate font-sans-clean mb-1">
                       {conn.profile?.role || 'Explorer'} · {(conn.profile?.location || 'Worldwide').split(',')[0]}
                     </p>
 
-                    <p className="text-[11px] text-[#8A8A8A] truncate font-sans-clean leading-relaxed">
+                    <p className="text-[11px] text-[#8E8E93] truncate font-sans-clean leading-relaxed">
                       {lastMsg}
                     </p>
 
@@ -218,16 +218,16 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
         {/* Center/Right Area: Active Conversation */}
         {activeConnection ? (
-          <div className="flex-1 flex flex-col bg-[#0B0B0B] relative min-w-0">
+          <div className="flex-1 flex flex-col bg-[#09090B] relative min-w-0">
             
             {/* Conversation Header */}
-            <div className="h-16 px-4 sm:px-6 lg:px-8 border-b border-[#242424] bg-[#101010] flex items-center justify-between gap-4 flex-shrink-0">
+            <div className="h-16 px-4 sm:px-6 lg:px-8 border-b border-[#1E1E24] bg-[#0E0E12] flex items-center justify-between gap-4 flex-shrink-0">
               <div className="flex items-center gap-3.5 min-w-0">
                 
                 {/* Mobile Back to List Button */}
                 <button
                   onClick={() => onSelectConnection('')}
-                  className="md:hidden p-1.5 text-[#8A8A8A] hover:text-[#F2F2ED] transition-colors"
+                  className="md:hidden p-1.5 text-[#8E8E93] hover:text-[#F5F5F0] transition-colors"
                   aria-label="Back to conversations list"
                 >
                   <ArrowLeft className="w-4 h-4" />
@@ -237,21 +237,21 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   src={activeConnection.profile?.avatarUrl || activeConnection.profile?.profilePhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
                   alt={activeConnection.profile?.name || 'Member'}
                   referrerPolicy="no-referrer"
-                  className="w-9 h-9 object-cover rounded-sm border border-[#242424] flex-shrink-0"
+                  className="w-9 h-9 object-cover border border-[#24242C] flex-shrink-0"
                 />
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#F2F2ED] truncate">
+                    <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#F5F5F0] truncate">
                       {activeConnection.profile?.name || 'Member'}
                     </h3>
-                    <span className="hidden sm:inline text-[10px] text-[#8A8A8A] uppercase tracking-widest font-mono-code">
+                    <span className="hidden sm:inline text-[10px] text-[#7A7A82] uppercase tracking-widest font-mono-code">
                       · {activeConnection.profile?.location || 'Worldwide'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-[#8A8A8A] uppercase tracking-wider truncate mt-0.5">
+                  <div className="flex items-center gap-2 text-[10px] text-[#7A7A82] uppercase tracking-wider truncate mt-0.5">
                     <span>{activeConnection.profile?.role || 'Explorer'}</span>
-                    <span className="text-[#242424]">|</span>
+                    <span className="text-[#1E1E24]">|</span>
                     <span className="text-[#D4FF3F] flex items-center gap-1 font-mono-code text-[9px]">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]"></span>
                       CONNECTED
@@ -266,39 +266,39 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 onClick={() => setIsProfileDrawerOpen(!isProfileDrawerOpen)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-mono-code uppercase tracking-wider transition-colors border ${
                   isProfileDrawerOpen
-                    ? 'border-[#D4FF3F] text-[#D4FF3F] bg-[#141414]'
-                    : 'border-[#242424] text-[#8A8A8A] hover:text-[#F2F2ED] hover:border-[#333333] bg-[#101010]'
+                    ? 'border-[#D4FF3F]/60 text-[#D4FF3F] bg-[#141418]'
+                    : 'border-[#24242C] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#383844] bg-[#0E0E12]'
                 }`}
                 title="View bio and background context"
               >
-                <Info className="w-3.5 h-3.5 text-[#8A8A8A]" />
+                <Info className="w-3.5 h-3.5 text-[#8E8E93]" />
                 <span className="hidden sm:inline">Profile Context</span>
               </button>
             </div>
 
             {/* Shared Intent & Curiosities Context Strip */}
-            <div className="bg-[#0D0D0D] border-b border-[#202020] px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between text-[11px] gap-2 flex-shrink-0">
-              <div className="flex items-center gap-2 text-[#8A8A8A] font-sans-clean">
-                <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#8A8A8A]">
+            <div className="bg-[#0B0B0E] border-b border-[#1A1A20] px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between text-[11px] gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 text-[#8E8E93] font-sans-clean">
+                <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#7A7A82]">
                   YOU BOTH SELECTED
                 </span>
-                <span className="text-[#292929]">·</span>
-                <span className="text-[#F2F2ED] font-medium tracking-wide uppercase text-[10px] font-mono-code">
+                <span className="text-[#24242C]">·</span>
+                <span className="text-[#F5F5F0] font-medium tracking-wide uppercase text-[10px] font-mono-code">
                   {(activeConnection.sharedIntents || []).join(' · ') || 'EXCHANGE IDEAS'}
                 </span>
               </div>
               
               {(activeConnection.sharedInterests || []).length > 0 && (
                 <div className="hidden lg:flex items-center gap-2">
-                  <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#8A8A8A]">
+                  <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#7A7A82]">
                     SHARED CURIOSITIES
                   </span>
-                  <span className="text-[#292929]">·</span>
+                  <span className="text-[#24242C]">·</span>
                   <div className="flex items-center gap-1.5">
                     {(activeConnection.sharedInterests || []).slice(0, 3).map((item) => (
                       <span
                         key={item}
-                        className="text-[9px] text-[#8A8A8A] border border-[#242424] px-2 py-0.5 uppercase tracking-wider font-mono-code bg-[#111111]"
+                        className="text-[9px] text-[#8E8E93] border border-[#202026] px-2 py-0.5 uppercase tracking-wider font-mono-code bg-[#101014]"
                       >
                         {item}
                       </span>
@@ -313,7 +313,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               
               {/* Dialogue Start Marker */}
               <div className="flex justify-center mb-6">
-                <div className="inline-flex items-center gap-2 border border-[#242424] bg-[#101010] px-3.5 py-1.5 text-[10px] text-[#8A8A8A] uppercase tracking-widest font-mono-code">
+                <div className="inline-flex items-center gap-2 border border-[#1E1E24] bg-[#0E0E12] px-3.5 py-1.5 text-[10px] text-[#7A7A82] uppercase tracking-widest font-mono-code">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]"></span>
                   <span>Conversation opened · Calm & unhurried</span>
                 </div>
@@ -322,13 +322,13 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               {/* Zero messages empty state prompt */}
               {activeMessages.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-                  <div className="w-10 h-10 rounded-full bg-[#141414] border border-[#242424] flex items-center justify-center mb-3 text-[#D4FF3F]">
+                  <div className="w-10 h-10 bg-[#121216] border border-[#1E1E24] flex items-center justify-center mb-3 text-[#D4FF3F]">
                     <Sparkles className="w-4 h-4" />
                   </div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#F2F2ED] mb-1 font-mono-code">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#F5F5F0] mb-1 font-mono-code">
                     Start the conversation
                   </h4>
-                  <p className="text-xs text-[#8A8A8A] max-w-xs leading-relaxed font-sans-clean">
+                  <p className="text-xs text-[#8E8E93] max-w-xs leading-relaxed font-sans-clean">
                     Share a thoughtful thought or pick one of the conversation prompts below to get started.
                   </p>
                 </div>
@@ -336,7 +336,6 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
               {/* Render Chat Messages with Dynamic Left/Right Alignment & Visual Grouping */}
               {activeMessages.map((msg, index) => {
-                // Determine dynamic ownership from authenticated user or fallback ID
                 const isMe = (() => {
                   if (currentUser) {
                     if (currentUser.id && msg.senderId === currentUser.id) return true;
@@ -380,17 +379,17 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                         {/* Sender Label (on first message of group) */}
                         {isFirstInGroup && (
                           <div className="flex items-center gap-2 mb-1 px-1">
-                            <span className="text-[10px] font-mono-code uppercase tracking-wider text-[#8A8A8A] font-semibold">
+                            <span className="text-[10px] font-mono-code uppercase tracking-wider text-[#7A7A82] font-semibold">
                               {activeConnection.profile?.name ? activeConnection.profile.name.split(' ')[0] : 'Member'}
                             </span>
                           </div>
                         )}
 
-                        {/* Message Container: Subtle rectangular with 4px radius */}
-                        <div className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-[13px] leading-relaxed border rounded-[4px] bg-[#121212] text-[#F2F2ED] border-[#222222]">
+                        {/* Message Container */}
+                        <div className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-[13px] leading-relaxed border bg-[#101014] text-[#F5F5F0] border-[#1E1E24]">
                           {/* Highlighted Starter Header */}
                           {msg.isStarterPrompt && (
-                            <div className="flex items-center gap-2 pb-1.5 mb-2 border-b border-[#242424]">
+                            <div className="flex items-center gap-2 pb-1.5 mb-2 border-b border-[#1E1E24]">
                               <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]" />
                               <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#D4FF3F] font-bold">
                                 CONVERSATION OPENER
@@ -398,7 +397,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                             </div>
                           )}
 
-                          <p className="font-sans-clean whitespace-pre-wrap font-normal text-[#F2F2ED]">
+                          <p className="font-sans-clean whitespace-pre-wrap font-normal text-[#F5F5F0]">
                             {msg.text}
                           </p>
                         </div>
@@ -406,7 +405,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                         {/* Subtle Timestamp (after last message of group) */}
                         {isLastInGroup && (
                           <div className="flex items-center gap-1.5 mt-1 px-1">
-                            <span className="text-[9px] text-[#7A7A7A] font-mono-code uppercase tracking-wider">
+                            <span className="text-[9px] text-[#7A7A82] font-mono-code uppercase tracking-wider">
                               {msg.timestamp}
                             </span>
                           </div>
@@ -420,17 +419,17 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                         {/* Sender Label (on first message of group) */}
                         {isFirstInGroup && (
                           <div className="flex items-center gap-2 mb-1 px-1">
-                            <span className="text-[10px] font-mono-code uppercase tracking-wider text-[#8A8A8A] font-semibold">
+                            <span className="text-[10px] font-mono-code uppercase tracking-wider text-[#7A7A82] font-semibold">
                               YOU
                             </span>
                           </div>
                         )}
 
-                        {/* Message Container: Subtle rectangular with 4px radius */}
-                        <div className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-[13px] leading-relaxed border rounded-[4px] bg-[#181818] text-[#F2F2ED] border-[#2C2C2C] hover:border-[#383838]">
+                        {/* Message Container */}
+                        <div className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-[13px] leading-relaxed border bg-[#16161C] text-[#F5F5F0] border-[#242430]">
                           {/* Highlighted Starter Header */}
                           {msg.isStarterPrompt && (
-                            <div className="flex items-center gap-2 pb-1.5 mb-2 border-b border-[#2C2C2C]">
+                            <div className="flex items-center gap-2 pb-1.5 mb-2 border-b border-[#242430]">
                               <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]" />
                               <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#D4FF3F] font-bold">
                                 CONVERSATION OPENER
@@ -438,7 +437,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                             </div>
                           )}
 
-                          <p className="font-sans-clean whitespace-pre-wrap font-normal text-[#F2F2ED]">
+                          <p className="font-sans-clean whitespace-pre-wrap font-normal text-[#F5F5F0]">
                             {msg.text}
                           </p>
                         </div>
@@ -446,10 +445,10 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                         {/* Subtle Timestamp & Delivery Status */}
                         {isLastInGroup && (
                           <div className="flex items-center gap-1.5 mt-1 px-1">
-                            <span className="text-[9px] text-[#7A7A7A] font-mono-code uppercase tracking-wider">
+                            <span className="text-[9px] text-[#7A7A82] font-mono-code uppercase tracking-wider">
                               {msg.timestamp}
                             </span>
-                            <CheckCheck className="w-3 h-3 text-[#8A8A8A]/70 inline" />
+                            <CheckCheck className="w-3 h-3 text-[#7A7A82]/70 inline" />
                           </div>
                         )}
                       </div>
@@ -463,16 +462,16 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
             {/* Conversation Starter Shortcut Bar (if dialogue is fresh) */}
             {activeMessages.length <= 2 && (
-              <div className="px-4 sm:px-6 py-2.5 border-t border-[#202020] bg-[#0E0E0E]">
+              <div className="px-4 sm:px-6 py-2.5 border-t border-[#1E1E24] bg-[#0C0C10]">
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                  <span className="text-[9px] text-[#8A8A8A] uppercase tracking-widest font-mono-code whitespace-nowrap flex items-center gap-1.5">
+                  <span className="text-[9px] text-[#7A7A82] uppercase tracking-widest font-mono-code whitespace-nowrap flex items-center gap-1.5">
                     <Lightbulb className="w-3 h-3 text-[#D4FF3F]" /> Prompts:
                   </span>
                   {CONVERSATION_STARTERS.slice(0, 3).map((starter, idx) => (
                     <button
                       key={idx}
                       onClick={() => handleSendStarter(starter)}
-                      className="whitespace-nowrap border border-[#242424] bg-[#121212] px-3 py-1 text-[11px] text-[#8A8A8A] hover:text-[#F2F2ED] hover:border-[#383838] transition-colors font-sans-clean"
+                      className="whitespace-nowrap border border-[#202026] bg-[#101014] px-3 py-1 text-[11px] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#383844] transition-colors font-sans-clean"
                     >
                       “{starter.slice(0, 34)}...”
                     </button>
@@ -482,7 +481,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
             )}
 
             {/* Message Input Bar */}
-            <form onSubmit={handleSend} className="p-3 sm:p-5 border-t border-[#242424] bg-[#101010] flex-shrink-0">
+            <form onSubmit={handleSend} className="p-3 sm:p-5 border-t border-[#1E1E24] bg-[#0E0E12] flex-shrink-0">
               <div className="flex items-center gap-3">
                 <input
                   id="message-text-input"
@@ -490,13 +489,13 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   placeholder={`Write a thoughtful note to ${(activeConnection.profile?.name || 'them').split(' ')[0]}...`}
-                  className="flex-1 border border-[#242424] bg-[#0B0B0B] px-4 py-3.5 text-xs sm:text-sm text-[#F2F2ED] placeholder-[#8A8A8A]/50 focus:border-[#383838] focus:outline-none transition-colors"
+                  className="flex-1 border border-[#24242C] bg-[#09090B] px-4 py-3 text-xs sm:text-sm text-[#F5F5F0] placeholder-[#64646E] focus:border-[#D4FF3F]/60 focus:outline-none transition-colors"
                 />
                 <button
                   id="send-message-btn"
                   type="submit"
                   disabled={!inputText.trim()}
-                  className="px-5 py-3.5 bg-[#D4FF3F] text-[#080808] hover:bg-[#F2F2ED] disabled:opacity-30 disabled:hover:bg-[#D4FF3F] disabled:cursor-not-allowed transition-all font-bold text-xs flex items-center justify-center gap-1.5"
+                  className="btn-primary py-3 px-5 text-xs"
                   title="Send message"
                 >
                   <Send className="w-3.5 h-3.5" />
@@ -507,17 +506,17 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
             {/* Slide-out Profile Context Drawer */}
             {isProfileDrawerOpen && (
-              <div className="absolute top-16 right-0 bottom-0 w-full sm:w-80 md:w-96 bg-[#101010] border-l border-[#242424] p-6 overflow-y-auto z-30 shadow-2xl animate-fade-in">
-                <div className="flex items-center justify-between mb-5 pb-3 border-b border-[#242424]">
+              <div className="absolute top-16 right-0 bottom-0 w-full sm:w-80 md:w-96 bg-[#0E0E12] border-l border-[#1E1E24] p-6 overflow-y-auto z-30 shadow-2xl animate-fade-in">
+                <div className="flex items-center justify-between mb-5 pb-3 border-b border-[#1E1E24]">
                   <div className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F]" />
-                    <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#F2F2ED] font-bold">
+                    <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#F5F5F0] font-bold">
                       PROFILE CONTEXT
                     </span>
                   </div>
                   <button
                     onClick={() => setIsProfileDrawerOpen(false)}
-                    className="p-1 text-[#8A8A8A] hover:text-[#F2F2ED] transition-colors"
+                    className="p-1 text-[#8E8E93] hover:text-[#F5F5F0] transition-colors"
                     aria-label="Close profile drawer"
                   >
                     <X className="w-4 h-4" />
@@ -530,69 +529,69 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                       src={activeConnection.profile?.avatarUrl || activeConnection.profile?.profilePhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
                       alt={activeConnection.profile?.name || 'Member'}
                       referrerPolicy="no-referrer"
-                      className="w-12 h-12 object-cover rounded-sm border border-[#242424]"
+                      className="w-12 h-12 object-cover border border-[#24242C]"
                     />
                     <div>
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-[#F2F2ED]">
+                      <h4 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F0]">
                         {activeConnection.profile?.name || 'Member'}
                       </h4>
-                      <p className="text-[11px] text-[#8A8A8A] font-sans-clean mt-0.5">
+                      <p className="text-[11px] text-[#8E8E93] font-sans-clean mt-0.5">
                         {activeConnection.profile?.role || 'Explorer'}
                       </p>
-                      <p className="text-[10px] text-[#8A8A8A] font-mono-code uppercase tracking-wider">
+                      <p className="text-[10px] text-[#7A7A82] font-mono-code uppercase tracking-wider">
                         {activeConnection.profile?.location || 'Worldwide'}
                       </p>
                     </div>
                   </div>
 
                   {activeConnection.profile?.tagline && (
-                    <div className="p-3.5 bg-[#141414] border border-[#202020]">
-                      <p className="text-xs text-[#F2F2ED] italic font-editorial leading-relaxed">
+                    <div className="p-3.5 bg-[#121216] border border-[#1E1E24]">
+                      <p className="text-xs text-[#F5F5F0] italic font-editorial leading-relaxed">
                         “{activeConnection.profile.tagline}”
                       </p>
                     </div>
                   )}
 
                   <div>
-                    <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#8A8A8A] block mb-1.5">
+                    <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#7A7A82] block mb-1.5">
                       ABOUT
                     </span>
-                    <p className="text-xs text-[#8A8A8A] leading-relaxed font-sans-clean">
+                    <p className="text-xs text-[#8E8E93] leading-relaxed font-sans-clean">
                       {activeConnection.profile?.bio || 'Member of Misfits Club.'}
                     </p>
                   </div>
 
                   {activeConnection.profile?.building && (
-                    <div className="bg-[#141414] p-3.5 border border-[#202020]">
+                    <div className="bg-[#121216] p-3.5 border border-[#1E1E24]">
                       <span className="text-[9px] text-[#D4FF3F] uppercase tracking-widest font-mono-code block mb-1 font-bold">
                         CURRENTLY BUILDING
                       </span>
-                      <p className="text-xs text-[#F2F2ED]/90 leading-relaxed font-sans-clean">
+                      <p className="text-xs text-[#F5F5F0]/90 leading-relaxed font-sans-clean">
                         {activeConnection.profile.building}
                       </p>
                     </div>
                   )}
 
                   {activeConnection.profile?.openQuestion && (
-                    <div className="bg-[#141414] p-3.5 border border-[#202020]">
-                      <span className="text-[9px] text-[#8A8A8A] uppercase tracking-widest font-mono-code block mb-1 font-bold">
+                    <div className="bg-[#121216] p-3.5 border border-[#1E1E24]">
+                      <span className="text-[9px] text-[#7A7A82] uppercase tracking-widest font-mono-code block mb-1 font-bold">
                         OPEN QUESTION
                       </span>
-                      <p className="text-xs text-[#F2F2ED] italic leading-relaxed font-editorial">
+                      <p className="text-xs text-[#F5F5F0] italic leading-relaxed font-editorial">
                         “{activeConnection.profile.openQuestion}”
                       </p>
                     </div>
                   )}
 
                   <div>
-                    <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#8A8A8A] block mb-2">
+                    <span className="text-[9px] font-mono-code uppercase tracking-widest text-[#7A7A82] block mb-2">
                       INTERESTS & TOPICS
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {(activeConnection.profile?.interests || []).map((i) => (
                         <span
                           key={i}
-                          className="text-[9px] text-[#8A8A8A] bg-[#141414] px-2.5 py-1 border border-[#242424] uppercase font-mono-code"
+                          className="text-[9px] text-[#8E8E93] bg-[#121216] px-2.5 py-1 border border-[#202026] uppercase font-mono-code"
                         >
                           {i}
                         </span>
@@ -605,7 +604,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
           </div>
         ) : (
-          <div className="flex-1 hidden md:flex items-center justify-center text-center p-8 text-[#8A8A8A] uppercase tracking-widest text-xs font-mono-code">
+          <div className="flex-1 hidden md:flex items-center justify-center text-center p-8 text-[#7A7A82] uppercase tracking-widest text-xs font-mono-code">
             Select a dialogue to start reading
           </div>
         )}

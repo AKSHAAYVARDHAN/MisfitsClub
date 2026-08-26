@@ -100,13 +100,13 @@ export const PlatformSidebar: React.FC<PlatformSidebarProps> = ({
   return (
     <aside
       id="platform-sidebar"
-      className={`fixed top-0 bottom-0 left-0 z-40 flex flex-col bg-[#0B0B0C] border-r border-[#F5F5F0]/10 transition-all duration-300 ease-in-out select-none
+      className={`fixed top-0 bottom-0 left-0 z-40 flex flex-col bg-[#09090B] border-r border-[#1E1E24] transition-all duration-300 ease-in-out select-none
         ${isCollapsed ? 'w-20' : 'w-64'}
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}
     >
       {/* 1. Header: Branding & Collapse Toggle */}
-      <div className={`h-20 flex items-center border-b border-[#F5F5F0]/10 px-4 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+      <div className={`h-20 flex items-center border-b border-[#1E1E24] px-4 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
         {!isCollapsed ? (
           <button
             id="sidebar-brand-logo-btn"
@@ -136,8 +136,8 @@ export const PlatformSidebar: React.FC<PlatformSidebarProps> = ({
           <button
             id="sidebar-toggle-collapse-btn"
             onClick={onToggleCollapse}
-            className={`hidden md:flex items-center justify-center w-7 h-7 rounded-none border border-[#242424] text-[#8A8A8A] hover:text-[#F5F5F0] hover:border-[#D4FF3F]/50 bg-[#121214] transition-colors focus:outline-none ${
-              isCollapsed ? 'absolute -right-3.5 top-6 z-50 bg-[#0B0B0C] shadow-lg' : ''
+            className={`hidden md:flex items-center justify-center w-7 h-7 rounded-none border border-[#24242C] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#383844] bg-[#121216] transition-colors focus:outline-none ${
+              isCollapsed ? 'absolute -right-3.5 top-6 z-50 bg-[#09090B] shadow-lg' : ''
             }`}
             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -164,20 +164,20 @@ export const PlatformSidebar: React.FC<PlatformSidebarProps> = ({
               onClick={() => handleItemClick(item.route)}
               className={`w-full group flex items-center gap-3.5 px-3.5 py-3 text-xs uppercase tracking-widest font-mono-code transition-all focus:outline-none ${
                 isActive
-                  ? 'text-[#D4FF3F] font-bold bg-[#D4FF3F]/10 border-l-2 border-[#D4FF3F]'
-                  : 'text-[#969696] hover:text-[#F5F5F0] hover:bg-[#141417] border-l-2 border-transparent'
+                  ? 'text-[#F5F5F0] font-bold bg-[#D4FF3F]/8 border-l-2 border-[#D4FF3F]'
+                  : 'text-[#8E8E93] hover:text-[#F5F5F0] hover:bg-[#141418] border-l-2 border-transparent'
               } ${isCollapsed ? 'justify-center px-0' : ''}`}
               title={isCollapsed ? item.label : undefined}
             >
               <div className="relative flex items-center justify-center">
                 <Icon
                   className={`w-4 h-4 transition-colors ${
-                    isActive ? 'text-[#D4FF3F]' : 'text-[#8A8A8A] group-hover:text-[#F5F5F0]'
+                    isActive ? 'text-[#D4FF3F]' : 'text-[#777780] group-hover:text-[#F5F5F0]'
                   }`}
                 />
                 {/* Badge for Collapsed Mode */}
                 {isCollapsed && item.badge && item.badge > 0 && (
-                  <span className="absolute -top-1.5 -right-2 bg-[#D4FF3F] text-[#0B0B0C] text-[8px] font-mono-code font-black px-1 rounded-none">
+                  <span className="absolute -top-1.5 -right-2 bg-lime-grained text-[#080808] text-[8px] font-mono-code font-black px-1 rounded-none">
                     {item.badge}
                   </span>
                 )}
@@ -190,8 +190,8 @@ export const PlatformSidebar: React.FC<PlatformSidebarProps> = ({
                     <span
                       className={`text-[10px] font-bold font-mono-code px-1.5 py-0.5 rounded-none ${
                         item.route === '/messages'
-                          ? 'bg-[#D4FF3F] text-[#0B0B0C]'
-                          : 'bg-[#F5F5F0]/10 text-[#F5F5F0]'
+                          ? 'bg-lime-grained text-[#080808]'
+                          : 'bg-[#181820] text-[#D0D0CA] border border-[#282832]'
                       }`}
                     >
                       {item.badge}
@@ -205,7 +205,7 @@ export const PlatformSidebar: React.FC<PlatformSidebarProps> = ({
       </nav>
 
       {/* 3. Bottom Section: Profile & User Actions */}
-      <div className="p-3 border-t border-[#F5F5F0]/10 bg-[#0E0E10]/40">
+      <div className="p-3 border-t border-[#1E1E24] bg-[#0C0C0E]">
         {currentUser && (
           <div className="space-y-1">
             <button
@@ -213,8 +213,8 @@ export const PlatformSidebar: React.FC<PlatformSidebarProps> = ({
               onClick={() => handleItemClick('/profile')}
               className={`w-full group flex items-center gap-3 px-3 py-2.5 text-xs font-mono-code transition-all focus:outline-none ${
                 isProfileActive
-                  ? 'text-[#D4FF3F] font-bold bg-[#D4FF3F]/10 border border-[#D4FF3F]/40'
-                  : 'text-[#F5F5F0] hover:bg-[#151518] border border-transparent'
+                  ? 'text-[#F5F5F0] font-bold bg-[#D4FF3F]/8 border border-[#D4FF3F]/30'
+                  : 'text-[#E0E0DC] hover:bg-[#141418] border border-transparent'
               } ${isCollapsed ? 'justify-center px-0' : ''}`}
               title={isCollapsed ? `${currentUser.name} (Profile)` : undefined}
             >
@@ -223,11 +223,11 @@ export const PlatformSidebar: React.FC<PlatformSidebarProps> = ({
                   src={currentUser.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
                   alt={currentUser.name}
                   referrerPolicy="no-referrer"
-                  className={`h-7 w-7 rounded-sm object-cover border ${
-                    isProfileActive ? 'border-[#D4FF3F]' : 'border-[#333]'
+                  className={`h-7 w-7 rounded-none object-cover border ${
+                    isProfileActive ? 'border-[#D4FF3F]' : 'border-[#282830]'
                   }`}
                 />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#D4FF3F] border border-[#0B0B0C]" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#D4FF3F] border border-[#09090B]" />
               </div>
 
               {!isCollapsed && (
@@ -235,7 +235,7 @@ export const PlatformSidebar: React.FC<PlatformSidebarProps> = ({
                   <p className="text-xs font-medium text-[#F5F5F0] truncate group-hover:text-[#D4FF3F] transition-colors">
                     {currentUser.name}
                   </p>
-                  <p className="text-[10px] text-[#7A7A7A] truncate font-sans-clean">
+                  <p className="text-[10px] text-[#7A7A82] truncate font-sans-clean">
                     {currentUser.role || 'Member'}
                   </p>
                 </div>
@@ -246,7 +246,7 @@ export const PlatformSidebar: React.FC<PlatformSidebarProps> = ({
               <button
                 id="sidebar-signout-btn"
                 onClick={onSignOut}
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A7A] hover:text-[#FF5C5C] hover:bg-[#FF5C5C]/5 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] hover:text-[#EF4444] hover:bg-[#EF4444]/5 transition-colors"
                 title="Sign out of platform"
               >
                 <LogOut className="w-3 h-3" />

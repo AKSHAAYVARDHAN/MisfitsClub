@@ -145,10 +145,10 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#080808] text-[#F2F2ED] py-8 px-4 sm:px-8 lg:px-12 max-w-7xl mx-auto pb-24 selection:bg-[#D4FF3F] selection:text-[#080808]">
+    <div className="min-h-screen bg-[#09090B] text-[#F5F5F0] py-8 px-4 sm:px-8 lg:px-12 max-w-7xl mx-auto pb-24 selection:bg-[#D4FF3F] selection:text-[#080808]">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 pb-6 border-b border-[#242424]">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 pb-6 border-b border-[#1E1E24]">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="w-2 h-2 rounded-full bg-[#D4FF3F]" />
@@ -156,10 +156,10 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
               NETWORK & CIRCLE
             </span>
           </div>
-          <h1 className="font-editorial text-4xl sm:text-5xl text-[#F2F2ED] font-light">
+          <h1 className="font-editorial text-4xl sm:text-5xl text-[#F5F5F0] font-light">
             Your Connections
           </h1>
-          <p className="font-sans-clean text-sm text-[#8A8A8A] mt-1.5 max-w-2xl">
+          <p className="font-sans-clean text-sm text-[#8E8E93] mt-1.5 max-w-2xl">
             Curious builders, thinkers, and explorers in your orbit. Track active dialogues and respond to incoming requests.
           </p>
         </div>
@@ -169,7 +169,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
             <button
               id="connections-view-orb-btn"
               onClick={onOpenOrb}
-              className="inline-flex items-center gap-2 bg-[#D4FF3F] text-[#080808] px-5 py-2.5 text-xs font-mono-code font-bold uppercase tracking-widest hover:bg-white transition-colors shadow-md"
+              className="btn-primary"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>3D Orb View</span>
@@ -179,7 +179,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
           <button
             id="connections-discover-more-btn"
             onClick={onExplore}
-            className="inline-flex items-center gap-2 bg-[#151516] border border-[#242424] px-5 py-2.5 text-xs font-mono-code uppercase tracking-widest text-[#F2F2ED] hover:border-[#D4FF3F] hover:text-[#D4FF3F] transition-colors"
+            className="btn-secondary"
           >
             <span>Discover Members</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -193,20 +193,20 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
           onClick={() => setActiveTab('connected')}
           className={`p-4 border text-left transition-all ${
             activeTab === 'connected'
-              ? 'border-[#D4FF3F] bg-[#D4FF3F]/5'
-              : 'border-[#242424] bg-[#101010] hover:border-[#383838]'
+              ? 'border-[#D4FF3F]/60 bg-[#D4FF3F]/5'
+              : 'border-[#1E1E24] bg-[#0E0E12] hover:border-[#32323E]'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#8A8A8A]">
+            <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#8E8E93]">
               Active Connections
             </span>
             <UserCheck className="w-4 h-4 text-[#D4FF3F]" />
           </div>
-          <p className="font-editorial text-3xl text-[#F2F2ED] mt-2 font-light">
+          <p className="font-editorial text-3xl text-[#F5F5F0] mt-2 font-light">
             {connectedList.length}
           </p>
-          <span className="text-[11px] text-[#8A8A8A] mt-1 block">
+          <span className="text-[11px] text-[#7A7A82] mt-1 block font-sans-clean">
             Mutual connections ready to chat
           </span>
         </button>
@@ -215,8 +215,8 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
           onClick={() => setActiveTab('received')}
           className={`p-4 border text-left transition-all relative ${
             activeTab === 'received'
-              ? 'border-[#D4FF3F] bg-[#D4FF3F]/5'
-              : 'border-[#242424] bg-[#101010] hover:border-[#383838]'
+              ? 'border-[#D4FF3F]/60 bg-[#D4FF3F]/5'
+              : 'border-[#1E1E24] bg-[#0E0E12] hover:border-[#32323E]'
           }`}
         >
           {incomingPendingList.length > 0 && (
@@ -226,15 +226,15 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
             </span>
           )}
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#8A8A8A]">
+            <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#8E8E93]">
               Requests Received
             </span>
             <UserPlus className="w-4 h-4 text-[#D4FF3F]" />
           </div>
-          <p className="font-editorial text-3xl text-[#F2F2ED] mt-2 font-light">
+          <p className="font-editorial text-3xl text-[#F5F5F0] mt-2 font-light">
             {incomingPendingList.length}
           </p>
-          <span className="text-[11px] text-[#8A8A8A] mt-1 block">
+          <span className="text-[11px] text-[#7A7A82] mt-1 block font-sans-clean">
             {incomingPendingList.length === 1 ? '1 invitation awaiting response' : `${incomingPendingList.length} invitations awaiting response`}
           </span>
         </button>
@@ -243,20 +243,20 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
           onClick={() => setActiveTab('sent')}
           className={`p-4 border text-left transition-all ${
             activeTab === 'sent'
-              ? 'border-[#D4FF3F] bg-[#D4FF3F]/5'
-              : 'border-[#242424] bg-[#101010] hover:border-[#383838]'
+              ? 'border-[#D4FF3F]/60 bg-[#D4FF3F]/5'
+              : 'border-[#1E1E24] bg-[#0E0E12] hover:border-[#32323E]'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#8A8A8A]">
+            <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#8E8E93]">
               Requests Sent
             </span>
-            <Send className="w-4 h-4 text-[#8A8A8A]" />
+            <Send className="w-4 h-4 text-[#7A7A82]" />
           </div>
-          <p className="font-editorial text-3xl text-[#F2F2ED] mt-2 font-light">
+          <p className="font-editorial text-3xl text-[#F5F5F0] mt-2 font-light">
             {outgoingPendingList.length}
           </p>
-          <span className="text-[11px] text-[#8A8A8A] mt-1 block">
+          <span className="text-[11px] text-[#7A7A82] mt-1 block font-sans-clean">
             Pending replies from members
           </span>
         </button>
@@ -266,14 +266,14 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         
         {/* Navigation Sub-Tabs */}
-        <div className="flex items-center gap-2 border-b border-[#242424] pb-2 sm:pb-0 sm:border-0">
+        <div className="flex items-center gap-2 border-b border-[#1E1E24] pb-2 sm:pb-0 sm:border-0">
           <button
             id="tab-btn-connected"
             onClick={() => setActiveTab('connected')}
-            className={`px-4 py-2 text-xs font-mono-code uppercase tracking-wider font-bold transition-all border ${
+            className={`px-4 py-2 text-xs font-mono-code uppercase tracking-wider font-semibold transition-all border ${
               activeTab === 'connected'
-                ? 'bg-[#F2F2ED] text-[#080808] border-[#F2F2ED]'
-                : 'bg-[#101010] text-[#8A8A8A] border-[#242424] hover:text-[#F2F2ED] hover:border-[#383838]'
+                ? 'bg-lime-grained text-[#080808] border-[#D4FF3F] font-bold'
+                : 'bg-[#101014] text-[#8E8E93] border-[#222228] hover:text-[#F5F5F0] hover:border-[#383844]'
             }`}
           >
             Connected ({connectedList.length})
@@ -282,10 +282,10 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
           <button
             id="tab-btn-received"
             onClick={() => setActiveTab('received')}
-            className={`px-4 py-2 text-xs font-mono-code uppercase tracking-wider font-bold transition-all border relative ${
+            className={`px-4 py-2 text-xs font-mono-code uppercase tracking-wider font-semibold transition-all border relative ${
               activeTab === 'received'
-                ? 'bg-[#F2F2ED] text-[#080808] border-[#F2F2ED]'
-                : 'bg-[#101010] text-[#8A8A8A] border-[#242424] hover:text-[#F2F2ED] hover:border-[#383838]'
+                ? 'bg-lime-grained text-[#080808] border-[#D4FF3F] font-bold'
+                : 'bg-[#101014] text-[#8E8E93] border-[#222228] hover:text-[#F5F5F0] hover:border-[#383844]'
             }`}
           >
             Requests Received ({incomingPendingList.length})
@@ -299,10 +299,10 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
           <button
             id="tab-btn-sent"
             onClick={() => setActiveTab('sent')}
-            className={`px-4 py-2 text-xs font-mono-code uppercase tracking-wider font-bold transition-all border ${
+            className={`px-4 py-2 text-xs font-mono-code uppercase tracking-wider font-semibold transition-all border ${
               activeTab === 'sent'
-                ? 'bg-[#F2F2ED] text-[#080808] border-[#F2F2ED]'
-                : 'bg-[#101010] text-[#8A8A8A] border-[#242424] hover:text-[#F2F2ED] hover:border-[#383838]'
+                ? 'bg-lime-grained text-[#080808] border-[#D4FF3F] font-bold'
+                : 'bg-[#101014] text-[#8E8E93] border-[#222228] hover:text-[#F5F5F0] hover:border-[#383844]'
             }`}
           >
             Requests Sent ({outgoingPendingList.length})
@@ -311,19 +311,19 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
 
         {/* Search Input */}
         <div className="relative w-full lg:w-72">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#8A8A8A]" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#64646E]" />
           <input
             id="connections-search-input"
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search connections..."
-            className="w-full bg-[#101010] border border-[#242424] pl-9 pr-3 py-2 text-xs text-[#F2F2ED] placeholder-[#8A8A8A] focus:border-[#D4FF3F] focus:outline-none font-mono-code"
+            className="w-full bg-[#0E0E12] border border-[#24242C] pl-9 pr-3 py-2 text-xs text-[#F5F5F0] placeholder-[#64646E] focus:border-[#D4FF3F]/60 focus:outline-none font-mono-code"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8A8A8A] hover:text-[#F2F2ED]"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#64646E] hover:text-[#F5F5F0]"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -340,8 +340,8 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
               onClick={() => setSelectedIntentFilter(intent)}
               className={`whitespace-nowrap px-3.5 py-1.5 text-xs font-mono-code uppercase tracking-wider transition-all border ${
                 selectedIntentFilter === intent
-                  ? 'border-[#D4FF3F] bg-[#D4FF3F]/10 text-[#D4FF3F] font-bold'
-                  : 'bg-[#101010] text-[#8A8A8A] border-[#242424] hover:border-[#383838] hover:text-[#F2F2ED]'
+                  ? 'border-[#D4FF3F]/50 bg-[#D4FF3F]/10 text-[#D4FF3F] font-bold'
+                  : 'bg-[#101014] text-[#8E8E93] border-[#222228] hover:border-[#383844] hover:text-[#F5F5F0]'
               }`}
             >
               {intent}
@@ -352,21 +352,21 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
 
       {/* Main Content Area */}
       {filteredList.length === 0 ? (
-        <div className="text-center py-20 border border-[#242424] bg-[#101010] p-8 max-w-lg mx-auto">
+        <div className="text-center py-20 border border-[#1E1E24] bg-[#0E0E12] p-8 max-w-lg mx-auto">
           <Sparkles className="w-8 h-8 text-[#D4FF3F] mx-auto mb-3" />
-          <h3 className="font-editorial text-2xl text-[#F2F2ED] font-light">
+          <h3 className="font-editorial text-2xl text-[#F5F5F0] font-light">
             {activeTab === 'connected' && 'No connections found'}
             {activeTab === 'received' && 'No pending incoming requests'}
             {activeTab === 'sent' && 'No pending sent requests'}
           </h3>
-          <p className="text-xs sm:text-sm text-[#8A8A8A] mt-2 mb-6">
+          <p className="text-xs sm:text-sm text-[#8E8E93] mt-2 mb-6 font-sans-clean">
             {activeTab === 'connected' && 'Explore the Discovery feed to find curious minds, joint builders, and kindred misfits.'}
             {activeTab === 'received' && 'When other members send you connection requests with starter questions, they will appear here.'}
             {activeTab === 'sent' && 'When you request to connect with members, you can track their status here.'}
           </p>
           <button
             onClick={onExplore}
-            className="bg-[#F2F2ED] text-[#080808] px-6 py-2.5 text-xs font-mono-code font-bold uppercase tracking-widest hover:bg-[#D4FF3F] transition-colors"
+            className="btn-primary"
           >
             Discover Members
           </button>
@@ -382,7 +382,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
             return (
               <div
                 key={conn.id}
-                className="border border-[#242424] bg-[#101010] p-5 flex flex-col justify-between hover:border-[#383838] transition-all relative group"
+                className="border border-[#1E1E24] bg-[#0E0E12] p-5 flex flex-col justify-between hover:border-[#32323E] transition-all relative group"
               >
                 <div>
                   
@@ -396,21 +396,21 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
                         src={p?.avatarUrl || p?.profilePhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
                         alt={p?.name || 'Member'}
                         referrerPolicy="no-referrer"
-                        className="w-12 h-12 object-cover border border-[#242424] shrink-0"
+                        className="w-12 h-12 object-cover border border-[#24242C] shrink-0"
                       />
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <h3 className="font-editorial text-xl text-[#F2F2ED] font-light group-hover/prof:text-[#D4FF3F] transition-colors">
+                          <h3 className="font-editorial text-xl text-[#F5F5F0] font-light group-hover/prof:text-[#D4FF3F] transition-colors">
                             {p?.name || 'Curious Misfit'}
                           </h3>
                           {p?.roleEmoji && (
                             <span className="text-sm">{p.roleEmoji}</span>
                           )}
                         </div>
-                        <p className="text-[11px] text-[#D4FF3F] font-mono-code uppercase tracking-wider">
+                        <p className="text-[11px] text-[#D0D0CA] font-mono-code uppercase tracking-wider">
                           {p?.role || 'Explorer & Builder'}
                         </p>
-                        <p className="text-[10px] text-[#8A8A8A] font-mono-code uppercase tracking-widest flex items-center gap-1 mt-0.5">
+                        <p className="text-[10px] text-[#7A7A82] font-mono-code uppercase tracking-widest flex items-center gap-1 mt-0.5">
                           <MapPin className="w-2.5 h-2.5" />
                           <span>{p?.location || p?.college || 'Worldwide'}</span>
                         </p>
@@ -429,7 +429,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
                       </span>
                     )}
                     {isOutgoing && (
-                      <span className="text-[10px] font-mono-code uppercase px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/30 font-bold shrink-0">
+                      <span className="text-[10px] font-mono-code uppercase px-2 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/30 font-bold shrink-0">
                         Sent
                       </span>
                     )}
@@ -437,14 +437,14 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
 
                   {/* Tagline / Question snippet */}
                   {p?.tagline && (
-                    <p className="font-editorial text-base italic text-[#F2F2ED]/90 leading-snug mb-3.5 font-light">
+                    <p className="font-editorial text-base italic text-[#F5F5F0]/90 leading-snug mb-3.5 font-light">
                       “{p.tagline}”
                     </p>
                   )}
 
                   {/* Intro Note / Starter Prompt if included */}
                   {conn.introNote && (
-                    <div className="bg-[#151516] p-3 border border-[#242424] mb-3.5">
+                    <div className="bg-[#121216] p-3 border border-[#202026] mb-3.5">
                       <span className="text-[9px] text-[#D4FF3F] font-mono-code uppercase tracking-widest font-bold block mb-1">
                         {isIncoming ? 'Opening Message from them' : 'Your Starter Note'}
                       </span>
@@ -457,14 +457,14 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
                   {/* Shared Intents */}
                   {conn.sharedIntents && conn.sharedIntents.length > 0 && (
                     <div className="mb-3">
-                      <span className="text-[10px] text-[#8A8A8A] uppercase font-mono-code tracking-widest block mb-1.5">
+                      <span className="text-[10px] text-[#7A7A82] uppercase font-mono-code tracking-widest block mb-1.5">
                         Shared Intentions:
                       </span>
                       <div className="flex flex-wrap gap-1">
                         {conn.sharedIntents.map((i) => (
                           <span
                             key={i}
-                            className="text-[10px] font-mono-code text-[#D4FF3F] bg-[#D4FF3F]/5 border border-[#D4FF3F]/20 px-2 py-0.5 uppercase tracking-wider"
+                            className="text-[10px] font-mono-code text-[#B5B5AF] bg-[#141418] border border-[#24242C] px-2 py-0.5 uppercase tracking-wider"
                           >
                             {i}
                           </span>
@@ -476,14 +476,14 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
                   {/* Common Topics */}
                   {conn.sharedInterests && conn.sharedInterests.length > 0 && (
                     <div className="mb-3">
-                      <span className="text-[10px] text-[#8A8A8A] uppercase font-mono-code tracking-widest block mb-1">
+                      <span className="text-[10px] text-[#7A7A82] uppercase font-mono-code tracking-widest block mb-1">
                         Common Topics:
                       </span>
                       <div className="flex flex-wrap gap-1">
                         {conn.sharedInterests.map((interest) => (
                           <span
                             key={interest}
-                            className="text-[10px] text-[#8A8A8A] bg-[#151516] px-2 py-0.5 border border-[#242424] uppercase font-mono-code"
+                            className="text-[10px] text-[#8E8E93] bg-[#121216] px-2 py-0.5 border border-[#202026] uppercase font-mono-code"
                           >
                             {interest}
                           </span>
@@ -494,7 +494,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
                 </div>
 
                 {/* Card Bottom Actions */}
-                <div className="pt-4 border-t border-[#242424] mt-3">
+                <div className="pt-4 border-t border-[#1C1C22] mt-3">
                   
                   {/* Connected Tab Actions */}
                   {isConnected && (
@@ -502,7 +502,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
                       <button
                         onClick={() => onRemoveConnection && handleAction(onRemoveConnection, conn.id)}
                         disabled={actionInProgress === conn.id}
-                        className="text-[11px] font-mono-code uppercase tracking-wider text-[#8A8A8A] hover:text-red-400 transition-colors"
+                        className="text-[11px] font-mono-code uppercase tracking-wider text-[#7A7A82] hover:text-[#EF4444] transition-colors"
                         title="Remove connection"
                       >
                         Remove
@@ -512,7 +512,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
                         {onSelectProfile && (
                           <button
                             onClick={() => onSelectProfile(p)}
-                            className="p-2 border border-[#242424] text-[#8A8A8A] hover:text-[#F2F2ED] hover:border-[#383838] transition-colors"
+                            className="p-2 border border-[#24242C] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#383844] transition-colors"
                             title="View Full Profile"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
@@ -521,7 +521,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
                         <button
                           id={`open-chat-btn-${conn.id}`}
                           onClick={() => onOpenChat(conn.id)}
-                          className="flex items-center gap-1.5 bg-[#F2F2ED] px-4 py-2 text-xs font-mono-code font-bold uppercase tracking-widest text-[#080808] hover:bg-[#D4FF3F] transition-all"
+                          className="btn-primary py-1.5 px-3 text-xs"
                         >
                           <MessageSquare className="w-3.5 h-3.5" />
                           <span>Open Chat</span>
@@ -537,7 +537,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
                         id={`decline-request-btn-${conn.id}`}
                         onClick={() => onDeclineRequest && handleAction(onDeclineRequest, conn.id)}
                         disabled={actionInProgress === conn.id}
-                        className="flex items-center gap-1 px-3 py-1.5 border border-[#242424] text-xs font-mono-code uppercase tracking-wider text-[#8A8A8A] hover:text-red-400 hover:border-red-500/40 transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 border border-[#24242C] text-xs font-mono-code uppercase tracking-wider text-[#8E8E93] hover:text-[#EF4444] hover:border-[#EF4444]/40 transition-colors"
                       >
                         <X className="w-3.5 h-3.5" />
                         <span>Decline</span>
@@ -547,7 +547,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
                         {onSelectProfile && (
                           <button
                             onClick={() => onSelectProfile(p)}
-                            className="p-2 border border-[#242424] text-[#8A8A8A] hover:text-[#F2F2ED] hover:border-[#383838] transition-colors"
+                            className="p-2 border border-[#24242C] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#383844] transition-colors"
                             title="View Full Profile"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
@@ -557,7 +557,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
                           id={`accept-request-btn-${conn.id}`}
                           onClick={() => onAcceptRequest && handleAction(onAcceptRequest, conn.id)}
                           disabled={actionInProgress === conn.id}
-                          className="flex items-center gap-1.5 bg-[#D4FF3F] text-[#080808] px-4 py-1.5 text-xs font-mono-code font-bold uppercase tracking-widest hover:bg-white transition-all shadow"
+                          className="btn-primary py-1.5 px-3.5 text-xs"
                         >
                           <Check className="w-3.5 h-3.5" />
                           <span>Accept</span>
@@ -569,7 +569,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
                   {/* Outgoing Requests Tab Actions */}
                   {isOutgoing && (
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] text-[#8A8A8A] font-mono-code uppercase tracking-widest flex items-center gap-1">
+                      <span className="text-[10px] text-[#7A7A82] font-mono-code uppercase tracking-widest flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         <span>Awaiting Response</span>
                       </span>
@@ -578,7 +578,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
                         {onSelectProfile && (
                           <button
                             onClick={() => onSelectProfile(p)}
-                            className="p-2 border border-[#242424] text-[#8A8A8A] hover:text-[#F2F2ED] hover:border-[#383838] transition-colors"
+                            className="p-2 border border-[#24242C] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#383844] transition-colors"
                             title="View Full Profile"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
@@ -588,10 +588,10 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
                           id={`cancel-request-btn-${conn.id}`}
                           onClick={() => onCancelRequest && handleAction(onCancelRequest, conn.id)}
                           disabled={actionInProgress === conn.id}
-                          className="flex items-center gap-1 px-3 py-1.5 border border-[#242424] text-xs font-mono-code uppercase tracking-wider text-[#8A8A8A] hover:text-red-400 hover:border-red-500/40 transition-colors"
+                          className="flex items-center gap-1 px-3 py-1.5 border border-[#24242C] text-xs font-mono-code uppercase tracking-wider text-[#8E8E93] hover:text-[#EF4444] hover:border-[#EF4444]/40 transition-colors"
                         >
                           <X className="w-3 h-3" />
-                          <span>Cancel Request</span>
+                          <span>Cancel</span>
                         </button>
                       </div>
                     </div>

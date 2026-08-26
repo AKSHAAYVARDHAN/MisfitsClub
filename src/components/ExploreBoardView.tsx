@@ -58,12 +58,12 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0B0C] text-[#F5F5F0] py-8 px-4 sm:px-8 lg:px-12 max-w-7xl mx-auto pb-24 selection:bg-[#D4FF3F] selection:text-[#0B0B0C]">
+    <div className="min-h-screen bg-[#09090B] text-[#F5F5F0] py-8 px-4 sm:px-8 lg:px-12 max-w-7xl mx-auto pb-24 selection:bg-[#D4FF3F] selection:text-[#080808]">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-6 border-b border-[#F5F5F0]/10">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-6 border-b border-[#1E1E24]">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex items-center gap-2 mb-1.5 font-mono-code">
             <Sparkles className="w-4 h-4 text-[#D4FF3F]" />
             <span className="text-[10px] text-[#D4FF3F] uppercase tracking-widest font-bold">
               Live Curiosity Spark
@@ -72,7 +72,7 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
           <h1 className="font-editorial text-4xl sm:text-5xl text-[#F5F5F0] font-light">
             Questions & Rabbit Holes
           </h1>
-          <p className="font-sans-clean text-sm text-[#969696] mt-1.5 max-w-xl">
+          <p className="font-sans-clean text-sm text-[#8E8E93] mt-1.5 max-w-xl">
             Unfiltered thoughts, active inquiries, and strange ideas posted by members around the globe.
           </p>
         </div>
@@ -80,26 +80,26 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
         <button
           id="post-curious-thought-btn"
           onClick={() => (currentUser ? setIsPostingModalOpen(true) : onOpenOnboarding())}
-          className="flex items-center gap-2 bg-[#D4FF3F] px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-[#0B0B0C] hover:bg-[#F5F5F0] transition-all self-start md:self-auto"
+          className="btn-primary self-start md:self-auto"
         >
           <Plus className="w-4 h-4" />
-          <span>Post a Thought / Question</span>
+          <span>Post Thought / Question</span>
         </button>
       </div>
 
       {/* Tag Filters */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 scrollbar-none">
-        <span className="text-[10px] text-[#969696] uppercase tracking-widest font-bold pr-2 whitespace-nowrap">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-4 mb-8 scrollbar-none font-mono-code">
+        <span className="text-[10px] text-[#777780] uppercase tracking-widest font-bold pr-2 whitespace-nowrap">
           Topic:
         </span>
         {allTags.map((tag) => (
           <button
             key={tag}
             onClick={() => setSelectedTag(tag)}
-            className={`whitespace-nowrap px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition-all ${
+            className={`whitespace-nowrap px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all border ${
               selectedTag === tag
-                ? 'bg-[#F5F5F0] text-[#0B0B0C]'
-                : 'bg-[#151516] text-[#969696] border border-[#F5F5F0]/10 hover:border-[#D4FF3F] hover:text-[#F5F5F0]'
+                ? 'bg-lime-grained text-[#080808] border-[#D4FF3F] font-bold'
+                : 'bg-[#101014] text-[#8E8E93] border-[#222228] hover:border-[#383844] hover:text-[#F5F5F0]'
             }`}
           >
             {tag}
@@ -112,7 +112,7 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
         {filteredPosts.map((post) => (
           <div
             key={post.id}
-            className="border border-[#F5F5F0]/10 bg-[#151516] p-6 sm:p-7 flex flex-col justify-between hover:border-[#D4FF3F]/50 transition-all"
+            className="border border-[#1E1E24] bg-[#0E0E12] p-6 sm:p-7 flex flex-col justify-between hover:border-[#32323E] transition-all"
           >
             <div>
               {/* Author bar */}
@@ -122,19 +122,19 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
                     src={post.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
                     alt={post.authorName}
                     referrerPolicy="no-referrer"
-                    className="w-10 h-10 object-cover border border-[#F5F5F0]/10"
+                    className="w-10 h-10 object-cover border border-[#26262E]"
                   />
                   <div>
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F0]">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F0] font-sans-clean">
                       {post.authorName}
                     </h3>
-                    <p className="text-[10px] text-[#969696] uppercase tracking-widest">
+                    <p className="text-[10px] text-[#7A7A82] uppercase tracking-widest font-mono-code">
                       {post.authorLocation} · {post.authorRole}
                     </p>
                   </div>
                 </div>
 
-                <span className="text-[9px] text-[#969696] uppercase tracking-widest">
+                <span className="text-[9px] text-[#7A7A82] uppercase tracking-widest font-mono-code">
                   {post.timestamp}
                 </span>
               </div>
@@ -149,7 +149,7 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
                 {(post.tags || []).map((tag) => (
                   <span
                     key={tag}
-                    className="text-[10px] text-[#969696] bg-[#0B0B0C] border border-[#F5F5F0]/5 px-2.5 py-0.5 uppercase tracking-wider"
+                    className="text-[10px] font-mono-code text-[#8E8E93] bg-[#121216] border border-[#202026] px-2.5 py-0.5"
                   >
                     #{tag}
                   </span>
@@ -158,16 +158,16 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
             </div>
 
             {/* Bottom Actions */}
-            <div className="pt-4 border-t border-[#F5F5F0]/10 flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs text-[#969696]">
-                <MessageCircle className="w-3.5 h-3.5 text-[#D4FF3F]" />
-                <span className="text-[10px] uppercase tracking-widest">{post.repliesCount} thinkers exploring this</span>
+            <div className="pt-4 border-t border-[#1C1C22] flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs text-[#8E8E93] font-mono-code">
+                <MessageCircle className="w-3.5 h-3.5 text-[#666670]" />
+                <span className="text-[10px] uppercase tracking-widest">{post.repliesCount} thinkers exploring</span>
               </div>
 
               <button
                 id={`reply-thought-${post.id}`}
                 onClick={() => onConnectWithAuthor(post.authorId, post.content)}
-                className="inline-flex items-center gap-1.5 bg-[#F5F5F0] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[#0B0B0C] hover:bg-[#D4FF3F] transition-all"
+                className="btn-primary py-1.5 px-3 text-xs"
               >
                 <span>Talk about this</span>
                 <ArrowRight className="w-3 h-3" />
@@ -180,12 +180,12 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
 
       {/* Post Modal */}
       {isPostingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B0B0C]/90 backdrop-blur-md p-4 selection:bg-[#D4FF3F] selection:text-[#0B0B0C]">
-          <div className="relative w-full max-w-lg border border-[#F5F5F0]/10 bg-[#151516] p-6 sm:p-8 shadow-2xl text-[#F5F5F0]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#09090B]/90 backdrop-blur-md p-4 selection:bg-[#D4FF3F] selection:text-[#080808]">
+          <div className="relative w-full max-w-lg border border-[#24242C] bg-[#101014] p-6 sm:p-8 shadow-2xl text-[#F5F5F0]">
             
             <button
               onClick={() => setIsPostingModalOpen(false)}
-              className="absolute right-5 top-5 p-2 text-[#969696] hover:text-[#F5F5F0]"
+              className="absolute right-5 top-5 p-2 text-[#8E8E93] hover:text-[#F5F5F0]"
             >
               <X className="w-4 h-4" />
             </button>
@@ -197,13 +197,13 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
               </h3>
             </div>
 
-            <p className="text-xs text-[#969696] mb-5 leading-relaxed">
+            <p className="text-xs text-[#8E8E93] mb-5 leading-relaxed">
               Post an unfiltered thought, an open thesis, or a question you'd love to discuss with someone interesting.
             </p>
 
             <form onSubmit={handleCreatePost} className="space-y-4">
               <div>
-                <label className="text-[10px] text-[#969696] uppercase tracking-widest font-bold block mb-1">
+                <label className="text-[10px] text-[#8E8E93] uppercase tracking-widest font-mono-code font-bold block mb-1">
                   What's on your mind?
                 </label>
                 <textarea
@@ -211,12 +211,12 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
                   value={postContent}
                   onChange={(e) => setPostContent(e.target.value)}
                   placeholder="e.g. Looking for someone obsessed with biomimicry robotics to explore passive flight dynamics..."
-                  className="w-full border border-[#F5F5F0]/10 bg-[#0B0B0C] p-3.5 text-xs sm:text-sm text-[#F5F5F0] placeholder-[#969696]/60 focus:border-[#D4FF3F] focus:outline-none leading-relaxed"
+                  className="w-full border border-[#24242C] bg-[#09090B] p-3.5 text-xs sm:text-sm text-[#F5F5F0] placeholder-[#64646E] focus:border-[#D4FF3F]/60 focus:outline-none leading-relaxed font-sans-clean"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-[#969696] uppercase tracking-widest font-bold block mb-1">
+                <label className="text-[10px] text-[#8E8E93] uppercase tracking-widest font-mono-code font-bold block mb-1">
                   Topic Tags (comma separated)
                 </label>
                 <input
@@ -224,15 +224,15 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
                   value={postTagsInput}
                   onChange={(e) => setPostTagsInput(e.target.value)}
                   placeholder="e.g. AI, Philosophy, Robotics"
-                  className="w-full border border-[#F5F5F0]/10 bg-[#0B0B0C] px-3.5 py-2.5 text-xs text-[#F5F5F0] focus:border-[#D4FF3F] focus:outline-none"
+                  className="w-full border border-[#24242C] bg-[#09090B] px-3.5 py-2.5 text-xs font-mono-code text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none"
                 />
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-[#F5F5F0]/10">
+              <div className="flex items-center justify-between pt-4 border-t border-[#1E1E24]">
                 <button
                   type="button"
                   onClick={() => setIsPostingModalOpen(false)}
-                  className="text-xs font-bold uppercase tracking-widest text-[#969696] hover:text-[#F5F5F0]"
+                  className="btn-secondary"
                 >
                   Cancel
                 </button>
@@ -240,7 +240,7 @@ export const ExploreBoardView: React.FC<ExploreBoardViewProps> = ({
                 <button
                   type="submit"
                   disabled={!postContent.trim()}
-                  className="flex items-center gap-2 bg-[#D4FF3F] px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-[#0B0B0C] hover:bg-[#F5F5F0] disabled:opacity-40"
+                  className="btn-primary"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Publish to Spark</span>

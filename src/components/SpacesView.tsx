@@ -206,16 +206,16 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
     <div id="spaces-view-root" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
       
       {/* 1. Header & Hero */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-[#F5F5F0]/10 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-[#1E1E24] mb-8">
         <div>
-          <div className="flex items-center gap-2 font-mono-code text-xs text-[#D4FF3F] uppercase tracking-wider mb-2">
-            <Layers className="w-4 h-4" />
+          <div className="flex items-center gap-2 font-mono-code text-xs text-[#8E8E93] uppercase tracking-wider mb-2">
+            <Layers className="w-4 h-4 text-[#D4FF3F]" />
             <span>COMMUNITY GATHERINGS</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold font-sans-clean text-[#F5F5F0] tracking-tight mb-2">
             HUB
           </h1>
-          <p className="text-sm text-[#A0A09A] max-w-2xl leading-relaxed">
+          <p className="text-sm text-[#8E8E93] max-w-2xl leading-relaxed">
             Find people who are into the same unusual things you are. Gather around a shared curiosity, toolmaking project, deep inquiry, or craft.
           </p>
         </div>
@@ -224,10 +224,10 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
         <button
           id="spaces-create-btn"
           onClick={() => setIsCreateModalOpen(true)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#D4FF3F] hover:bg-[#b8e62f] text-[#080808] text-xs font-mono-code font-bold uppercase tracking-wider transition-all shadow-lg shrink-0"
+          className="btn-primary shrink-0"
         >
           <Plus className="w-4 h-4" />
-          Create a Hub
+          Create Hub
         </button>
       </div>
 
@@ -238,19 +238,19 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
           
           {/* Search Input */}
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666]" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666670]" />
             <input
               id="spaces-search-input"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search hubs by name, topic, or tag..."
-              className="w-full pl-9 pr-8 py-2 bg-[#0E0E11] border border-[#26262B] focus:border-[#D4FF3F] text-xs font-mono-code text-[#F5F5F0] placeholder-[#555] focus:outline-none transition-colors"
+              className="w-full pl-9 pr-8 py-2 bg-[#0E0E12] border border-[#24242C] focus:border-[#D4FF3F]/60 text-xs font-mono-code text-[#F5F5F0] placeholder-[#555560] focus:outline-none transition-colors"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#666] hover:text-[#CCC]"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#666670] hover:text-[#CCC]"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -258,14 +258,14 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
           </div>
 
           {/* Membership Tabs */}
-          <div className="flex items-center gap-1 bg-[#121215] border border-[#26262B] p-1 self-start md:self-auto">
+          <div className="flex items-center gap-1 bg-[#121216] border border-[#24242C] p-1 self-start md:self-auto">
             <button
               id="spaces-tab-all"
               onClick={() => setMembershipTab('all')}
               className={`px-3.5 py-1.5 text-xs font-mono-code transition-all ${
                 membershipTab === 'all'
-                  ? 'bg-[#D4FF3F] text-[#080808] font-bold'
-                  : 'text-[#8A8A8A] hover:text-[#F5F5F0]'
+                  ? 'bg-lime-grained text-[#080808] font-bold'
+                  : 'text-[#8E8E93] hover:text-[#F5F5F0]'
               }`}
             >
               All Hubs ({spaces.length})
@@ -275,8 +275,8 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
               onClick={() => setMembershipTab('my-spaces')}
               className={`px-3.5 py-1.5 text-xs font-mono-code transition-all ${
                 membershipTab === 'my-spaces'
-                  ? 'bg-[#D4FF3F] text-[#080808] font-bold'
-                  : 'text-[#8A8A8A] hover:text-[#F5F5F0]'
+                  ? 'bg-lime-grained text-[#080808] font-bold'
+                  : 'text-[#8E8E93] hover:text-[#F5F5F0]'
               }`}
             >
               My Hubs ({mySpacesCount})
@@ -295,8 +295,8 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1 text-xs font-mono-code whitespace-nowrap transition-all border ${
                   isSelected
-                    ? 'bg-[#D4FF3F] text-[#080808] font-bold border-[#D4FF3F]'
-                    : 'bg-[#101013] text-[#8A8A8A] border-[#222] hover:border-[#444] hover:text-[#F5F5F0]'
+                    ? 'bg-lime-grained text-[#080808] font-bold border-[#D4FF3F]'
+                    : 'bg-[#101014] text-[#8E8E93] border-[#222228] hover:border-[#383844] hover:text-[#F5F5F0]'
                 }`}
               >
                 {cat}
@@ -308,7 +308,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
         {/* Active Tag Filter / Suggestions */}
         {allTags.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            <span className="text-[10px] font-mono-code text-[#666] mr-1">Popular Tags:</span>
+            <span className="text-[10px] font-mono-code text-[#666670] mr-1">Popular Tags:</span>
             {allTags.map((tag) => {
               const isSelected = selectedTag === tag;
               return (
@@ -317,8 +317,8 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
                   onClick={() => setSelectedTag(isSelected ? null : tag)}
                   className={`px-2 py-0.5 text-[10px] font-mono-code transition-colors border ${
                     isSelected
-                      ? 'bg-[#D4FF3F]/20 text-[#D4FF3F] border-[#D4FF3F]'
-                      : 'bg-[#0E0E10] text-[#777] border-[#1E1E22] hover:border-[#333] hover:text-[#AAA]'
+                      ? 'bg-[#D4FF3F]/15 text-[#D4FF3F] border-[#D4FF3F]/40 font-bold'
+                      : 'bg-[#0E0E12] text-[#8E8E93] border-[#202026] hover:border-[#33333E] hover:text-[#D0D0CA]'
                   }`}
                 >
                   #{tag}
@@ -329,7 +329,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
             {selectedTag && (
               <button
                 onClick={() => setSelectedTag(null)}
-                className="text-[10px] font-mono-code text-[#FF6B6B] hover:underline ml-1"
+                className="text-[10px] font-mono-code text-[#EF4444] hover:underline ml-1"
               >
                 Clear tag filter
               </button>
@@ -342,17 +342,17 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
       {isLoading ? (
         <div className="py-24 text-center">
           <Loader2 className="w-8 h-8 animate-spin text-[#D4FF3F] mx-auto mb-3" />
-          <p className="font-mono-code text-xs text-[#8A8A8A] uppercase tracking-wider">
+          <p className="font-mono-code text-xs text-[#8E8E93] uppercase tracking-wider">
             Loading Misfits Hubs...
           </p>
         </div>
       ) : filteredSpaces.length === 0 ? (
-        <div className="bg-[#0D0D10] border border-[#202026] p-12 text-center my-6">
-          <Layers className="w-10 h-10 text-[#444] mx-auto mb-4" />
+        <div className="bg-[#0E0E12] border border-[#1E1E24] p-12 text-center my-6">
+          <Layers className="w-10 h-10 text-[#444450] mx-auto mb-4" />
           <h3 className="text-base font-bold font-mono-code text-[#F5F5F0] mb-2">
             No Hubs Found
           </h3>
-          <p className="text-xs text-[#888] max-w-md mx-auto mb-6">
+          <p className="text-xs text-[#8E8E93] max-w-md mx-auto mb-6">
             {membershipTab === 'my-spaces'
               ? "You haven't joined or created any Hubs yet. Explore public hubs or start your own gathering."
               : searchQuery || selectedCategory !== 'All' || selectedTag
@@ -368,16 +368,17 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
                   setSelectedTag(null);
                   setMembershipTab('all');
                 }}
-                className="px-4 py-2 bg-[#1A1A1E] border border-[#333] text-xs font-mono-code text-[#F5F5F0] hover:border-[#D4FF3F] transition-colors"
+                className="btn-secondary"
               >
                 Reset All Filters
               </button>
             )}
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="px-5 py-2 bg-[#D4FF3F] text-[#080808] text-xs font-mono-code font-bold uppercase tracking-wider hover:bg-[#b8e62f] transition-all"
+              className="btn-primary"
             >
-              + Create a Hub
+              <Plus className="w-4 h-4" />
+              Create Hub
             </button>
           </div>
         </div>

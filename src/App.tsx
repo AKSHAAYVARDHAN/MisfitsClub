@@ -219,21 +219,13 @@ function MainApp() {
   // Synchronize real-time user connections from Firestore
   useEffect(() => {
     const currentUserId = user?.uid || user?.id;
-    if (!currentUserId) return;
+    if (!currentUserId) {
+      setConnections(INITIAL_SAMPLE_CONNECTIONS);
+      return;
+    }
 
     const unsub = connectionService.subscribeUserConnections(currentUserId, (liveConns) => {
-      if (liveConns && liveConns.length > 0) {
-        const liveIds = new Set(liveConns.map((c) => c.id));
-        const merged = [...liveConns];
-        for (const sample of INITIAL_SAMPLE_CONNECTIONS) {
-          if (!liveIds.has(sample.id)) {
-            merged.push(sample);
-          }
-        }
-        setConnections(merged);
-      } else {
-        setConnections(INITIAL_SAMPLE_CONNECTIONS);
-      }
+      setConnections(liveConns || []);
     });
 
     return () => unsub();

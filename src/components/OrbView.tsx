@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ConnectionIntent, OrbLocation, UserProfile, PublicProfile, Connection } from '../types';
-import { SAMPLE_PROFILES, INITIAL_USER } from '../data/mockData';
+import { INITIAL_USER } from '../data/mockData';
 import { OrbGlobe, OrbGlobeRef } from './OrbGlobe';
+import { resolveLocationCoordinates } from '../utils/geo';
+import { getOtherParticipantId } from '../services/connectionService';
 import { 
   Compass, 
   Sparkles, 
@@ -13,12 +15,10 @@ import {
   X, 
   MapPin,
   HelpCircle,
-  Users,
   ZoomIn,
   ZoomOut,
   ChevronRight,
-  UserPlus,
-  Info
+  UserPlus
 } from 'lucide-react';
 
 interface OrbViewProps {
@@ -54,93 +54,106 @@ export const OrbView: React.FC<OrbViewProps> = ({
   const [activeIntentFilter, setActiveIntentFilter] = useState<ConnectionIntent | 'All'>('All');
   const [showArcs, setShowArcs] = useState(true);
   const [autoRotate, setAutoRotate] = useState(true);
-  const [demoZeroState, setDemoZeroState] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   const [showMobileHelp, setShowMobileHelp] = useState(false);
 
-  // Profile list resolution with safe fallback
-  const rawProfilesList = allProfiles || profiles || SAMPLE_PROFILES;
-  const safeProfilesList = (rawProfilesList && rawProfilesList.length > 0) ? rawProfilesList : SAMPLE_PROFILES;
+  // 1. Identify the currently authenticated user
   const safeUser = currentUser || INITIAL_USER;
+  const currentUid = safeUser.uid || safeUser.id || 'me';
 
-  // User coordinate & city fallback (Chennai default, dynamic if set)
+  // 2. User coordinate & city resolution (Home Base)
   const userGeo = useMemo(() => {
+    const geo = resolveLocationCoordinates(
+      safeUser.location,
+      safeUser.lat,
+      safeUser.lng,
+      currentUid
+    );
     return {
-      lat: safeUser.lat ?? 13.0827,
-      lng: safeUser.lng ?? 80.2707,
-      name: safeUser.name || 'Akshaay Vardhan',
-      city: safeUser.location?.split(',')[0]?.trim() || 'Chennai',
+      lat: geo.lat,
+      lng: geo.lng,
+      name: safeUser.name || 'You',
+      city: geo.city || 'Chennai',
+      country: geo.country || 'India',
     };
-  }, [safeUser]);
+  }, [safeUser, currentUid]);
 
-  // Set of connected profile IDs to accurately determine connection status
-  const connectedProfileIds = useMemo(() => {
-    const ids = new Set<string>();
-    (connections || []).forEach((c) => {
-      if (c.profileId) ids.add(c.profileId);
-      if (c.targetId) ids.add(c.targetId);
-      if (c.profile?.id) ids.add(c.profile.id);
-      if (c.id) ids.add(c.id);
-    });
-    return ids;
+  // 3. Filter for REAL active mutual connections only
+  const activeConnectedConnections = useMemo(() => {
+    return (connections || []).filter((c) => c.status === 'connected');
   }, [connections]);
 
-  // Transform connections and profiles into OrbLocations
+  // 4. Map ONLY real mutual connections to OrbLocations
   const orbLocations: OrbLocation[] = useMemo(() => {
-    if (demoZeroState) return [];
+    const rawList = allProfiles || profiles || [];
+    const mapped: OrbLocation[] = [];
+    const seenIds = new Set<string>();
 
-    const safeConns = connections || [];
+    activeConnectedConnections.forEach((conn) => {
+      const otherId = getOtherParticipantId(conn, currentUid);
 
-    // Map existing active connections
-    const mappedConns: OrbLocation[] = safeConns.map((conn) => {
-      const p = conn.profile;
-      return {
-        id: p?.id || conn.id,
-        name: p?.name || 'Member',
-        city: (p?.location || 'Worldwide').split(',')[0].trim(),
-        country: p?.country || 'Global',
-        lat: p?.lat ?? 52.52,
-        lng: p?.lng ?? 13.40,
-        profile: p,
-        intents: (conn.sharedIntents && conn.sharedIntents.length > 0) ? conn.sharedIntents : (p?.intents || []),
-        lastActive: conn.lastMessageTime || 'Recently',
-      };
-    });
+      // Find full profile from live directory if available, else use conn.profile
+      const matchedProfile = rawList.find(
+        (p) =>
+          (otherId && (p.id === otherId || p.uid === otherId)) ||
+          (conn.profileId && (p.id === conn.profileId || p.uid === conn.profileId)) ||
+          (conn.profile?.id && (p.id === conn.profile.id || p.uid === conn.profile.id))
+      );
 
-    // Add additional curated global network misfits so globe is richly populated across continents
-    const existingIds = new Set(mappedConns.map((c) => c.id));
-    safeProfilesList.forEach((p) => {
-      if (p && !existingIds.has(p.id) && p.id !== safeUser.id && p.lat !== undefined && p.lng !== undefined) {
-        mappedConns.push({
-          id: p.id,
-          name: p.name || 'Member',
-          city: (p.location || 'Worldwide').split(',')[0].trim(),
-          country: p.country || 'Global',
-          lat: p.lat,
-          lng: p.lng,
-          profile: p as UserProfile,
-          intents: p.intents || [],
-          lastActive: 'Active today',
+      const profile: UserProfile | PublicProfile = (matchedProfile || conn.profile) as UserProfile | PublicProfile;
+      const targetId = profile?.id || otherId || conn.profileId || conn.id;
+
+      if (targetId && !seenIds.has(targetId) && targetId !== currentUid) {
+        seenIds.add(targetId);
+
+        // Resolve geographic coordinates accurately
+        const geo = resolveLocationCoordinates(
+          profile?.location,
+          profile?.lat,
+          profile?.lng,
+          targetId
+        );
+
+        // Shared or profile connection intentions
+        const intents =
+          conn.sharedIntents && conn.sharedIntents.length > 0
+            ? conn.sharedIntents
+            : profile?.intents || [];
+
+        mapped.push({
+          id: targetId,
+          name: profile?.name || 'Connected Thinker',
+          city: geo.city,
+          country: geo.country,
+          lat: geo.lat,
+          lng: geo.lng,
+          profile: profile as UserProfile,
+          intents,
+          lastActive: conn.lastMessageTime || conn.connectedAt || 'Connected',
         });
       }
     });
 
-    return mappedConns;
-  }, [connections, safeProfilesList, safeUser.id, demoZeroState]);
+    return mapped;
+  }, [activeConnectedConnections, allProfiles, profiles, currentUid]);
 
-  // Calculate unique countries and connection stats dynamically
+  const isZeroConnections = orbLocations.length === 0;
+
+  // 5. Dynamic statistics derived strictly from real active connections
   const stats = useMemo(() => {
-    if (demoZeroState) {
-      return { count: 0, countries: 0, sharedIntents: 0 };
+    if (isZeroConnections) {
+      return { count: 0, countries: 0 };
     }
-    const countriesSet = new Set(orbLocations.map((loc) => loc.country));
-    const allIntents = new Set(orbLocations.flatMap((loc) => loc.intents || []));
+    const countriesSet = new Set(
+      orbLocations
+        .map((loc) => loc.country)
+        .filter((c) => c && c.toLowerCase() !== 'global' && c.toLowerCase() !== 'worldwide')
+    );
     return {
       count: orbLocations.length,
       countries: Math.max(countriesSet.size, 1),
-      sharedIntents: allIntents.size,
     };
-  }, [orbLocations, demoZeroState]);
+  }, [orbLocations, isZeroConnections]);
 
   const allIntentsList: (ConnectionIntent | 'All')[] = [
     'All',
@@ -196,10 +209,14 @@ export const OrbView: React.FC<OrbViewProps> = ({
     }
   };
 
+  // Determine if the selected location is an active connected thinker
   const isSelectedConnected = useMemo(() => {
-    if (!selectedLocation?.profile) return false;
-    return connectedProfileIds.has(selectedLocation.id) || connectedProfileIds.has(selectedLocation.profile.id);
-  }, [selectedLocation, connectedProfileIds]);
+    if (!selectedLocation) return false;
+    if (selectedLocation.isUser) return false;
+    return orbLocations.some(
+      (loc) => loc.id === selectedLocation.id || loc.profile?.id === selectedLocation.id
+    );
+  }, [selectedLocation, orbLocations]);
 
   return (
     <div className="relative w-full min-h-[calc(100dvh-4rem)] md:min-h-[calc(100vh-65px)] bg-[#0B0B0C] text-[#F5F5F0] overflow-x-hidden flex flex-col justify-between select-none pb-24 md:pb-6">
@@ -237,7 +254,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
             <div className="flex items-center gap-4 sm:gap-7 mt-2.5 sm:mt-3.5 pt-2.5 sm:pt-3 border-t border-[#1E1E24]">
               <div>
                 <span className="font-editorial text-lg sm:text-2xl lg:text-3xl font-light text-[#F5F5F0] block leading-none">
-                  {demoZeroState ? '0' : stats.count}
+                  {stats.count}
                 </span>
                 <span className="text-[9px] font-bold uppercase tracking-widest text-[#7A7A82] font-mono-code mt-1 block">
                   Connections
@@ -248,7 +265,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
 
               <div>
                 <span className="font-editorial text-lg sm:text-2xl lg:text-3xl font-light text-[#F5F5F0] block leading-none">
-                  {demoZeroState ? '0' : stats.countries}
+                  {stats.countries}
                 </span>
                 <span className="text-[9px] font-bold uppercase tracking-widest text-[#7A7A82] font-mono-code mt-1 block">
                   Countries
@@ -285,22 +302,6 @@ export const OrbView: React.FC<OrbViewProps> = ({
             {/* Secondary Controls Group (Clean horizontal row on mobile/tablet) */}
             <div className="flex items-center gap-1.5 sm:gap-2 pt-0.5 w-full sm:w-auto justify-between sm:justify-start lg:justify-end overflow-x-auto scrollbar-none">
               
-              {/* State View Selector */}
-              <button
-                id="orb-toggle-empty-state-btn"
-                onClick={() => setDemoZeroState(!demoZeroState)}
-                title="Toggle between populated world and zero connection starting state"
-                aria-label="Toggle network view state"
-                className={`border px-2.5 sm:px-3 py-1.5 text-[10px] font-mono-code font-bold uppercase tracking-widest transition-all flex items-center gap-1.5 shrink-0 min-h-[32px] ${
-                  demoZeroState
-                    ? 'border-[#D4FF3F]/60 text-[#D4FF3F] bg-[#141418]'
-                    : 'border-[#24242C] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#383844] bg-[#0E0E12]'
-                }`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${demoZeroState ? 'bg-[#D4FF3F]' : 'bg-[#7A7A82]'}`} />
-                <span>{demoZeroState ? 'State: Zero (0)' : `State: My World (${orbLocations.length})`}</span>
-              </button>
-
               {/* Spin Auto-Rotation Toggle */}
               <button
                 id="orb-toggle-spin-btn"
@@ -353,13 +354,20 @@ export const OrbView: React.FC<OrbViewProps> = ({
           connections={orbLocations}
           selectedLocation={selectedLocation}
           onSelectLocation={(loc) => {
-            setSelectedLocation(loc);
+            if (loc?.isUser) {
+              setSelectedLocation({
+                ...loc,
+                profile: safeUser,
+              });
+            } else {
+              setSelectedLocation(loc);
+            }
             setHasInteracted(true);
           }}
           activeIntentFilter={activeIntentFilter}
           showLines={showArcs}
           autoRotate={autoRotate}
-          emptyState={demoZeroState}
+          emptyState={isZeroConnections}
           showRecenterButton={false}
           onHoverLocation={handleHover}
           onUserInteraction={() => setHasInteracted(true)}
@@ -423,36 +431,30 @@ export const OrbView: React.FC<OrbViewProps> = ({
           </div>
         </div>
 
-        {/* --- Zero State Overlay (Preserving Globe in Background) --- */}
-        {demoZeroState && (
+        {/* --- Zero State Overlay (Preserving 3D Globe in Background) --- */}
+        {isZeroConnections && (
           <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none p-4">
             <div className="bg-[#0E0E12]/95 backdrop-blur-md border border-[#1E1E24] p-5 sm:p-8 max-w-md text-center pointer-events-auto shadow-2xl animate-fadeIn">
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#D4FF3F]/10 border border-[#D4FF3F]/30 flex items-center justify-center mx-auto mb-3">
                 <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#D4FF3F]" />
               </div>
               <span className="text-[10px] text-[#D4FF3F] font-mono-code uppercase tracking-widest font-bold block mb-1">
-                Zero Connections
+                Your Orbit Is Just Beginning
               </span>
               <h2 className="font-editorial text-xl sm:text-3xl text-[#F5F5F0] font-light">
-                Your Orb is just beginning.
+                Your world is waiting to be connected.
               </h2>
               <p className="text-xs text-[#8E8E93] mt-1.5 sm:mt-2 mb-5 sm:mb-6 leading-relaxed max-w-xs mx-auto">
-                Connect with your first Misfit and watch your personal world expand across continents.
+                Look at the people you’ve met around the planet. Connect with thinkers, creators, and builders to watch your personal network expand across continents in real-time.
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
+              <div className="flex items-center justify-center">
                 <button
                   id="zero-state-find-someone-btn"
                   onClick={onExplore}
-                  className="btn-primary text-xs w-full sm:w-auto"
+                  className="btn-primary text-xs w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5"
                 >
-                  <Compass className="w-3.5 h-3.5 mr-1" />
-                  Discover Thinkers
-                </button>
-                <button
-                  onClick={() => setDemoZeroState(false)}
-                  className="btn-secondary text-xs w-full sm:w-auto"
-                >
-                  View Sample Globe
+                  <Compass className="w-3.5 h-3.5" />
+                  <span>Discover Thinkers</span>
                 </button>
               </div>
             </div>
@@ -489,9 +491,9 @@ export const OrbView: React.FC<OrbViewProps> = ({
               {/* Header Status Bar */}
               <div className="flex items-center justify-between gap-3 mb-3 sm:mb-4 pb-2.5 sm:pb-3 border-b border-[#1E1E24]">
                 <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${isSelectedConnected ? 'bg-[#D4FF3F] animate-pulse' : 'bg-[#7A7A82]'}`} />
-                  <span className={`text-[10px] font-bold uppercase tracking-widest font-mono-code ${isSelectedConnected ? 'text-[#D4FF3F]' : 'text-[#8E8E93]'}`}>
-                    {isSelectedConnected ? 'Connected Thinker' : 'Exploring Thinker'}
+                  <span className={`w-2 h-2 rounded-full ${selectedLocation.isUser ? 'bg-[#D4FF3F]' : isSelectedConnected ? 'bg-[#D4FF3F] animate-pulse' : 'bg-[#7A7A82]'}`} />
+                  <span className={`text-[10px] font-bold uppercase tracking-widest font-mono-code ${selectedLocation.isUser ? 'text-[#D4FF3F]' : isSelectedConnected ? 'text-[#D4FF3F]' : 'text-[#8E8E93]'}`}>
+                    {selectedLocation.isUser ? 'You (Home Base)' : isSelectedConnected ? 'Connected Thinker' : 'Thinker Node'}
                   </span>
                 </div>
                 <button
@@ -507,7 +509,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
               {/* Avatar & Core Profile Information */}
               <div className="flex items-start gap-3 sm:gap-3.5 mb-3 sm:mb-4">
                 <img
-                  src={selectedLocation.profile.avatarUrl}
+                  src={selectedLocation.profile.avatarUrl || selectedLocation.profile.profilePhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
                   alt={selectedLocation.name}
                   referrerPolicy="no-referrer"
                   className="w-10 h-10 sm:w-12 sm:h-12 object-cover border border-[#24242C] flex-shrink-0"
@@ -579,7 +581,16 @@ export const OrbView: React.FC<OrbViewProps> = ({
 
             {/* Contextual Action Buttons */}
             <div className="pt-2.5 sm:pt-3 border-t border-[#1E1E24] flex items-center gap-2">
-              {isSelectedConnected ? (
+              {selectedLocation.isUser ? (
+                <button
+                  id="orb-card-explore-btn"
+                  onClick={onExplore}
+                  className="btn-primary flex-1 py-2 text-xs flex items-center justify-center gap-1.5 min-h-[38px]"
+                >
+                  <Compass className="w-3.5 h-3.5" />
+                  <span>Explore Thinkers</span>
+                </button>
+              ) : isSelectedConnected ? (
                 <button
                   id="orb-card-message-btn"
                   onClick={() => handleOpenConversation(selectedLocation.id)}
@@ -599,16 +610,18 @@ export const OrbView: React.FC<OrbViewProps> = ({
                 </button>
               )}
 
-              <button
-                id="orb-card-view-profile-btn"
-                onClick={() => handleViewProfileModal(selectedLocation.profile!)}
-                title="View Full Profile"
-                aria-label="View Full Profile"
-                className="btn-secondary px-3.5 py-2 text-xs flex items-center justify-center gap-1 min-h-[38px]"
-              >
-                <User className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Profile</span>
-              </button>
+              {!selectedLocation.isUser && (
+                <button
+                  id="orb-card-view-profile-btn"
+                  onClick={() => handleViewProfileModal(selectedLocation.profile!)}
+                  title="View Full Profile"
+                  aria-label="View Full Profile"
+                  className="btn-secondary px-3.5 py-2 text-xs flex items-center justify-center gap-1 min-h-[38px]"
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Profile</span>
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -678,7 +691,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#F5F5F0]" />
-              <span>Thinker Node</span>
+              <span>Connected Thinker</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-0.5 bg-[#D4FF3F]/70" />
@@ -745,4 +758,3 @@ export const OrbView: React.FC<OrbViewProps> = ({
     </div>
   );
 };
-

@@ -221,3 +221,209 @@ export function getIntentVisual(intent?: ConnectionIntent) {
       return { color: '#969696', hex: 0x969696, label: 'Talk' };
   }
 }
+
+/**
+ * Known global tech & cultural hub coordinates for reliable geocoding of user profile locations
+ */
+const KNOWN_COORDINATES: Record<string, { lat: number; lng: number; city: string; country: string }> = {
+  // India
+  chennai: { lat: 13.0827, lng: 80.2707, city: 'Chennai', country: 'India' },
+  bengaluru: { lat: 12.9716, lng: 77.5946, city: 'Bengaluru', country: 'India' },
+  bangalore: { lat: 12.9716, lng: 77.5946, city: 'Bengaluru', country: 'India' },
+  mumbai: { lat: 19.0760, lng: 72.8777, city: 'Mumbai', country: 'India' },
+  delhi: { lat: 28.6139, lng: 77.2090, city: 'New Delhi', country: 'India' },
+  newdelhi: { lat: 28.6139, lng: 77.2090, city: 'New Delhi', country: 'India' },
+  hyderabad: { lat: 17.3850, lng: 78.4867, city: 'Hyderabad', country: 'India' },
+  pune: { lat: 18.5204, lng: 73.8567, city: 'Pune', country: 'India' },
+  kolkata: { lat: 22.5726, lng: 88.3639, city: 'Kolkata', country: 'India' },
+  ahmedabad: { lat: 23.0225, lng: 72.5714, city: 'Ahmedabad', country: 'India' },
+  jaipur: { lat: 26.9124, lng: 75.7873, city: 'Jaipur', country: 'India' },
+  kochi: { lat: 9.9312, lng: 76.2673, city: 'Kochi', country: 'India' },
+  cochin: { lat: 9.9312, lng: 76.2673, city: 'Kochi', country: 'India' },
+  goa: { lat: 15.2993, lng: 74.1240, city: 'Goa', country: 'India' },
+  chandigarh: { lat: 30.7333, lng: 76.7794, city: 'Chandigarh', country: 'India' },
+  india: { lat: 20.5937, lng: 78.9629, city: 'India', country: 'India' },
+
+  // Americas
+  sanfrancisco: { lat: 37.7749, lng: -122.4194, city: 'San Francisco', country: 'USA' },
+  sf: { lat: 37.7749, lng: -122.4194, city: 'San Francisco', country: 'USA' },
+  bayarea: { lat: 37.7749, lng: -122.4194, city: 'San Francisco', country: 'USA' },
+  california: { lat: 36.7783, lng: -119.4179, city: 'California', country: 'USA' },
+  newyork: { lat: 40.7128, lng: -74.0060, city: 'New York', country: 'USA' },
+  nyc: { lat: 40.7128, lng: -74.0060, city: 'New York', country: 'USA' },
+  brooklyn: { lat: 40.6782, lng: -73.9442, city: 'Brooklyn', country: 'USA' },
+  seattle: { lat: 47.6062, lng: -122.3321, city: 'Seattle', country: 'USA' },
+  austin: { lat: 30.2672, lng: -97.7431, city: 'Austin', country: 'USA' },
+  boston: { lat: 42.3601, lng: -71.0589, city: 'Boston', country: 'USA' },
+  cambridge: { lat: 42.3736, lng: -71.1097, city: 'Cambridge', country: 'USA' },
+  chicago: { lat: 41.8781, lng: -87.6298, city: 'Chicago', country: 'USA' },
+  losangeles: { lat: 34.0522, lng: -118.2437, city: 'Los Angeles', country: 'USA' },
+  la: { lat: 34.0522, lng: -118.2437, city: 'Los Angeles', country: 'USA' },
+  sandiego: { lat: 32.7157, lng: -117.1611, city: 'San Diego', country: 'USA' },
+  portland: { lat: 45.5152, lng: -122.6784, city: 'Portland', country: 'USA' },
+  denver: { lat: 39.7392, lng: -104.9903, city: 'Denver', country: 'USA' },
+  toronto: { lat: 43.6532, lng: -79.3832, city: 'Toronto', country: 'Canada' },
+  vancouver: { lat: 49.2827, lng: -123.1207, city: 'Vancouver', country: 'Canada' },
+  montreal: { lat: 45.5017, lng: -73.5673, city: 'Montreal', country: 'Canada' },
+  canada: { lat: 45.4215, lng: -75.6972, city: 'Ottawa', country: 'Canada' },
+  mexicocity: { lat: 19.4326, lng: -99.1332, city: 'Mexico City', country: 'Mexico' },
+  mexico: { lat: 19.4326, lng: -99.1332, city: 'Mexico City', country: 'Mexico' },
+  saopaulo: { lat: -23.5505, lng: -46.6333, city: 'São Paulo', country: 'Brazil' },
+  brazil: { lat: -15.7975, lng: -47.8919, city: 'Brasília', country: 'Brazil' },
+  buenosaires: { lat: -34.6037, lng: -58.3816, city: 'Buenos Aires', country: 'Argentina' },
+  argentina: { lat: -34.6037, lng: -58.3816, city: 'Buenos Aires', country: 'Argentina' },
+  santiago: { lat: -33.4489, lng: -70.6693, city: 'Santiago', country: 'Chile' },
+  bogota: { lat: 4.7110, lng: -74.0721, city: 'Bogotá', country: 'Colombia' },
+  usa: { lat: 37.0902, lng: -95.7129, city: 'United States', country: 'USA' },
+
+  // Europe
+  london: { lat: 51.5074, lng: -0.1278, city: 'London', country: 'United Kingdom' },
+  uk: { lat: 51.5074, lng: -0.1278, city: 'London', country: 'United Kingdom' },
+  oxford: { lat: 51.7520, lng: -1.2577, city: 'Oxford', country: 'United Kingdom' },
+  edinburgh: { lat: 55.9533, lng: -3.1883, city: 'Edinburgh', country: 'United Kingdom' },
+  berlin: { lat: 52.5200, lng: 13.4050, city: 'Berlin', country: 'Germany' },
+  germany: { lat: 52.5200, lng: 13.4050, city: 'Berlin', country: 'Germany' },
+  munich: { lat: 48.1351, lng: 11.5820, city: 'Munich', country: 'Germany' },
+  frankfurt: { lat: 50.1109, lng: 8.6821, city: 'Frankfurt', country: 'Germany' },
+  paris: { lat: 48.8566, lng: 2.3522, city: 'Paris', country: 'France' },
+  france: { lat: 48.8566, lng: 2.3522, city: 'Paris', country: 'France' },
+  amsterdam: { lat: 52.3676, lng: 4.9041, city: 'Amsterdam', country: 'Netherlands' },
+  netherlands: { lat: 52.3676, lng: 4.9041, city: 'Amsterdam', country: 'Netherlands' },
+  stockholm: { lat: 59.3293, lng: 18.0686, city: 'Stockholm', country: 'Sweden' },
+  sweden: { lat: 59.3293, lng: 18.0686, city: 'Stockholm', country: 'Sweden' },
+  zurich: { lat: 47.3769, lng: 8.5417, city: 'Zurich', country: 'Switzerland' },
+  switzerland: { lat: 46.9480, lng: 7.4474, city: 'Bern', country: 'Switzerland' },
+  geneva: { lat: 46.2044, lng: 6.1432, city: 'Geneva', country: 'Switzerland' },
+  dublin: { lat: 53.3498, lng: -6.2603, city: 'Dublin', country: 'Ireland' },
+  ireland: { lat: 53.3498, lng: -6.2603, city: 'Dublin', country: 'Ireland' },
+  copenhagen: { lat: 55.6761, lng: 12.5683, city: 'Copenhagen', country: 'Denmark' },
+  denmark: { lat: 55.6761, lng: 12.5683, city: 'Copenhagen', country: 'Denmark' },
+  helsinki: { lat: 60.1699, lng: 24.9384, city: 'Helsinki', country: 'Finland' },
+  finland: { lat: 60.1699, lng: 24.9384, city: 'Helsinki', country: 'Finland' },
+  oslo: { lat: 59.9139, lng: 10.7522, city: 'Oslo', country: 'Norway' },
+  norway: { lat: 59.9139, lng: 10.7522, city: 'Oslo', country: 'Norway' },
+  vienna: { lat: 48.2082, lng: 16.3738, city: 'Vienna', country: 'Austria' },
+  madrid: { lat: 40.4168, lng: -3.7038, city: 'Madrid', country: 'Spain' },
+  barcelona: { lat: 41.3879, lng: 2.1699, city: 'Barcelona', country: 'Spain' },
+  spain: { lat: 40.4168, lng: -3.7038, city: 'Madrid', country: 'Spain' },
+  milan: { lat: 45.4642, lng: 9.1900, city: 'Milan', country: 'Italy' },
+  rome: { lat: 41.9028, lng: 12.4964, city: 'Rome', country: 'Italy' },
+  italy: { lat: 41.9028, lng: 12.4964, city: 'Rome', country: 'Italy' },
+  lisbon: { lat: 38.7223, lng: -9.1393, city: 'Lisbon', country: 'Portugal' },
+  portugal: { lat: 38.7223, lng: -9.1393, city: 'Lisbon', country: 'Portugal' },
+  warsaw: { lat: 52.2297, lng: 21.0122, city: 'Warsaw', country: 'Poland' },
+  poland: { lat: 52.2297, lng: 21.0122, city: 'Warsaw', country: 'Poland' },
+  prague: { lat: 50.0755, lng: 14.4378, city: 'Prague', country: 'Czech Republic' },
+  tallinn: { lat: 59.4370, lng: 24.7535, city: 'Tallinn', country: 'Estonia' },
+  athens: { lat: 37.9838, lng: 23.7275, city: 'Athens', country: 'Greece' },
+
+  // Asia & Pacific
+  tokyo: { lat: 35.6762, lng: 139.6503, city: 'Tokyo', country: 'Japan' },
+  kyoto: { lat: 35.0116, lng: 135.7681, city: 'Kyoto', country: 'Japan' },
+  japan: { lat: 35.6762, lng: 139.6503, city: 'Tokyo', country: 'Japan' },
+  singapore: { lat: 1.3521, lng: 103.8198, city: 'Singapore', country: 'Singapore' },
+  seoul: { lat: 37.5665, lng: 126.9780, city: 'Seoul', country: 'South Korea' },
+  korea: { lat: 37.5665, lng: 126.9780, city: 'Seoul', country: 'South Korea' },
+  taipei: { lat: 25.0330, lng: 121.5654, city: 'Taipei', country: 'Taiwan' },
+  taiwan: { lat: 25.0330, lng: 121.5654, city: 'Taipei', country: 'Taiwan' },
+  hongkong: { lat: 22.3193, lng: 114.1694, city: 'Hong Kong', country: 'Hong Kong' },
+  sydney: { lat: -33.8688, lng: 151.2093, city: 'Sydney', country: 'Australia' },
+  melbourne: { lat: -37.8136, lng: 144.9631, city: 'Melbourne', country: 'Australia' },
+  australia: { lat: -25.2744, lng: 133.7751, city: 'Canberra', country: 'Australia' },
+  auckland: { lat: -36.8485, lng: 174.7633, city: 'Auckland', country: 'New Zealand' },
+  newzealand: { lat: -41.2865, lng: 174.7762, city: 'Wellington', country: 'New Zealand' },
+  bangkok: { lat: 13.7563, lng: 100.5018, city: 'Bangkok', country: 'Thailand' },
+  thailand: { lat: 13.7563, lng: 100.5018, city: 'Bangkok', country: 'Thailand' },
+  jakarta: { lat: -6.2088, lng: 106.8456, city: 'Jakarta', country: 'Indonesia' },
+  manila: { lat: 14.5995, lng: 120.9842, city: 'Manila', country: 'Philippines' },
+  dubai: { lat: 25.2048, lng: 55.2708, city: 'Dubai', country: 'UAE' },
+  uae: { lat: 25.2048, lng: 55.2708, city: 'Dubai', country: 'UAE' },
+  telaviv: { lat: 32.0853, lng: 34.7818, city: 'Tel Aviv', country: 'Israel' },
+  doha: { lat: 25.2854, lng: 51.5310, city: 'Doha', country: 'Qatar' },
+  riyadh: { lat: 24.7136, lng: 46.6753, city: 'Riyadh', country: 'Saudi Arabia' },
+
+  // Africa
+  lagos: { lat: 6.5244, lng: 3.3792, city: 'Lagos', country: 'Nigeria' },
+  nigeria: { lat: 9.0820, lng: 8.6753, city: 'Abuja', country: 'Nigeria' },
+  nairobi: { lat: -1.2921, lng: 36.8219, city: 'Nairobi', country: 'Kenya' },
+  kenya: { lat: -1.2921, lng: 36.8219, city: 'Nairobi', country: 'Kenya' },
+  capetown: { lat: -33.9249, lng: 18.4241, city: 'Cape Town', country: 'South Africa' },
+  johannesburg: { lat: -26.2041, lng: 28.0473, city: 'Johannesburg', country: 'South Africa' },
+  southafrica: { lat: -30.5595, lng: 22.9375, city: 'Cape Town', country: 'South Africa' },
+  cairo: { lat: 30.0444, lng: 31.2357, city: 'Cairo', country: 'Egypt' },
+  accra: { lat: 5.6037, lng: -0.1870, city: 'Accra', country: 'Ghana' },
+  kigali: { lat: -1.9706, lng: 30.1044, city: 'Kigali', country: 'Rwanda' },
+};
+
+/**
+ * Intelligently resolve coordinates, city, and country from a location string or explicit lat/lng.
+ * Falls back deterministically if location is unspecified or unknown.
+ */
+export function resolveLocationCoordinates(
+  locationStr?: string,
+  explicitLat?: number,
+  explicitLng?: number,
+  fallbackSeed: string = 'misfit'
+): { lat: number; lng: number; city: string; country: string } {
+  // If explicit lat/lng provided, use them directly
+  if (
+    typeof explicitLat === 'number' &&
+    !isNaN(explicitLat) &&
+    typeof explicitLng === 'number' &&
+    !isNaN(explicitLng) &&
+    (explicitLat !== 0 || explicitLng !== 0)
+  ) {
+    const rawLoc = (locationStr || '').trim();
+    const parts = rawLoc.split(',').map((p) => p.trim());
+    return {
+      lat: explicitLat,
+      lng: explicitLng,
+      city: parts[0] || 'Worldwide',
+      country: parts[1] || 'Global',
+    };
+  }
+
+  const clean = (locationStr || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  // Look for direct key or sub-key match in dictionary
+  if (clean) {
+    for (const [key, data] of Object.entries(KNOWN_COORDINATES)) {
+      if (clean.includes(key) || key.includes(clean)) {
+        return { ...data };
+      }
+    }
+  }
+
+  // Parse "City, Country" from original string
+  const rawLoc = (locationStr || '').trim();
+  if (rawLoc && rawLoc.toLowerCase() !== 'worldwide') {
+    const parts = rawLoc.split(',').map((p) => p.trim());
+    const city = parts[0] || 'Worldwide';
+    const country = parts[1] || 'Global';
+
+    // Hash fallback seed + location to get a consistent position across landmasses
+    let hash = 0;
+    const str = `${rawLoc}_${fallbackSeed}`;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) - hash + str.charCodeAt(i);
+      hash |= 0;
+    }
+    const pseudoLat = 15 + (Math.abs(hash) % 45); // Latitudes 15° to 60°
+    const pseudoLng = -120 + (Math.abs(hash >> 3) % 240); // Longitudes -120° to 120°
+
+    return {
+      lat: pseudoLat,
+      lng: pseudoLng,
+      city,
+      country,
+    };
+  }
+
+  // Default fallback
+  return {
+    lat: 13.0827,
+    lng: 80.2707,
+    city: 'Chennai',
+    country: 'India',
+  };
+}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Connection, ConnectionIntent, MeetArchetype, PublicProfile, UserProfile } from '../types';
 import { MemberProfileModal } from './MemberProfileModal';
 import { discoveryService } from '../services/discoveryService';
@@ -17,7 +17,8 @@ import {
   User,
   Filter,
   Check,
-  Clock
+  Clock,
+  ChevronDown
 } from 'lucide-react';
 
 interface DiscoverViewProps {
@@ -167,7 +168,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
     currentUserId,
   ]);
 
-  // Active filter count
+  // Active filter count (including search query)
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (selectedIntentFilter !== 'All') count++;
@@ -190,8 +191,39 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
     searchQuery,
   ]);
 
+  // Non-search filter count (specifically for refine discovery controls)
+  const nonSearchFilterCount = useMemo(() => {
+    let count = 0;
+    if (selectedIntentFilter !== 'All') count++;
+    if (selectedArchetypeFilter !== 'All') count++;
+    if (selectedCollege !== 'All') count++;
+    if (selectedDepartment !== 'All') count++;
+    if (selectedYear !== 'All') count++;
+    if (selectedSkill !== 'All') count++;
+    if (selectedInterest !== 'All') count++;
+    return count;
+  }, [
+    selectedIntentFilter,
+    selectedArchetypeFilter,
+    selectedCollege,
+    selectedDepartment,
+    selectedYear,
+    selectedSkill,
+    selectedInterest,
+  ]);
+
   const handleResetAllFilters = () => {
     setSearchQuery('');
+    setSelectedIntentFilter('All');
+    setSelectedArchetypeFilter('All');
+    setSelectedCollege('All');
+    setSelectedDepartment('All');
+    setSelectedYear('All');
+    setSelectedSkill('All');
+    setSelectedInterest('All');
+  };
+
+  const handleClearRefineFilters = () => {
     setSelectedIntentFilter('All');
     setSelectedArchetypeFilter('All');
     setSelectedCollege('All');
@@ -249,239 +281,523 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
       )}
 
       {/* 2. Search & Filter Bar */}
-      <div className="space-y-4 mb-8">
+      <div className="space-y-3 sm:space-y-4 mb-8">
         
-        {/* Search input with filter drawer trigger */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
+        {/* =========================================================================
+            2A. MOBILE & TABLET DISCOVERY CONTROLS (Unified Single Refine Control)
+            ========================================================================= */}
+        <div className="lg:hidden space-y-2.5">
+          {/* Search Input (Full width, clear icon, comfortable height) */}
+          <div className="relative w-full">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7A7A82]" />
             <input
-              id="discover-search-input"
+              id="discover-search-input-mobile"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search people, skills, interests..."
-              className="w-full border border-[#1E1E24] bg-[#0E0E12] pl-10 pr-16 py-3 text-xs sm:text-sm text-[#F5F5F0] placeholder-[#7A7A82]/50 focus:border-[#D4FF3F]/60 focus:outline-none transition-colors"
+              className="w-full border border-[#1E1E24] bg-[#0E0E12] pl-10 pr-16 py-3 text-xs sm:text-sm text-[#F5F5F0] placeholder-[#7A7A82]/50 focus:border-[#D4FF3F]/60 focus:outline-none transition-colors min-h-[44px]"
             />
             {searchQuery && (
               <button
-                id="clear-search-query-btn"
+                id="clear-search-query-btn-mobile"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] hover:text-[#D4FF3F]"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] hover:text-[#D4FF3F] py-1"
               >
                 Clear
               </button>
             )}
           </div>
 
+          {/* Unified Refine Discovery Trigger Button */}
           <button
-            id="toggle-advanced-filters-btn"
+            id="mobile-refine-discovery-btn"
+            type="button"
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className={`flex items-center justify-center gap-2 px-4 py-3 border text-xs font-mono-code uppercase tracking-wider font-bold transition-colors ${
-              showAdvancedFilters || activeFilterCount > 0
-                ? 'border-[#D4FF3F]/60 bg-[#D4FF3F]/10 text-[#D4FF3F]'
+            aria-expanded={showAdvancedFilters}
+            aria-controls="mobile-refine-discovery-panel"
+            className={`w-full flex items-center justify-between px-4 py-3 border text-xs font-mono-code uppercase tracking-wider font-bold transition-all min-h-[44px] ${
+              showAdvancedFilters || nonSearchFilterCount > 0
+                ? 'border-[#D4FF3F]/60 bg-[#121216] text-[#F5F5F0]'
                 : 'border-[#1E1E24] bg-[#0E0E12] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#2E2E38]'
             }`}
           >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span>Filters</span>
-            {activeFilterCount > 0 && (
-              <span className="bg-[#D4FF3F] text-[#080808] w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold">
-                {activeFilterCount}
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#D4FF3F]" />
+              <span>Refine Discovery</span>
+              {nonSearchFilterCount > 0 && (
+                <span className="bg-[#D4FF3F] text-[#080808] w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ml-1">
+                  {nonSearchFilterCount}
+                </span>
+              )}
+            </div>
+            <ChevronDown
+              className={`w-4 h-4 text-[#8E8E93] transition-transform duration-200 ${
+                showAdvancedFilters ? 'rotate-180 text-[#D4FF3F]' : ''
+              }`}
+            />
           </button>
-        </div>
 
-        {/* Collapsible Multi-dimensional Filters */}
-        {showAdvancedFilters && (
-          <div className="bg-[#0E0E12] border border-[#1E1E24] p-4 sm:p-5 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#1E1E24]">
-              <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] font-bold flex items-center gap-1.5">
-                <Filter className="w-3 h-3 text-[#D4FF3F]" />
-                <span>Multi-Dimensional Filters</span>
-              </span>
-              {activeFilterCount > 0 && (
+          {/* Mobile & Tablet Unified Refine Discovery Panel */}
+          {showAdvancedFilters && (
+            <div
+              id="mobile-refine-discovery-panel"
+              className="bg-[#0E0E12] border border-[#1E1E24] p-4 sm:p-5 space-y-4 animate-fadeIn"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-[#1E1E24]">
+                <span className="text-[11px] font-mono-code uppercase tracking-widest text-[#F5F5F0] font-bold flex items-center gap-2">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-[#D4FF3F]" />
+                  <span>Refine Discovery</span>
+                </span>
+                {nonSearchFilterCount > 0 && (
+                  <span className="text-[10px] font-mono-code text-[#D4FF3F]">
+                    {nonSearchFilterCount} {nonSearchFilterCount === 1 ? 'filter active' : 'filters active'}
+                  </span>
+                )}
+              </div>
+
+              {/* 6 Filters Grid (Responsive: 1 col on mobile, 2 col on tablet) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                {/* 1. Connection Intent */}
+                <div>
+                  <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5 font-bold">
+                    Connection Intent
+                  </label>
+                  <select
+                    id="mobile-refine-intent-select"
+                    value={selectedIntentFilter}
+                    onChange={(e) => setSelectedIntentFilter(e.target.value as ConnectionIntent | 'All')}
+                    className={`w-full bg-[#121216] border px-3 py-2.5 text-xs font-mono-code text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none min-h-[42px] transition-colors ${
+                      selectedIntentFilter !== 'All' ? 'border-[#D4FF3F]/60 text-[#D4FF3F] font-bold' : 'border-[#1E1E24]'
+                    }`}
+                  >
+                    <option value="All">All Intents</option>
+                    {allIntents.filter(i => i !== 'All').map((intent) => (
+                      <option key={intent} value={intent}>
+                        {intent}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. College / Campus */}
+                <div>
+                  <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5 font-bold">
+                    College / Campus
+                  </label>
+                  <select
+                    id="mobile-refine-college-select"
+                    value={selectedCollege}
+                    onChange={(e) => setSelectedCollege(e.target.value)}
+                    className={`w-full bg-[#121216] border px-3 py-2.5 text-xs font-mono-code text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none min-h-[42px] transition-colors ${
+                      selectedCollege !== 'All' ? 'border-[#D4FF3F]/60 text-[#D4FF3F] font-bold' : 'border-[#1E1E24]'
+                    }`}
+                  >
+                    <option value="All">All Colleges</option>
+                    {availableColleges.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 3. Department */}
+                <div>
+                  <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5 font-bold">
+                    Department
+                  </label>
+                  <select
+                    id="mobile-refine-department-select"
+                    value={selectedDepartment}
+                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                    className={`w-full bg-[#121216] border px-3 py-2.5 text-xs font-mono-code text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none min-h-[42px] transition-colors ${
+                      selectedDepartment !== 'All' ? 'border-[#D4FF3F]/60 text-[#D4FF3F] font-bold' : 'border-[#1E1E24]'
+                    }`}
+                  >
+                    <option value="All">All Departments</option>
+                    {availableDepartments.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 4. Cohort / Year */}
+                <div>
+                  <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5 font-bold">
+                    Cohort / Year
+                  </label>
+                  <select
+                    id="mobile-refine-year-select"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className={`w-full bg-[#121216] border px-3 py-2.5 text-xs font-mono-code text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none min-h-[42px] transition-colors ${
+                      selectedYear !== 'All' ? 'border-[#D4FF3F]/60 text-[#D4FF3F] font-bold' : 'border-[#1E1E24]'
+                    }`}
+                  >
+                    <option value="All">All Years</option>
+                    {availableYears.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 5. Skill / Craft */}
+                <div>
+                  <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5 font-bold">
+                    Skill / Craft
+                  </label>
+                  <select
+                    id="mobile-refine-skill-select"
+                    value={selectedSkill}
+                    onChange={(e) => setSelectedSkill(e.target.value)}
+                    className={`w-full bg-[#121216] border px-3 py-2.5 text-xs font-mono-code text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none min-h-[42px] transition-colors ${
+                      selectedSkill !== 'All' ? 'border-[#D4FF3F]/60 text-[#D4FF3F] font-bold' : 'border-[#1E1E24]'
+                    }`}
+                  >
+                    <option value="All">All Skills</option>
+                    {availableSkills.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 6. Interest / Focus */}
+                <div>
+                  <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5 font-bold">
+                    Interest / Focus
+                  </label>
+                  <select
+                    id="mobile-refine-interest-select"
+                    value={selectedInterest}
+                    onChange={(e) => setSelectedInterest(e.target.value)}
+                    className={`w-full bg-[#121216] border px-3 py-2.5 text-xs font-mono-code text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none min-h-[42px] transition-colors ${
+                      selectedInterest !== 'All' ? 'border-[#D4FF3F]/60 text-[#D4FF3F] font-bold' : 'border-[#1E1E24]'
+                    }`}
+                  >
+                    <option value="All">All Interests</option>
+                    {availableInterests.map((i) => (
+                      <option key={i} value={i}>
+                        {i}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Active Badges */}
+              {nonSearchFilterCount > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[#1E1E24]">
+                  <span className="text-[9px] font-mono-code text-[#7A7A82] uppercase mr-1">Active:</span>
+                  {selectedIntentFilter !== 'All' && (
+                    <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
+                      Intent: {selectedIntentFilter}
+                      <button onClick={() => setSelectedIntentFilter('All')} aria-label="Clear intent filter"><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
+                  {selectedCollege !== 'All' && (
+                    <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
+                      College: {selectedCollege}
+                      <button onClick={() => setSelectedCollege('All')} aria-label="Clear college filter"><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
+                  {selectedDepartment !== 'All' && (
+                    <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
+                      Dept: {selectedDepartment}
+                      <button onClick={() => setSelectedDepartment('All')} aria-label="Clear department filter"><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
+                  {selectedYear !== 'All' && (
+                    <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
+                      Year: {selectedYear}
+                      <button onClick={() => setSelectedYear('All')} aria-label="Clear year filter"><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
+                  {selectedSkill !== 'All' && (
+                    <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
+                      Skill: {selectedSkill}
+                      <button onClick={() => setSelectedSkill('All')} aria-label="Clear skill filter"><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
+                  {selectedInterest !== 'All' && (
+                    <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
+                      Interest: {selectedInterest}
+                      <button onClick={() => setSelectedInterest('All')} aria-label="Clear interest filter"><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Bottom Action Buttons */}
+              <div className="flex items-center gap-2.5 pt-3 border-t border-[#1E1E24]">
                 <button
-                  id="reset-all-filters-btn"
-                  onClick={handleResetAllFilters}
-                  className="text-[10px] font-mono-code uppercase tracking-widest text-[#D4FF3F] hover:underline flex items-center gap-1"
+                  id="mobile-refine-clear-btn"
+                  type="button"
+                  onClick={handleClearRefineFilters}
+                  disabled={nonSearchFilterCount === 0}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 border border-[#1E1E24] bg-[#121216] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#2E2E38] disabled:opacity-40 disabled:pointer-events-none text-xs font-mono-code uppercase tracking-wider min-h-[42px] transition-colors"
                 >
                   <RotateCcw className="w-3 h-3" />
-                  <span>Reset All ({activeFilterCount})</span>
+                  <span>Clear All</span>
+                </button>
+
+                <button
+                  id="mobile-refine-apply-btn"
+                  type="button"
+                  onClick={() => setShowAdvancedFilters(false)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-lime-grained text-[#080808] border border-[#D4FF3F] hover:brightness-110 text-xs font-mono-code uppercase tracking-wider font-bold min-h-[42px] transition-all shadow-[0_0_15px_rgba(212,255,63,0.15)]"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Apply Filters</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* =========================================================================
+            2B. DESKTOP DISCOVERY CONTROLS (UNTOUCHED & UNCHANGED)
+            ========================================================================= */}
+        <div className="hidden lg:block space-y-4">
+          {/* Search input with filter drawer trigger */}
+          <div className="flex flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7A7A82]" />
+              <input
+                id="discover-search-input"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search people, skills, interests..."
+                className="w-full border border-[#1E1E24] bg-[#0E0E12] pl-10 pr-16 py-3 text-xs sm:text-sm text-[#F5F5F0] placeholder-[#7A7A82]/50 focus:border-[#D4FF3F]/60 focus:outline-none transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  id="clear-search-query-btn"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] hover:text-[#D4FF3F]"
+                >
+                  Clear
                 </button>
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {/* College Filter */}
-              <div>
-                <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5">
-                  College / Campus
-                </label>
-                <select
-                  id="filter-college-select"
-                  value={selectedCollege}
-                  onChange={(e) => setSelectedCollege(e.target.value)}
-                  className="w-full bg-[#121216] border border-[#1E1E24] px-3 py-2 text-xs text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none"
-                >
-                  <option value="All">All Colleges</option>
-                  {availableColleges.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Department Filter */}
-              <div>
-                <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5">
-                  Department
-                </label>
-                <select
-                  id="filter-department-select"
-                  value={selectedDepartment}
-                  onChange={(e) => setSelectedDepartment(e.target.value)}
-                  className="w-full bg-[#121216] border border-[#1E1E24] px-3 py-2 text-xs text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none"
-                >
-                  <option value="All">All Departments</option>
-                  {availableDepartments.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Year Filter */}
-              <div>
-                <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5">
-                  Cohort / Year
-                </label>
-                <select
-                  id="filter-year-select"
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="w-full bg-[#121216] border border-[#1E1E24] px-3 py-2 text-xs text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none"
-                >
-                  <option value="All">All Years</option>
-                  {availableYears.map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Skill Filter */}
-              <div>
-                <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5">
-                  Skill / Craft
-                </label>
-                <select
-                  id="filter-skill-select"
-                  value={selectedSkill}
-                  onChange={(e) => setSelectedSkill(e.target.value)}
-                  className="w-full bg-[#121216] border border-[#1E1E24] px-3 py-2 text-xs text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none"
-                >
-                  <option value="All">All Skills</option>
-                  {availableSkills.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Interest Filter */}
-              <div>
-                <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5">
-                  Interest / Focus
-                </label>
-                <select
-                  id="filter-interest-select"
-                  value={selectedInterest}
-                  onChange={(e) => setSelectedInterest(e.target.value)}
-                  className="w-full bg-[#121216] border border-[#1E1E24] px-3 py-2 text-xs text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none"
-                >
-                  <option value="All">All Interests</option>
-                  {availableInterests.map((i) => (
-                    <option key={i} value={i}>
-                      {i}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Active filter badges row */}
-            {activeFilterCount > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5 pt-2">
-                <span className="text-[9px] font-mono-code text-[#7A7A82] uppercase mr-1">Active:</span>
-                {selectedCollege !== 'All' && (
-                  <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
-                    College: {selectedCollege}
-                    <button onClick={() => setSelectedCollege('All')}><X className="w-3 h-3" /></button>
-                  </span>
-                )}
-                {selectedDepartment !== 'All' && (
-                  <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
-                    Dept: {selectedDepartment}
-                    <button onClick={() => setSelectedDepartment('All')}><X className="w-3 h-3" /></button>
-                  </span>
-                )}
-                {selectedYear !== 'All' && (
-                  <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
-                    Year: {selectedYear}
-                    <button onClick={() => setSelectedYear('All')}><X className="w-3 h-3" /></button>
-                  </span>
-                )}
-                {selectedSkill !== 'All' && (
-                  <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
-                    Skill: {selectedSkill}
-                    <button onClick={() => setSelectedSkill('All')}><X className="w-3 h-3" /></button>
-                  </span>
-                )}
-                {selectedInterest !== 'All' && (
-                  <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
-                    Interest: {selectedInterest}
-                    <button onClick={() => setSelectedInterest('All')}><X className="w-3 h-3" /></button>
-                  </span>
-                )}
-                {selectedIntentFilter !== 'All' && (
-                  <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
-                    Intent: {selectedIntentFilter}
-                    <button onClick={() => setSelectedIntentFilter('All')}><X className="w-3 h-3" /></button>
-                  </span>
-                )}
-              </div>
-            )}
+            <button
+              id="toggle-advanced-filters-btn"
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className={`flex items-center justify-center gap-2 px-4 py-3 border text-xs font-mono-code uppercase tracking-wider font-bold transition-colors ${
+                showAdvancedFilters || activeFilterCount > 0
+                  ? 'border-[#D4FF3F]/60 bg-[#D4FF3F]/10 text-[#D4FF3F]'
+                  : 'border-[#1E1E24] bg-[#0E0E12] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#2E2E38]'
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="bg-[#D4FF3F] text-[#080808] w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
           </div>
-        )}
 
-        {/* Connection Intent Quick Selector */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none">
-          <span className="text-[10px] font-mono-code text-[#7A7A82] uppercase tracking-widest pr-2 whitespace-nowrap font-bold">
-            Connection Intent:
-          </span>
-          {allIntents.map((intent) => {
-            const isSelected = selectedIntentFilter === intent;
-            return (
-              <button
-                key={intent}
-                id={`filter-intent-${intent.toLowerCase().replace(/\s+/g, '-')}`}
-                onClick={() => setSelectedIntentFilter(intent)}
-                className={`whitespace-nowrap px-3 py-1.5 text-xs font-mono-code uppercase tracking-wider transition-all ${
-                  isSelected
-                    ? 'bg-lime-grained text-[#080808] font-bold border border-[#D4FF3F]'
-                    : 'bg-[#0E0E12] text-[#8E8E93] border border-[#1E1E24] hover:border-[#383844] hover:text-[#F5F5F0]'
-                }`}
-              >
-                {intent}
-              </button>
-            );
-          })}
+          {/* Connection Intent Quick Selector */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none">
+            <span className="text-[10px] font-mono-code text-[#7A7A82] uppercase tracking-widest pr-2 whitespace-nowrap font-bold">
+              Connection Intent:
+            </span>
+            {allIntents.map((intent) => {
+              const isSelected = selectedIntentFilter === intent;
+              return (
+                <button
+                  key={intent}
+                  id={`filter-intent-${intent.toLowerCase().replace(/\s+/g, '-')}`}
+                  onClick={() => setSelectedIntentFilter(intent)}
+                  className={`whitespace-nowrap px-3 py-1.5 text-xs font-mono-code uppercase tracking-wider transition-all ${
+                    isSelected
+                      ? 'bg-lime-grained text-[#080808] font-bold border border-[#D4FF3F]'
+                      : 'bg-[#0E0E12] text-[#8E8E93] border border-[#1E1E24] hover:border-[#383844] hover:text-[#F5F5F0]'
+                  }`}
+                >
+                  {intent}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Collapsible Multi-dimensional Filters */}
+          {showAdvancedFilters && (
+            <div className="bg-[#0E0E12] border border-[#1E1E24] p-4 sm:p-5 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#1E1E24]">
+                <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] font-bold flex items-center gap-1.5">
+                  <Filter className="w-3 h-3 text-[#D4FF3F]" />
+                  <span>Multi-Dimensional Filters</span>
+                </span>
+                {activeFilterCount > 0 && (
+                  <button
+                    id="reset-all-filters-btn"
+                    onClick={handleResetAllFilters}
+                    className="text-[10px] font-mono-code uppercase tracking-widest text-[#D4FF3F] hover:underline flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset All ({activeFilterCount})</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                {/* College Filter */}
+                <div>
+                  <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5">
+                    College / Campus
+                  </label>
+                  <select
+                    id="filter-college-select"
+                    value={selectedCollege}
+                    onChange={(e) => setSelectedCollege(e.target.value)}
+                    className="w-full bg-[#121216] border border-[#1E1E24] px-3 py-2 text-xs text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none"
+                  >
+                    <option value="All">All Colleges</option>
+                    {availableColleges.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Department Filter */}
+                <div>
+                  <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5">
+                    Department
+                  </label>
+                  <select
+                    id="filter-department-select"
+                    value={selectedDepartment}
+                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                    className="w-full bg-[#121216] border border-[#1E1E24] px-3 py-2 text-xs text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none"
+                  >
+                    <option value="All">All Departments</option>
+                    {availableDepartments.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Cohort Filter */}
+                <div>
+                  <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5">
+                    Cohort / Year
+                  </label>
+                  <select
+                    id="filter-year-select"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="w-full bg-[#121216] border border-[#1E1E24] px-3 py-2 text-xs text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none"
+                  >
+                    <option value="All">All Years</option>
+                    {availableYears.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Skill Filter */}
+                <div>
+                  <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5">
+                    Skill / Craft
+                  </label>
+                  <select
+                    id="filter-skill-select"
+                    value={selectedSkill}
+                    onChange={(e) => setSelectedSkill(e.target.value)}
+                    className="w-full bg-[#121216] border border-[#1E1E24] px-3 py-2 text-xs text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none"
+                  >
+                    <option value="All">All Skills</option>
+                    {availableSkills.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Interest Filter */}
+                <div>
+                  <label className="block text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] mb-1.5">
+                    Interest / Focus
+                  </label>
+                  <select
+                    id="filter-interest-select"
+                    value={selectedInterest}
+                    onChange={(e) => setSelectedInterest(e.target.value)}
+                    className="w-full bg-[#121216] border border-[#1E1E24] px-3 py-2 text-xs text-[#F5F5F0] focus:border-[#D4FF3F]/60 focus:outline-none"
+                  >
+                    <option value="All">All Interests</option>
+                    {availableInterests.map((i) => (
+                      <option key={i} value={i}>
+                        {i}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Active filter badges row */}
+              {activeFilterCount > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-2">
+                  <span className="text-[9px] font-mono-code text-[#7A7A82] uppercase mr-1">Active:</span>
+                  {selectedCollege !== 'All' && (
+                    <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
+                      College: {selectedCollege}
+                      <button onClick={() => setSelectedCollege('All')}><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
+                  {selectedDepartment !== 'All' && (
+                    <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
+                      Dept: {selectedDepartment}
+                      <button onClick={() => setSelectedDepartment('All')}><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
+                  {selectedYear !== 'All' && (
+                    <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
+                      Year: {selectedYear}
+                      <button onClick={() => setSelectedYear('All')}><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
+                  {selectedSkill !== 'All' && (
+                    <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
+                      Skill: {selectedSkill}
+                      <button onClick={() => setSelectedSkill('All')}><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
+                  {selectedInterest !== 'All' && (
+                    <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
+                      Interest: {selectedInterest}
+                      <button onClick={() => setSelectedInterest('All')}><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
+                  {selectedIntentFilter !== 'All' && (
+                    <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[10px] font-mono-code">
+                      Intent: {selectedIntentFilter}
+                      <button onClick={() => setSelectedIntentFilter('All')}><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
       </div>

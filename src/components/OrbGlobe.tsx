@@ -1,10 +1,16 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import * as THREE from 'three';
 import { UserProfile, ConnectionIntent, OrbLocation } from '../types';
 import { latLngToVector3, createGreatCircleArc, generateEarthCanvasTexture, getIntentVisual } from '../utils/geo';
 import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 
-interface OrbGlobeProps {
+export interface OrbGlobeRef {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetToHome: () => void;
+}
+
+export interface OrbGlobeProps {
   userLocation: { lat: number; lng: number; name: string; city: string };
   connections: OrbLocation[];
   selectedLocation: OrbLocation | null;
@@ -17,9 +23,10 @@ interface OrbGlobeProps {
   initialDistance?: number;
   className?: string;
   onHoverLocation?: (loc: OrbLocation | null, screenPos?: { x: number; y: number }) => void;
+  onUserInteraction?: () => void;
 }
 
-export const OrbGlobe: React.FC<OrbGlobeProps> = ({
+export const OrbGlobe = forwardRef<OrbGlobeRef, OrbGlobeProps>(({
   userLocation,
   connections,
   selectedLocation,
@@ -32,7 +39,8 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
   initialDistance = 7.2,
   className = '',
   onHoverLocation,
-}) => {
+  onUserInteraction,
+}, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
@@ -639,18 +647,37 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
     state.cameraTargetDistance = initialDistance;
   }, [userLocation, initialDistance]);
 
+  // Expose ref functions for external navigation control cluster
+  useImperativeHandle(ref, () => ({
+    zoomIn,
+    zoomOut,
+    resetToHome,
+  }), [zoomIn, zoomOut, resetToHome]);
+
   return (
     <div
       ref={containerRef}
       id="misfits-orb-canvas-container"
       className={`relative w-full h-full select-none cursor-grab active:cursor-grabbing overflow-hidden ${className}`}
-      onPointerDown={handlePointerDown}
+      onPointerDown={(e) => {
+        if (onUserInteraction) onUserInteraction();
+        handlePointerDown(e);
+      }}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
-      onClick={handleClick}
-      onWheel={handleWheel}
-      onTouchMove={handleTouchMove}
+      onClick={(e) => {
+        if (onUserInteraction) onUserInteraction();
+        handleClick(e);
+      }}
+      onWheel={(e) => {
+        if (onUserInteraction) onUserInteraction();
+        handleWheel(e);
+      }}
+      onTouchMove={(e) => {
+        if (onUserInteraction) onUserInteraction();
+        handleTouchMove(e);
+      }}
       onTouchEnd={handleTouchEnd}
     >
       <canvas
@@ -658,7 +685,7 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
         className="w-full h-full block touch-none"
       />
 
-      {/* Floating Canvas UI Controls */}
+      {/* Floating Canvas UI Controls (if enabled) */}
       {showRecenterButton && (
         <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 flex items-center gap-2 z-10 pointer-events-auto">
           <div className="flex items-center border border-[#1E1E24] bg-[#0E0E12]/95 backdrop-blur-md">
@@ -669,6 +696,7 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
                 zoomOut();
               }}
               title="Zoom out"
+              aria-label="Zoom out"
               className="p-2 text-[#8E8E93] hover:text-[#D4FF3F] hover:bg-[#141418] transition-colors border-r border-[#1E1E24]"
             >
               <ZoomOut className="w-3.5 h-3.5" />
@@ -680,6 +708,7 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
                 zoomIn();
               }}
               title="Zoom in"
+              aria-label="Zoom in"
               className="p-2 text-[#8E8E93] hover:text-[#D4FF3F] hover:bg-[#141418] transition-colors"
             >
               <ZoomIn className="w-3.5 h-3.5" />
@@ -692,14 +721,17 @@ export const OrbGlobe: React.FC<OrbGlobeProps> = ({
               e.stopPropagation();
               resetToHome();
             }}
-            title="Recenter to your location"
+            title={`Recenter on ${userLocation.city}`}
+            aria-label={`Recenter on ${userLocation.city}`}
             className="bg-[#0E0E12]/95 backdrop-blur-md border border-[#1E1E24] hover:border-[#D4FF3F]/50 text-[#F5F5F0] hover:text-[#D4FF3F] px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all shadow-xl flex items-center gap-1.5 font-mono-code"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F] animate-pulse" />
-            <span>Recenter ({userLocation.city})</span>
+            <span>Recenter • {userLocation.city}</span>
           </button>
         </div>
       )}
     </div>
   );
-};
+});
+
+OrbGlobe.displayName = 'OrbGlobe';

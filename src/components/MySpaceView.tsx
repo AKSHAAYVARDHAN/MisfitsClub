@@ -48,7 +48,9 @@ import {
   Globe2,
   Trash2,
   HelpCircle,
-  Radio
+  Radio,
+  ChevronDown,
+  MoreVertical
 } from 'lucide-react';
 
 export type MySpaceTab = 'overview' | 'connections' | 'hosted' | 'joined' | 'sparks';
@@ -646,114 +648,173 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
         </div>
       </section>
 
-      {/* 2. Navigation Tabs Bar */}
+      {/* 2. Navigation Bar */}
       <section className="border-b border-[#242424] bg-[#0B0B0D] sticky top-16 z-10 px-4 sm:px-8">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 overflow-x-auto no-scrollbar">
+        <div className="max-w-6xl mx-auto">
           
-          {/* Tab buttons */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            <button
-              id="my-space-tab-overview"
-              onClick={() => setActiveTab('overview')}
-              className={`px-3.5 sm:px-4 py-3.5 text-xs font-mono-code uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border-b-2 ${
-                activeTab === 'overview'
-                  ? 'text-[#D4FF3F] border-[#D4FF3F] font-bold bg-[#D4FF3F]/5'
-                  : 'text-[#8A8A8A] border-transparent hover:text-[#F2F2ED] hover:bg-[#141416]'
-              }`}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Overview</span>
-            </button>
+          {/* Desktop Navigation (md and up) */}
+          <div className="hidden md:flex items-center justify-between gap-4">
+            {/* Tab buttons */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              <button
+                id="my-space-tab-overview"
+                onClick={() => setActiveTab('overview')}
+                className={`px-3.5 sm:px-4 py-3.5 text-xs font-mono-code uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border-b-2 ${
+                  activeTab === 'overview'
+                    ? 'text-[#D4FF3F] border-[#D4FF3F] font-bold bg-[#D4FF3F]/5'
+                    : 'text-[#8A8A8A] border-transparent hover:text-[#F2F2ED] hover:bg-[#141416]'
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Overview</span>
+              </button>
 
-            <button
-              id="my-space-tab-connections"
-              onClick={() => setActiveTab('connections')}
-              className={`px-3.5 sm:px-4 py-3.5 text-xs font-mono-code uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border-b-2 ${
-                activeTab === 'connections'
-                  ? 'text-[#D4FF3F] border-[#D4FF3F] font-bold bg-[#D4FF3F]/5'
-                  : 'text-[#8A8A8A] border-transparent hover:text-[#F2F2ED] hover:bg-[#141416]'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>My Connections</span>
-              <span className="px-1.5 py-0.2 bg-[#222] text-[#AAA] text-[10px] rounded-none">
-                {myConnectedList.length}
-              </span>
-              {incomingRequestsList.length > 0 && (
-                <span className="w-2 h-2 rounded-full bg-[#D4FF3F] inline-block ml-0.5" />
-              )}
-            </button>
+              <button
+                id="my-space-tab-connections"
+                onClick={() => setActiveTab('connections')}
+                className={`px-3.5 sm:px-4 py-3.5 text-xs font-mono-code uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border-b-2 ${
+                  activeTab === 'connections'
+                    ? 'text-[#D4FF3F] border-[#D4FF3F] font-bold bg-[#D4FF3F]/5'
+                    : 'text-[#8A8A8A] border-transparent hover:text-[#F2F2ED] hover:bg-[#141416]'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>My Connections</span>
+                <span className="px-1.5 py-0.2 bg-[#222] text-[#AAA] text-[10px] rounded-none">
+                  {myConnectedList.length}
+                </span>
+                {incomingRequestsList.length > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-[#D4FF3F] inline-block ml-0.5" />
+                )}
+              </button>
 
-            <button
-              id="my-space-tab-hosted"
-              onClick={() => setActiveTab('hosted')}
-              className={`px-3.5 sm:px-4 py-3.5 text-xs font-mono-code uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border-b-2 ${
-                activeTab === 'hosted'
-                  ? 'text-[#D4FF3F] border-[#D4FF3F] font-bold bg-[#D4FF3F]/5'
-                  : 'text-[#8A8A8A] border-transparent hover:text-[#F2F2ED] hover:bg-[#141416]'
-              }`}
-            >
-              <Crown className="w-3.5 h-3.5 text-[#D4FF3F]" />
-              <span>Hubs I Host</span>
-              <span className="px-1.5 py-0.2 bg-[#222] text-[#AAA] text-[10px] rounded-none">
-                {hubsIHost.length}
-              </span>
-            </button>
+              <button
+                id="my-space-tab-hosted"
+                onClick={() => setActiveTab('hosted')}
+                className={`px-3.5 sm:px-4 py-3.5 text-xs font-mono-code uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border-b-2 ${
+                  activeTab === 'hosted'
+                    ? 'text-[#D4FF3F] border-[#D4FF3F] font-bold bg-[#D4FF3F]/5'
+                    : 'text-[#8A8A8A] border-transparent hover:text-[#F2F2ED] hover:bg-[#141416]'
+                }`}
+              >
+                <Crown className="w-3.5 h-3.5 text-[#D4FF3F]" />
+                <span>Hubs I Host</span>
+                <span className="px-1.5 py-0.2 bg-[#222] text-[#AAA] text-[10px] rounded-none">
+                  {hubsIHost.length}
+                </span>
+              </button>
 
-            <button
-              id="my-space-tab-joined"
-              onClick={() => setActiveTab('joined')}
-              className={`px-3.5 sm:px-4 py-3.5 text-xs font-mono-code uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border-b-2 ${
-                activeTab === 'joined'
-                  ? 'text-[#D4FF3F] border-[#D4FF3F] font-bold bg-[#D4FF3F]/5'
-                  : 'text-[#8A8A8A] border-transparent hover:text-[#F2F2ED] hover:bg-[#141416]'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Hubs I Joined</span>
-              <span className="px-1.5 py-0.2 bg-[#222] text-[#AAA] text-[10px] rounded-none">
-                {hubsIJoined.length}
-              </span>
-            </button>
+              <button
+                id="my-space-tab-joined"
+                onClick={() => setActiveTab('joined')}
+                className={`px-3.5 sm:px-4 py-3.5 text-xs font-mono-code uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border-b-2 ${
+                  activeTab === 'joined'
+                    ? 'text-[#D4FF3F] border-[#D4FF3F] font-bold bg-[#D4FF3F]/5'
+                    : 'text-[#8A8A8A] border-transparent hover:text-[#F2F2ED] hover:bg-[#141416]'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Hubs I Joined</span>
+                <span className="px-1.5 py-0.2 bg-[#222] text-[#AAA] text-[10px] rounded-none">
+                  {hubsIJoined.length}
+                </span>
+              </button>
 
-            <button
-              id="my-space-tab-sparks"
-              onClick={() => setActiveTab('sparks')}
-              className={`px-3.5 sm:px-4 py-3.5 text-xs font-mono-code uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border-b-2 ${
-                activeTab === 'sparks'
-                  ? 'text-[#D4FF3F] border-[#D4FF3F] font-bold bg-[#D4FF3F]/5'
-                  : 'text-[#8A8A8A] border-transparent hover:text-[#F2F2ED] hover:bg-[#141416]'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>My Sparks</span>
-              <span className="px-1.5 py-0.2 bg-[#222] text-[#AAA] text-[10px] rounded-none">
-                {mySparks.length}
-              </span>
-            </button>
+              <button
+                id="my-space-tab-sparks"
+                onClick={() => setActiveTab('sparks')}
+                className={`px-3.5 sm:px-4 py-3.5 text-xs font-mono-code uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border-b-2 ${
+                  activeTab === 'sparks'
+                    ? 'text-[#D4FF3F] border-[#D4FF3F] font-bold bg-[#D4FF3F]/5'
+                    : 'text-[#8A8A8A] border-transparent hover:text-[#F2F2ED] hover:bg-[#141416]'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>My Sparks</span>
+                <span className="px-1.5 py-0.2 bg-[#222] text-[#AAA] text-[10px] rounded-none">
+                  {mySparks.length}
+                </span>
+              </button>
+            </div>
+
+            {/* Quick Search on Desktop */}
+            {activeTab !== 'overview' && (
+              <div className="relative my-2 w-56 lg:w-64 shrink-0">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#777]" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search..."
+                  className="w-full bg-[#141416] border border-[#242424] focus:border-[#D4FF3F] pl-8 pr-3 py-1.5 text-xs font-mono-code text-[#F2F2ED] placeholder-[#666] outline-none transition-colors"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[#777] hover:text-[#F2F2ED]"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Quick Search */}
-          {activeTab !== 'overview' && (
-            <div className="relative my-2 w-48 sm:w-64 shrink-0">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#777]" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search..."
-                className="w-full bg-[#141416] border border-[#242424] focus:border-[#D4FF3F] pl-8 pr-3 py-1.5 text-xs font-mono-code text-[#F2F2ED] placeholder-[#666] outline-none"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[#777] hover:text-[#F2F2ED]"
+          {/* Mobile & Tablet Navigation (below md) */}
+          <div className="flex md:hidden flex-col gap-2.5 py-3">
+            <div className="flex items-center gap-2">
+              <label htmlFor="my-space-mobile-section-select" className="text-[11px] font-mono-code uppercase tracking-wider text-[#8A8A8A] shrink-0">
+                Section:
+              </label>
+              <div className="relative flex-1">
+                <select
+                  id="my-space-mobile-section-select"
+                  value={activeTab}
+                  onChange={(e) => setActiveTab(e.target.value as MySpaceTab)}
+                  className="w-full appearance-none bg-[#141416] border border-[#2A2A2A] text-[#D4FF3F] text-xs font-mono-code uppercase tracking-wider font-bold py-2 pl-3 pr-8 focus:border-[#D4FF3F] outline-none cursor-pointer"
                 >
-                  Clear
-                </button>
-              )}
+                  <option value="overview" className="bg-[#141416] text-[#F2F2ED]">
+                    Overview
+                  </option>
+                  <option value="connections" className="bg-[#141416] text-[#F2F2ED]">
+                    My Connections ({myConnectedList.length})
+                  </option>
+                  <option value="hosted" className="bg-[#141416] text-[#F2F2ED]">
+                    Hubs I Host ({hubsIHost.length})
+                  </option>
+                  <option value="joined" className="bg-[#141416] text-[#F2F2ED]">
+                    Hubs I Joined ({hubsIJoined.length})
+                  </option>
+                  <option value="sparks" className="bg-[#141416] text-[#F2F2ED]">
+                    My Sparks ({mySparks.length})
+                  </option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-[#D4FF3F] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
-          )}
+
+            {/* Quick Search on Mobile/Tablet */}
+            {activeTab !== 'overview' && (
+              <div className="relative w-full">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#777]" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search in this section..."
+                  className="w-full bg-[#141416] border border-[#242424] focus:border-[#D4FF3F] pl-8 pr-3 py-1.5 text-xs font-mono-code text-[#F2F2ED] placeholder-[#666] outline-none transition-colors"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[#777] hover:text-[#F2F2ED]"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
         </div>
       </section>
@@ -1363,9 +1424,11 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
               </div>
             </div>
 
-            {/* Sub-Tabs: All / Requests / Sent */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1E1E20] pb-2">
-              <div className="flex items-center gap-2">
+            {/* Sub-Tabs & Intent Controls */}
+            
+            {/* DESKTOP TOOLBAR (md and up) */}
+            <div className="hidden md:flex items-center justify-between gap-3 border-b border-[#1E1E20] pb-3">
+              <div className="flex flex-wrap items-center gap-2">
                 
                 {/* Sub-tab 1: All Connected */}
                 <button
@@ -1420,25 +1483,78 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
 
               </div>
 
-              {/* Intent Filter Chips */}
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-                <span className="text-[10px] font-mono-code uppercase text-[#666] flex items-center gap-1 mr-1">
-                  <Filter className="w-3 h-3" />
+              {/* Compact Intent Filter Dropdown for Desktop */}
+              <div className="relative shrink-0 flex items-center gap-2">
+                <span className="text-[11px] font-mono-code uppercase text-[#888] flex items-center gap-1">
+                  <Filter className="w-3 h-3 text-[#D4FF3F]" />
                   <span>Intent:</span>
                 </span>
-                {['All', 'Build Together', 'Exchange Ideas', 'Collaborate', 'Learn Together'].map((intent) => (
-                  <button
-                    key={intent}
-                    onClick={() => setSelectedIntentFilter(intent)}
-                    className={`px-2 py-0.5 text-[10px] font-mono-code uppercase tracking-wider transition-colors whitespace-nowrap ${
-                      selectedIntentFilter === intent
-                        ? 'bg-[#222] text-[#D4FF3F] border border-[#D4FF3F]/40'
-                        : 'bg-[#141416] text-[#777] border border-[#222] hover:text-[#AAA]'
-                    }`}
+                <div className="relative">
+                  <select
+                    id="my-space-connections-intent-select"
+                    value={selectedIntentFilter}
+                    onChange={(e) => setSelectedIntentFilter(e.target.value)}
+                    className="appearance-none bg-[#141416] border border-[#2A2A2A] hover:border-[#D4FF3F]/50 text-[#F2F2ED] text-xs font-mono-code uppercase tracking-wider py-1.5 pl-2.5 pr-7 focus:border-[#D4FF3F] outline-none cursor-pointer"
                   >
-                    {intent}
-                  </button>
-                ))}
+                    <option value="All">All Intents</option>
+                    <option value="Build Together">Build Together</option>
+                    <option value="Exchange Ideas">Exchange Ideas</option>
+                    <option value="Collaborate">Collaborate</option>
+                    <option value="Learn Together">Learn Together</option>
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-[#888] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            {/* MOBILE & TABLET TOOLBAR (below md) */}
+            <div className="flex md:hidden flex-col gap-2.5 border-b border-[#1E1E20] pb-3">
+              {/* Connections State Dropdown */}
+              <div className="relative w-full">
+                <select
+                  id="my-connections-mobile-state-select"
+                  value={connectionsSubTab}
+                  onChange={(e) => setConnectionsSubTab(e.target.value as 'all' | 'requests' | 'sent')}
+                  className="w-full appearance-none bg-[#141416] border border-[#2A2A2A] text-[#D4FF3F] text-xs font-mono-code uppercase tracking-wider font-bold py-2.5 pl-3.5 pr-8 focus:border-[#D4FF3F] outline-none cursor-pointer"
+                >
+                  <option value="all" className="bg-[#141416] text-[#F2F2ED]">
+                    Connections: Connected ({myConnectedList.length})
+                  </option>
+                  <option value="requests" className="bg-[#141416] text-[#F2F2ED]">
+                    Connections: Incoming Requests ({incomingRequestsList.length})
+                  </option>
+                  <option value="sent" className="bg-[#141416] text-[#F2F2ED]">
+                    Connections: Sent Requests ({outgoingSentList.length})
+                  </option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-[#D4FF3F] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+
+              {/* Intent Filter Dropdown */}
+              <div className="relative w-full">
+                <select
+                  id="my-space-connections-mobile-intent-select"
+                  value={selectedIntentFilter}
+                  onChange={(e) => setSelectedIntentFilter(e.target.value)}
+                  className="w-full appearance-none bg-[#141416] border border-[#2A2A2A] hover:border-[#D4FF3F]/50 text-[#F2F2ED] text-xs font-mono-code uppercase tracking-wider py-2.5 pl-3.5 pr-8 focus:border-[#D4FF3F] outline-none cursor-pointer"
+                >
+                  <option value="All" className="bg-[#141416] text-[#F2F2ED]">
+                    Intent: All Intents
+                  </option>
+                  <option value="Build Together" className="bg-[#141416] text-[#F2F2ED]">
+                    Intent: Build Together
+                  </option>
+                  <option value="Exchange Ideas" className="bg-[#141416] text-[#F2F2ED]">
+                    Intent: Exchange Ideas
+                  </option>
+                  <option value="Collaborate" className="bg-[#141416] text-[#F2F2ED]">
+                    Intent: Collaborate
+                  </option>
+                  <option value="Learn Together" className="bg-[#141416] text-[#F2F2ED]">
+                    Intent: Learn Together
+                  </option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-[#888] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
 

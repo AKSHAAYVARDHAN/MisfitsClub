@@ -17,7 +17,8 @@ import {
   UserCheck, 
   UserPlus,
   ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  ChevronDown
 } from 'lucide-react';
 
 interface ConnectionsViewProps {
@@ -59,6 +60,33 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
   const [selectedIntentFilter, setSelectedIntentFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+  const [isIntentOpen, setIsIntentOpen] = useState<boolean>(false);
+  const intentDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  const INTENT_OPTIONS = [
+    'All',
+    'Build Together',
+    'Exchange Ideas',
+    'Collaborate',
+    'Learn Together',
+    'Just Talk'
+  ];
+
+  // Close intent dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        intentDropdownRef.current &&
+        !intentDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsIntentOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const currentUserId = currentUser?.uid || currentUser?.id;
   const safeConns = connections || [];
@@ -187,9 +215,11 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
         </div>
       </div>
 
-      {/* Network Overview Stats */}
+      {/* Network Overview Stats (Primary Connection State Navigation) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
         <button
+          id="overview-card-connected"
+          type="button"
           onClick={() => setActiveTab('connected')}
           className={`p-4 border text-left transition-all ${
             activeTab === 'connected'
@@ -212,6 +242,8 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
         </button>
 
         <button
+          id="overview-card-received"
+          type="button"
           onClick={() => setActiveTab('received')}
           className={`p-4 border text-left transition-all relative ${
             activeTab === 'received'
@@ -240,6 +272,8 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
         </button>
 
         <button
+          id="overview-card-sent"
+          type="button"
           onClick={() => setActiveTab('sent')}
           className={`p-4 border text-left transition-all ${
             activeTab === 'sent'
@@ -262,93 +296,92 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
         </button>
       </div>
 
-      {/* Tabs & Search Filter Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
-        
-        {/* Navigation Sub-Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-none border-b border-[#1E1E24] sm:border-0 w-full lg:w-auto">
-          <button
-            id="tab-btn-connected"
-            onClick={() => setActiveTab('connected')}
-            className={`whitespace-nowrap px-3.5 sm:px-4 py-2 text-xs font-mono-code uppercase tracking-wider font-semibold transition-all border shrink-0 ${
-              activeTab === 'connected'
-                ? 'bg-lime-grained text-[#080808] border-[#D4FF3F] font-bold'
-                : 'bg-[#101014] text-[#8E8E93] border-[#222228] hover:text-[#F5F5F0] hover:border-[#383844]'
-            }`}
-          >
-            Connected ({connectedList.length})
-          </button>
-
-          <button
-            id="tab-btn-received"
-            onClick={() => setActiveTab('received')}
-            className={`whitespace-nowrap px-3.5 sm:px-4 py-2 text-xs font-mono-code uppercase tracking-wider font-semibold transition-all border shrink-0 relative ${
-              activeTab === 'received'
-                ? 'bg-lime-grained text-[#080808] border-[#D4FF3F] font-bold'
-                : 'bg-[#101014] text-[#8E8E93] border-[#222228] hover:text-[#F5F5F0] hover:border-[#383844]'
-            }`}
-          >
-            Requests Received ({incomingPendingList.length})
-            {incomingPendingList.length > 0 && activeTab !== 'received' && (
-              <span className="ml-1.5 px-1.5 py-0.2 bg-[#D4FF3F] text-[#080808] text-[9px] font-bold">
-                NEW
-              </span>
-            )}
-          </button>
-
-          <button
-            id="tab-btn-sent"
-            onClick={() => setActiveTab('sent')}
-            className={`whitespace-nowrap px-3.5 sm:px-4 py-2 text-xs font-mono-code uppercase tracking-wider font-semibold transition-all border shrink-0 ${
-              activeTab === 'sent'
-                ? 'bg-lime-grained text-[#080808] border-[#D4FF3F] font-bold'
-                : 'bg-[#101014] text-[#8E8E93] border-[#222228] hover:text-[#F5F5F0] hover:border-[#383844]'
-            }`}
-          >
-            Requests Sent ({outgoingPendingList.length})
-          </button>
-        </div>
-
-        {/* Search Input */}
-        <div className="relative w-full lg:w-72">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#64646E]" />
+      {/* =========================================================================
+          CONNECTIONS CONTROL TOOLBAR (ALL SCREEN SIZES)
+          - Single clean horizontal search & filter row across desktop, tablet & mobile:
+            [ Search connections... (Dominant Width) ] [ INTENT: ALL ▼ (Compact Secondary) ]
+          ========================================================================= */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+        {/* Search Input (Dominant Width) */}
+        <div className="relative flex-1 min-w-0">
+          <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7A7A82]" />
           <input
             id="connections-search-input"
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search connections..."
-            className="w-full bg-[#0E0E12] border border-[#24242C] pl-9 pr-3 py-2 text-xs text-[#F5F5F0] placeholder-[#64646E] focus:border-[#D4FF3F]/60 focus:outline-none font-mono-code"
+            className="w-full h-[42px] bg-[#0E0E12] border border-[#1E1E24] pl-9 pr-9 text-xs text-[#F5F5F0] placeholder-[#666670] focus:border-[#D4FF3F]/60 focus:outline-none font-mono-code transition-colors"
           />
           {searchQuery && (
             <button
+              id="clear-connections-search"
+              type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#64646E] hover:text-[#F5F5F0]"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7A7A82] hover:text-[#D4FF3F] p-1"
+              aria-label="Clear search"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
-      </div>
 
-      {/* Intent Filters for Connected Tab */}
-      {activeTab === 'connected' && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-6 scrollbar-none">
-          {['All', 'Build Together', 'Exchange Ideas', 'Collaborate', 'Learn Together', 'Just Talk'].map((intent) => (
-            <button
-              key={intent}
-              onClick={() => setSelectedIntentFilter(intent)}
-              className={`whitespace-nowrap px-3.5 py-1.5 text-xs font-mono-code uppercase tracking-wider transition-all border ${
-                selectedIntentFilter === intent
-                  ? 'border-[#D4FF3F]/50 bg-[#D4FF3F]/10 text-[#D4FF3F] font-bold'
-                  : 'bg-[#101014] text-[#8E8E93] border-[#222228] hover:border-[#383844] hover:text-[#F5F5F0]'
+        {/* Intent Filter Dropdown (Compact Secondary Control) */}
+        <div ref={intentDropdownRef} className="relative shrink-0">
+          <button
+            id="connections-intent-dropdown-btn"
+            type="button"
+            onClick={() => setIsIntentOpen(!isIntentOpen)}
+            aria-expanded={isIntentOpen}
+            aria-haspopup="listbox"
+            className={`w-full sm:w-auto h-[42px] px-4 border text-xs font-mono-code uppercase tracking-wider transition-colors inline-flex items-center justify-between sm:justify-start gap-2 shrink-0 ${
+              selectedIntentFilter !== 'All'
+                ? 'border-[#D4FF3F]/50 bg-[#121216] text-[#D4FF3F] font-bold shadow-[0_0_8px_rgba(212,255,63,0.1)]'
+                : 'border-[#1E1E24] bg-[#0E0E12] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#2E2E38]'
+            }`}
+          >
+            <span>INTENT: {selectedIntentFilter.toUpperCase()}</span>
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                isIntentOpen ? 'rotate-180 text-[#D4FF3F]' : 'text-[#8E8E93]'
               }`}
+            />
+          </button>
+
+          {isIntentOpen && (
+            <div
+              id="connections-intent-dropdown-menu"
+              role="listbox"
+              className="absolute top-full right-0 mt-1 z-30 w-full sm:min-w-[210px] bg-[#0E0E12] border border-[#1E1E24] shadow-2xl py-1 animate-fadeIn"
             >
-              {intent}
-            </button>
-          ))}
+              {INTENT_OPTIONS.map((intent) => {
+                const isSelected = selectedIntentFilter === intent;
+                return (
+                  <button
+                    key={intent}
+                    id={`connections-intent-option-${intent.toLowerCase().replace(/\s+/g, '-')}`}
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => {
+                      setSelectedIntentFilter(intent);
+                      setIsIntentOpen(false);
+                    }}
+                    className={`w-full text-left px-3.5 py-2 text-xs font-mono-code flex items-center justify-between transition-colors ${
+                      isSelected
+                        ? 'bg-[#D4FF3F]/15 text-[#D4FF3F] font-bold'
+                        : 'text-[#8E8E93] hover:bg-[#15151A] hover:text-[#F5F5F0]'
+                    }`}
+                  >
+                    <span>{intent}</span>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-[#D4FF3F]" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Main Content Area */}
       {filteredList.length === 0 ? (

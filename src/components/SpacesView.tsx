@@ -59,6 +59,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeSpace, setActiveSpace] = useState<Space | null>(null);
   const [showRefinePanel, setShowRefinePanel] = useState<boolean>(false);
+  const [showDesktopRefine, setShowDesktopRefine] = useState<boolean>(false);
 
   const currentUserId = currentUser.uid || currentUser.id;
 
@@ -467,41 +468,72 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
         </div>
 
         {/* =========================================================================
-            2B. DESKTOP DISCOVERY CONTROLS (hidden lg:block - UNCHANGED)
+            2B. DESKTOP DISCOVERY CONTROLS (hidden lg:block)
+            - Unified Single Toolbar:
+              [ Search hubs... (55-65%) ] [ REFINE HUBS ▼ ] [ ALL HUBS ] [ MY HUBS ]
+            - Clean collapsible Refine panel below the toolbar when opened
             ========================================================================= */}
-        <div className="hidden lg:block space-y-4">
-          {/* Top Control Row: Search + Tab Switcher */}
-          <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center">
-            
-            {/* Search Input */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666670]" />
+        <div className="hidden lg:block space-y-3">
+          {/* Unified Discovery Toolbar */}
+          <div className="flex items-center gap-3">
+            {/* Search Input (Primary Width: 55-65%) */}
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7A7A82]" />
               <input
                 id="spaces-search-input"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search hubs by name, topic, or tag..."
-                className="w-full pl-9 pr-8 py-2 bg-[#0E0E12] border border-[#24242C] focus:border-[#D4FF3F]/60 text-xs font-mono-code text-[#F5F5F0] placeholder-[#555560] focus:outline-none transition-colors"
+                className="w-full pl-9 pr-9 py-2.5 bg-[#0E0E12] border border-[#1E1E24] focus:border-[#D4FF3F]/60 text-xs font-mono-code text-[#F5F5F0] placeholder-[#666670] focus:outline-none transition-colors h-[42px]"
               />
               {searchQuery && (
                 <button
+                  id="clear-spaces-search-desktop"
+                  type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#666670] hover:text-[#CCC]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7A7A82] hover:text-[#D4FF3F]"
+                  aria-label="Clear search"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            {/* Membership Tabs */}
-            <div className="flex items-center gap-1 bg-[#121216] border border-[#24242C] p-1 self-start md:self-auto">
+            {/* Refine Hubs Trigger (Compact Fixed/Shrink-0 Control) */}
+            <button
+              id="desktop-refine-hubs-btn"
+              type="button"
+              onClick={() => setShowDesktopRefine(!showDesktopRefine)}
+              aria-expanded={showDesktopRefine}
+              aria-controls="desktop-refine-hubs-panel"
+              className={`h-[42px] px-3.5 border text-xs font-mono-code uppercase tracking-wider transition-colors inline-flex items-center gap-2 shrink-0 ${
+                showDesktopRefine || activeRefineCount > 0
+                  ? 'border-[#D4FF3F]/50 bg-[#121216] text-[#F5F5F0]'
+                  : 'border-[#1E1E24] bg-[#0E0E12] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#2E2E38]'
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#D4FF3F]" />
+              <span>
+                REFINE HUBS
+                {activeRefineCount > 0 && ` • ${activeRefineCount} ACTIVE`}
+              </span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                  showDesktopRefine ? 'rotate-180 text-[#D4FF3F]' : 'text-[#8E8E93]'
+                }`}
+              />
+            </button>
+
+            {/* Scope Tabs: [ ALL HUBS ] [ MY HUBS ] (Compact Grouped Selector) */}
+            <div className="h-[42px] flex items-center gap-1 bg-[#121216] border border-[#1E1E24] p-1 shrink-0">
               <button
                 id="spaces-tab-all"
+                type="button"
                 onClick={() => setMembershipTab('all')}
-                className={`px-3.5 py-1.5 text-xs font-mono-code transition-all ${
+                className={`h-full px-3.5 text-xs font-mono-code uppercase tracking-wider transition-all flex items-center justify-center ${
                   membershipTab === 'all'
-                    ? 'bg-lime-grained text-[#080808] font-bold'
+                    ? 'bg-lime-grained text-[#080808] font-bold shadow-[0_0_10px_rgba(212,255,63,0.15)]'
                     : 'text-[#8E8E93] hover:text-[#F5F5F0]'
                 }`}
               >
@@ -509,10 +541,11 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
               </button>
               <button
                 id="spaces-tab-mine"
+                type="button"
                 onClick={() => setMembershipTab('my-spaces')}
-                className={`px-3.5 py-1.5 text-xs font-mono-code transition-all ${
+                className={`h-full px-3.5 text-xs font-mono-code uppercase tracking-wider transition-all flex items-center justify-center ${
                   membershipTab === 'my-spaces'
-                    ? 'bg-lime-grained text-[#080808] font-bold'
+                    ? 'bg-lime-grained text-[#080808] font-bold shadow-[0_0_10px_rgba(212,255,63,0.15)]'
                     : 'text-[#8E8E93] hover:text-[#F5F5F0]'
                 }`}
               >
@@ -521,56 +554,146 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
             </div>
           </div>
 
-          {/* Categories Bar */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            {CATEGORIES.map((cat) => {
-              const isSelected = selectedCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  id={`spaces-filter-cat-${cat.toLowerCase()}`}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1 text-xs font-mono-code whitespace-nowrap transition-all border ${
-                    isSelected
-                      ? 'bg-lime-grained text-[#080808] font-bold border-[#D4FF3F]'
-                      : 'bg-[#101014] text-[#8E8E93] border-[#222228] hover:border-[#383844] hover:text-[#F5F5F0]'
-                  }`}
-                >
-                  {cat}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Active Tag Filter / Suggestions */}
-          {allTags.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[10px] font-mono-code text-[#666670] mr-1">Popular Tags:</span>
-              {allTags.map((tag) => {
-                const isSelected = selectedTag === tag;
-                return (
+          {/* Quick Active Filter Badges when panel is collapsed */}
+          {!showDesktopRefine && activeRefineCount > 0 && (
+            <div className="flex items-center gap-2 animate-fadeIn pt-0.5">
+              <span className="text-[10px] font-mono-code text-[#7A7A82] uppercase">Active:</span>
+              {selectedCategory !== 'All' && (
+                <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[11px] font-mono-code">
+                  <span>Category: {selectedCategory}</span>
                   <button
-                    key={tag}
-                    onClick={() => setSelectedTag(isSelected ? null : tag)}
-                    className={`px-2 py-0.5 text-[10px] font-mono-code transition-colors border ${
-                      isSelected
-                        ? 'bg-[#D4FF3F]/15 text-[#D4FF3F] border-[#D4FF3F]/40 font-bold'
-                        : 'bg-[#0E0E12] text-[#8E8E93] border-[#202026] hover:border-[#33333E] hover:text-[#D0D0CA]'
-                    }`}
+                    type="button"
+                    onClick={() => setSelectedCategory('All')}
+                    aria-label="Clear category filter"
+                    className="hover:text-white"
                   >
-                    #{tag}
+                    <X className="w-3 h-3" />
                   </button>
-                );
-              })}
-
-              {selectedTag && (
-                <button
-                  onClick={() => setSelectedTag(null)}
-                  className="text-[10px] font-mono-code text-[#EF4444] hover:underline ml-1"
-                >
-                  Clear tag filter
-                </button>
+                </span>
               )}
+              {selectedTag && (
+                <span className="inline-flex items-center gap-1 bg-[#121216] border border-[#D4FF3F]/30 text-[#D4FF3F] px-2 py-0.5 text-[11px] font-mono-code">
+                  <span>Tag: #{selectedTag}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTag(null)}
+                    aria-label="Clear tag filter"
+                    className="hover:text-white"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={handleClearRefine}
+                className="text-[10px] font-mono-code uppercase tracking-wider text-[#8E8E93] hover:text-[#D4FF3F] ml-1 underline"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+
+          {/* Desktop Refine Hubs Panel */}
+          {showDesktopRefine && (
+            <div
+              id="desktop-refine-hubs-panel"
+              className="bg-[#0E0E12] border border-[#1E1E24] p-5 space-y-4 animate-fadeIn"
+            >
+              {/* Category Section */}
+              <div>
+                <div className="flex items-center justify-between mb-2.5">
+                  <label className="text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] font-bold">
+                    CATEGORY
+                  </label>
+                  {selectedCategory !== 'All' && (
+                    <span className="text-[10px] font-mono-code text-[#D4FF3F]">
+                      Selected: {selectedCategory}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {CATEGORIES.map((cat) => {
+                    const isSelected = selectedCategory === cat;
+                    return (
+                      <button
+                        key={cat}
+                        id={`desktop-filter-cat-${cat.toLowerCase()}`}
+                        type="button"
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`px-3 py-1.5 text-xs font-mono-code transition-all border ${
+                          isSelected
+                            ? 'bg-lime-grained text-[#080808] font-bold border-[#D4FF3F] shadow-[0_0_10px_rgba(212,255,63,0.15)]'
+                            : 'bg-[#121216] text-[#8E8E93] border-[#202026] hover:border-[#383844] hover:text-[#F5F5F0]'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Popular Tags Section */}
+              {allTags.length > 0 && (
+                <div className="pt-3 border-t border-[#1E1E24]">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <label className="text-[10px] font-mono-code uppercase tracking-widest text-[#7A7A82] font-bold">
+                      POPULAR TAGS
+                    </label>
+                    {selectedTag && (
+                      <span className="text-[10px] font-mono-code text-[#D4FF3F]">
+                        Selected: #{selectedTag}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {allTags.map((tag) => {
+                      const isSelected = selectedTag === tag;
+                      return (
+                        <button
+                          key={tag}
+                          id={`desktop-filter-tag-${tag.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+                          type="button"
+                          onClick={() => setSelectedTag(isSelected ? null : tag)}
+                          className={`px-2.5 py-1 text-xs font-mono-code transition-colors border flex items-center gap-1 ${
+                            isSelected
+                              ? 'bg-[#D4FF3F]/20 text-[#D4FF3F] border-[#D4FF3F]/60 font-bold shadow-[0_0_8px_rgba(212,255,63,0.1)]'
+                              : 'bg-[#121216] text-[#8E8E93] border-[#202026] hover:border-[#383844] hover:text-[#F5F5F0]'
+                          }`}
+                        >
+                          <span>#{tag}</span>
+                          {isSelected && <Check className="w-3 h-3 text-[#D4FF3F]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Bottom Actions: Clear All & Apply */}
+              <div className="flex items-center justify-between pt-3 border-t border-[#1E1E24]">
+                <button
+                  id="desktop-refine-clear-btn"
+                  type="button"
+                  onClick={handleClearRefine}
+                  disabled={activeRefineCount === 0}
+                  className="flex items-center gap-1.5 px-3.5 py-2 border border-[#1E1E24] bg-[#121216] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#2E2E38] disabled:opacity-40 disabled:pointer-events-none text-xs font-mono-code uppercase tracking-wider transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Clear All</span>
+                </button>
+
+                <button
+                  id="desktop-refine-apply-btn"
+                  type="button"
+                  onClick={() => setShowDesktopRefine(false)}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-lime-grained text-[#080808] border border-[#D4FF3F] hover:brightness-110 text-xs font-mono-code uppercase tracking-wider font-bold transition-all shadow-[0_0_12px_rgba(212,255,63,0.15)]"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Apply</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

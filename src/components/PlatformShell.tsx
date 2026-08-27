@@ -235,90 +235,106 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
       {/* 3. Mobile Bottom Navigation Bar (< md screens) */}
       <nav
         id="platform-mobile-bottom-nav"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-[#1E1E24] bg-[#09090B]/95 backdrop-blur-lg px-2 py-1.5"
+        aria-label="Mobile navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-[#1E1E24] bg-[#09090B]/95 backdrop-blur-xl px-3 py-2 safe-bottom"
       >
-        <div className="grid grid-cols-7 gap-1 text-center">
+        <div className="grid grid-cols-6 gap-1 items-center max-w-md mx-auto">
+          {/* 1. ORB */}
           <button
             id="mobile-nav-orb"
             onClick={() => onNavigate('/orb')}
-            className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
-              currentPath === '/orb' ? 'text-[#D4FF3F] font-bold' : 'text-[#8E8E93]'
+            aria-label="Orb"
+            title="Orb"
+            className={`relative flex items-center justify-center h-11 w-full transition-colors duration-150 focus:outline-none ${
+              currentPath === '/orb'
+                ? 'text-white'
+                : 'text-[#7A7A82] hover:text-[#F5F5F0]'
             }`}
           >
-            <Globe className="h-4 w-4 mb-0.5" />
-            <span>Orb</span>
+            <Globe className="h-5 w-5" />
           </button>
 
+          {/* 2. DISCOVER */}
           <button
             id="mobile-nav-discover"
             onClick={() => onNavigate('/discover')}
-            className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
-              currentPath === '/discover' ? 'text-[#D4FF3F] font-bold' : 'text-[#8E8E93]'
+            aria-label="Discover"
+            title="Discover"
+            className={`relative flex items-center justify-center h-11 w-full transition-colors duration-150 focus:outline-none ${
+              currentPath === '/discover'
+                ? 'text-white'
+                : 'text-[#7A7A82] hover:text-[#F5F5F0]'
             }`}
           >
-            <Compass className="h-4 w-4 mb-0.5" />
-            <span>Find</span>
+            <Compass className="h-5 w-5" />
           </button>
 
+          {/* 3. SPARK */}
           <button
             id="mobile-nav-spark"
             onClick={() => onNavigate('/board')}
-            className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
-              currentPath === '/board' ? 'text-[#D4FF3F] font-bold' : 'text-[#8E8E93]'
+            aria-label="Spark"
+            title="Spark"
+            className={`relative flex items-center justify-center h-11 w-full transition-colors duration-150 focus:outline-none ${
+              currentPath === '/board'
+                ? 'text-white'
+                : 'text-[#7A7A82] hover:text-[#F5F5F0]'
             }`}
           >
-            <Sparkles className="h-4 w-4 mb-0.5" />
-            <span>Spark</span>
+            <Sparkles className="h-5 w-5" />
           </button>
 
+          {/* 4. HUB */}
           <button
             id="mobile-nav-spaces"
             onClick={() => onNavigate('/spaces')}
-            className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
-              currentPath === '/spaces' ? 'text-[#D4FF3F] font-bold' : 'text-[#8E8E93]'
+            aria-label="Hub"
+            title="Hub"
+            className={`relative flex items-center justify-center h-11 w-full transition-colors duration-150 focus:outline-none ${
+              currentPath === '/spaces'
+                ? 'text-white'
+                : 'text-[#7A7A82] hover:text-[#F5F5F0]'
             }`}
           >
-            <Layers className="h-4 w-4 mb-0.5" />
-            <span>Hub</span>
+            <Layers className="h-5 w-5" />
           </button>
 
-          <button
-            id="mobile-nav-connections"
-            onClick={() => onNavigate('/connections')}
-            className={`relative flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
-              currentPath === '/connections' ? 'text-[#D4FF3F] font-bold' : 'text-[#8E8E93]'
-            }`}
-          >
-            <Users className="h-4 w-4 mb-0.5" />
-            <span>Circle</span>
-            {connectionsCount > 0 && (
-              <span className="absolute top-0 right-2 h-1.5 w-1.5 rounded-full bg-[#D4FF3F]"></span>
-            )}
-          </button>
-
+          {/* 5. MESSAGES */}
           <button
             id="mobile-nav-messages"
             onClick={() => onNavigate('/messages')}
-            className={`relative flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
-              currentPath === '/messages' ? 'text-[#D4FF3F] font-bold' : 'text-[#8E8E93]'
+            aria-label="Messages"
+            title="Messages"
+            className={`relative flex items-center justify-center h-11 w-full transition-colors duration-150 focus:outline-none ${
+              currentPath === '/messages'
+                ? 'text-white'
+                : 'text-[#7A7A82] hover:text-[#F5F5F0]'
             }`}
           >
-            <MessageSquare className="h-4 w-4 mb-0.5" />
-            <span>Chat</span>
+            <MessageSquare className="h-5 w-5" />
             {unreadMessagesCount > 0 && (
-              <span className="absolute top-0 right-2 h-2 w-2 rounded-full bg-[#D4FF3F]"></span>
+              <span
+                id="mobile-unread-messages-badge"
+                className="absolute top-1.5 right-2 bg-lime-grained text-[#080808] text-[8px] font-mono-code font-bold px-1 min-w-[14px] h-[14px] flex items-center justify-center rounded-none shadow"
+              >
+                {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+              </span>
             )}
           </button>
 
+          {/* 6. MY SPACE */}
           <button
-            id="mobile-nav-profile"
-            onClick={() => onNavigate('/profile')}
-            className={`flex flex-col items-center justify-center text-[9px] uppercase tracking-wider py-1 font-mono-code ${
-              currentPath === '/profile' ? 'text-[#D4FF3F] font-bold' : 'text-[#8E8E93]'
+            id="mobile-nav-my-space"
+            onClick={() => onNavigate('/my-space')}
+            aria-label="My Space"
+            title="My Space"
+            className={`relative flex items-center justify-center h-11 w-full transition-colors duration-150 focus:outline-none ${
+              currentPath === '/my-space'
+                ? 'text-white'
+                : 'text-[#7A7A82] hover:text-[#F5F5F0]'
             }`}
           >
-            <User className="h-4 w-4 mb-0.5" />
-            <span>Profile</span>
+            <Users className="h-5 w-5" />
           </button>
         </div>
       </nav>

@@ -1,8 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Connection, Space, UserProfile, PublicProfile, SpaceCategory, ConnectionIntent } from '../types';
+import { 
+  Connection, 
+  Space, 
+  UserProfile, 
+  PublicProfile, 
+  CuriousBoardPost, 
+  ConnectionIntent 
+} from '../types';
 import { spaceService } from '../services/spaceService';
+import { sparkService } from '../services/sparkService';
 import { connectionService } from '../services/connectionService';
 import { CreateSpaceModal } from './CreateSpaceModal';
+import { EditSpaceModal } from './EditSpaceModal';
+import { ManageHubMembersModal } from './ManageHubMembersModal';
+import { CreateSparkModal } from './CreateSparkModal';
 import { 
   LayoutGrid, 
   Users, 
@@ -32,21 +43,31 @@ import {
   Clock,
   Send,
   Inbox,
-  Filter
+  Filter,
+  Edit3,
+  Globe2,
+  Trash2,
+  HelpCircle,
+  Radio
 } from 'lucide-react';
 
-export type MySpaceTab = 'overview' | 'connections' | 'hosted' | 'joined';
+export type MySpaceTab = 'overview' | 'connections' | 'hosted' | 'joined' | 'sparks';
 export type ConnectionsSubTab = 'all' | 'requests' | 'sent';
 
 interface MySpaceViewProps {
   currentUser: UserProfile;
   connections: Connection[];
+  onOpenProfile?: () => void;
   onOpenChat: (connectionId: string) => void;
   onSelectProfile: (profile: PublicProfile | UserProfile) => void;
   onOpenSpace: (spaceId: string) => void;
   onExploreMembers: () => void;
   onExploreSpaces: () => void;
-  onOpenSpark?: () => void;
+  onOpenSpark?: (sparkId?: string) => void;
+  onUpdateProfile?: (updated: UserProfile) => Promise<void> | void;
+  onOpenOrb?: () => void;
+  onOpenMessages?: () => void;
+  onOpenOnboarding?: () => void;
   onAcceptRequest?: (connectionId: string) => Promise<void> | void;
   onDeclineRequest?: (connectionId: string) => Promise<void> | void;
   onCancelRequest?: (connectionId: string) => Promise<void> | void;
@@ -56,12 +77,17 @@ interface MySpaceViewProps {
 export const MySpaceView: React.FC<MySpaceViewProps> = ({
   currentUser,
   connections = [],
+  onOpenProfile,
   onOpenChat,
   onSelectProfile,
   onOpenSpace,
   onExploreMembers,
   onExploreSpaces,
   onOpenSpark,
+  onUpdateProfile,
+  onOpenOrb,
+  onOpenMessages,
+  onOpenOnboarding,
   onAcceptRequest,
   onDeclineRequest,
   onCancelRequest,
@@ -71,12 +97,27 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
 
   const [activeTab, setActiveTab] = useState<MySpaceTab>('overview');
   const [connectionsSubTab, setConnectionsSubTab] = useState<ConnectionsSubTab>('all');
+  
+  // Spaces state
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [isLoadingSpaces, setIsLoadingSpaces] = useState<boolean>(true);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  
+  // Sparks state
+  const [sparks, setSparks] = useState<CuriousBoardPost[]>([]);
+  const [isLoadingSparks, setIsLoadingSparks] = useState<boolean>(true);
+  
+  // Modals state
+  const [isCreateSpaceModalOpen, setIsCreateSpaceModalOpen] = useState<boolean>(false);
+  const [isCreateSparkModalOpen, setIsCreateSparkModalOpen] = useState<boolean>(false);
+  const [editingSpace, setEditingSpace] = useState<Space | null>(null);
+  const [managingMembersSpace, setManagingMembersSpace] = useState<Space | null>(null);
+  const [deletingSparkId, setDeletingSparkId] = useState<string | null>(null);
+
+  // Search & Filter state
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedIntentFilter, setSelectedIntentFilter] = useState<string>('All');
   
+  // Confirmation state
   const [leavingSpaceId, setLeavingSpaceId] = useState<string | null>(null);
   const [confirmLeaveSpaceId, setConfirmLeaveSpaceId] = useState<string | null>(null);
   const [confirmRemoveConnId, setConfirmRemoveConnId] = useState<string | null>(null);
@@ -90,7 +131,16 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
       setSpaces(liveSpaces);
       setIsLoadingSpaces(false);
     });
+    return () => unsubscribe();
+  }, []);
 
+  // Subscribe to real-time sparks
+  useEffect(() => {
+    setIsLoadingSparks(true);
+    const unsubscribe = sparkService.subscribeSparks((liveSparks) => {
+      setSparks(liveSparks);
+      setIsLoadingSparks(false);
+    });
     return () => unsubscribe();
   }, []);
 
@@ -127,6 +177,11 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
       (s) => (s.memberIds || []).includes(currentUserId) && s.ownerId !== currentUserId
     );
   }, [spaces, currentUserId]);
+
+  // Derive My Sparks (sparks where authorId === currentUserId)
+  const mySparks = useMemo(() => {
+    return sparks.filter((s) => s.authorId === currentUserId);
+  }, [sparks, currentUserId]);
 
   // Helper to extract counterpart profile for any connection document
   const getCounterpartProfile = (conn: Connection, subTab: ConnectionsSubTab) => {
@@ -208,6 +263,18 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
         s.tags.some((t) => t.toLowerCase().includes(q))
     );
   }, [hubsIJoined, searchQuery]);
+
+  // Filtered My Sparks for Search
+  const filteredMySparks = useMemo(() => {
+    if (!searchQuery.trim()) return mySparks;
+    const q = searchQuery.toLowerCase().trim();
+    return mySparks.filter(
+      (s) =>
+        (s.title && s.title.toLowerCase().includes(q)) ||
+        s.content.toLowerCase().includes(q) ||
+        s.tags.some((t) => t.toLowerCase().includes(q))
+    );
+  }, [mySparks, searchQuery]);
 
   // Handle Accept Connection Request
   const handleAccept = async (connId: string, memberName: string) => {
@@ -298,11 +365,33 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
     }
   };
 
+  // Handle Delete Spark
+  const handleDeleteSpark = async (sparkId: string) => {
+    if (!currentUserId || !sparkId) return;
+    try {
+      await sparkService.deleteSpark(sparkId, currentUserId);
+      setDeletingSparkId(null);
+      setActionSuccessMsg('Spark post removed successfully.');
+      setTimeout(() => setActionSuccessMsg(null), 3500);
+    } catch (err: any) {
+      console.error('Error deleting spark:', err);
+    }
+  };
+
   const handleSpaceCreated = (newSpace: Space) => {
-    setIsCreateModalOpen(false);
+    setIsCreateSpaceModalOpen(false);
     setActionSuccessMsg(`Hub "${newSpace.name}" created successfully.`);
     setTimeout(() => setActionSuccessMsg(null), 3500);
     onOpenSpace(newSpace.id);
+  };
+
+  const handleSparkCreated = (newSpark: CuriousBoardPost) => {
+    setIsCreateSparkModalOpen(false);
+    setActionSuccessMsg('Spark posted to the Curiosity Board.');
+    setTimeout(() => setActionSuccessMsg(null), 3500);
+    if (onOpenSpark) {
+      onOpenSpark(newSpark.id);
+    }
   };
 
   return (
@@ -316,7 +405,11 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
             
             {/* User Identity & Subheading */}
             <div className="flex items-center gap-4 sm:gap-5">
-              <div className="relative">
+              <div 
+                className={`relative group ${onOpenProfile ? 'cursor-pointer' : ''}`}
+                onClick={onOpenProfile}
+                title={onOpenProfile ? "View / Edit Profile" : undefined}
+              >
                 <img
                   src={
                     currentUser.profilePhoto ||
@@ -325,7 +418,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                   }
                   alt={currentUser.name}
                   referrerPolicy="no-referrer"
-                  className="w-16 h-16 sm:w-20 sm:h-20 object-cover border-2 border-[#D4FF3F]/60 rounded-sm"
+                  className="w-16 h-16 sm:w-20 sm:h-20 object-cover border-2 border-[#D4FF3F]/70 rounded-sm group-hover:border-[#D4FF3F] transition-colors"
                 />
                 <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#D4FF3F] border-2 border-[#080808]" />
               </div>
@@ -333,13 +426,23 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#D4FF3F] font-bold px-2 py-0.5 bg-[#D4FF3F]/10 border border-[#D4FF3F]/30">
-                    Personal Control Center
+                    PERSONAL CONTROL CENTER
                   </span>
                   {currentUser.roleEmoji && <span>{currentUser.roleEmoji}</span>}
                 </div>
 
-                <h1 className="text-2xl sm:text-3xl font-editorial text-[#F2F2ED] mt-1 font-light tracking-wide">
-                  {currentUser.name}
+                <h1 className="text-2xl sm:text-3xl font-editorial text-[#F2F2ED] mt-1 font-light tracking-wide flex items-center gap-3">
+                  <span>{currentUser.name}</span>
+                  {onOpenProfile && (
+                    <button
+                      onClick={onOpenProfile}
+                      className="text-xs font-mono-code text-[#888] hover:text-[#D4FF3F] inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#141416] border border-[#2A2A2A] hover:border-[#D4FF3F]/40 transition-colors"
+                      title="Edit Profile"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Edit Profile</span>
+                    </button>
+                  )}
                 </h1>
 
                 <p className="text-xs text-[#8A8A8A] font-mono-code mt-0.5 flex flex-wrap items-center gap-2">
@@ -366,11 +469,20 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
               </div>
             </div>
 
-            {/* Quick Action Button */}
-            <div className="flex items-center gap-3">
+            {/* Quick Action Button Bar */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                id="my-space-create-spark-btn"
+                onClick={() => setIsCreateSparkModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 bg-[#17171C] hover:bg-[#22222A] border border-[#333] hover:border-[#D4FF3F]/50 text-[#F2F2ED] font-mono-code text-xs uppercase font-bold tracking-wider transition-colors shadow-sm"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#D4FF3F]" />
+                <span>Post Spark</span>
+              </button>
+
               <button
                 id="my-space-create-hub-header-btn"
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={() => setIsCreateSpaceModalOpen(true)}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#D4FF3F] text-[#080808] font-mono-code text-xs uppercase font-bold tracking-widest hover:bg-[#c2ed2e] transition-transform active:scale-95 shadow-sm"
               >
                 <Plus className="w-4 h-4 text-[#080808]" />
@@ -414,8 +526,8 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
             </div>
           )}
 
-          {/* 3 Quick Summary Metric Badges */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
+          {/* 4 Quick Summary Metric Badges */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
             
             {/* Metric 1: My Connections */}
             <button
@@ -432,20 +544,20 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
             >
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#8A8A8A] group-hover:text-[#D4FF3F] transition-colors">
-                  My Connections
+                  Connections
                 </span>
                 <Users className="w-4 h-4 text-[#8A8A8A] group-hover:text-[#D4FF3F] transition-colors" />
               </div>
               <div className="flex items-baseline gap-2 mt-2">
-                <span className="text-2xl sm:text-3xl font-mono-code font-bold text-[#F2F2ED]">
+                <span className="text-2xl font-mono-code font-bold text-[#F2F2ED]">
                   {myConnectedList.length}
                 </span>
                 <span className="text-[10px] text-[#7A7A7A] font-mono-code uppercase">
-                  Connected
+                  Active
                 </span>
                 {incomingRequestsList.length > 0 && (
                   <span className="ml-auto text-[10px] font-mono-code bg-[#D4FF3F]/20 text-[#D4FF3F] px-1.5 py-0.5 border border-[#D4FF3F]/40 font-bold">
-                    +{incomingRequestsList.length} req
+                    +{incomingRequestsList.length}
                   </span>
                 )}
               </div>
@@ -468,11 +580,11 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 <Crown className="w-4 h-4 text-[#D4FF3F]" />
               </div>
               <div className="flex items-baseline gap-2 mt-2">
-                <span className="text-2xl sm:text-3xl font-mono-code font-bold text-[#F2F2ED]">
+                <span className="text-2xl font-mono-code font-bold text-[#F2F2ED]">
                   {hubsIHost.length}
                 </span>
                 <span className="text-[10px] text-[#7A7A7A] font-mono-code uppercase">
-                  Hosted Hubs
+                  Hosted
                 </span>
               </div>
             </button>
@@ -494,11 +606,37 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 <Layers className="w-4 h-4 text-[#8A8A8A] group-hover:text-[#D4FF3F] transition-colors" />
               </div>
               <div className="flex items-baseline gap-2 mt-2">
-                <span className="text-2xl sm:text-3xl font-mono-code font-bold text-[#F2F2ED]">
+                <span className="text-2xl font-mono-code font-bold text-[#F2F2ED]">
                   {hubsIJoined.length}
                 </span>
                 <span className="text-[10px] text-[#7A7A7A] font-mono-code uppercase">
-                  Member Hubs
+                  Member
+                </span>
+              </div>
+            </button>
+
+            {/* Metric 4: My Sparks */}
+            <button
+              id="my-space-metric-sparks-btn"
+              onClick={() => setActiveTab('sparks')}
+              className={`p-4 border transition-all text-left group ${
+                activeTab === 'sparks'
+                  ? 'border-[#D4FF3F] bg-[#141416]'
+                  : 'border-[#242424] bg-[#111113] hover:border-[#383838] hover:bg-[#141416]'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#8A8A8A] group-hover:text-[#D4FF3F] transition-colors">
+                  My Sparks
+                </span>
+                <Sparkles className="w-4 h-4 text-[#D4FF3F]" />
+              </div>
+              <div className="flex items-baseline gap-2 mt-2">
+                <span className="text-2xl font-mono-code font-bold text-[#F2F2ED]">
+                  {mySparks.length}
+                </span>
+                <span className="text-[10px] text-[#7A7A7A] font-mono-code uppercase">
+                  Inquiries
                 </span>
               </div>
             </button>
@@ -577,6 +715,22 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 {hubsIJoined.length}
               </span>
             </button>
+
+            <button
+              id="my-space-tab-sparks"
+              onClick={() => setActiveTab('sparks')}
+              className={`px-3.5 sm:px-4 py-3.5 text-xs font-mono-code uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border-b-2 ${
+                activeTab === 'sparks'
+                  ? 'text-[#D4FF3F] border-[#D4FF3F] font-bold bg-[#D4FF3F]/5'
+                  : 'text-[#8A8A8A] border-transparent hover:text-[#F2F2ED] hover:bg-[#141416]'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>My Sparks</span>
+              <span className="px-1.5 py-0.2 bg-[#222] text-[#AAA] text-[10px] rounded-none">
+                {mySparks.length}
+              </span>
+            </button>
           </div>
 
           {/* Quick Search */}
@@ -608,12 +762,98 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
       <main className="max-w-6xl mx-auto px-4 sm:px-8 py-8 space-y-10">
 
         {/* ========================================================================= */}
-        {/* TAB 1: OVERVIEW */}
+        {/* TAB 1: OVERVIEW (The True Personal Command Center) */}
         {/* ========================================================================= */}
         {activeTab === 'overview' && (
           <div className="space-y-10">
             
-            {/* Section 1: My Connections Preview */}
+            {/* Section 1: Pending Inquiries & Requests (Action Required) */}
+            {incomingRequestsList.length > 0 && (
+              <section id="my-space-overview-action-items">
+                <div className="flex items-center justify-between mb-4 border-b border-[#2A2A20] pb-2">
+                  <div className="flex items-center gap-2">
+                    <Inbox className="w-4 h-4 text-[#D4FF3F]" />
+                    <h2 className="text-sm font-mono-code uppercase tracking-wider text-[#D4FF3F] font-bold">
+                      Action Required: Incoming Connection Requests ({incomingRequestsList.length})
+                    </h2>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActiveTab('connections');
+                      setConnectionsSubTab('requests');
+                    }}
+                    className="text-xs font-mono-code text-[#AAA] hover:text-[#D4FF3F] flex items-center gap-1 uppercase tracking-wider"
+                  >
+                    <span>Manage all</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {incomingRequestsList.slice(0, 2).map((conn) => {
+                    const profile = getCounterpartProfile(conn, 'requests');
+                    if (!profile) return null;
+                    const isOperating = actionInProgressId === conn.id;
+
+                    return (
+                      <div
+                        key={conn.id}
+                        className="p-4 border border-[#D4FF3F]/30 bg-[#121210] flex flex-col justify-between gap-3"
+                      >
+                        <div className="flex items-start gap-3">
+                          <img
+                            src={profile.avatarUrl || profile.profilePhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
+                            alt={profile.name}
+                            referrerPolicy="no-referrer"
+                            className="w-12 h-12 object-cover border border-[#444] rounded-sm shrink-0"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-sm font-medium text-[#F2F2ED] truncate">
+                              {profile.name}
+                            </h4>
+                            <p className="text-xs text-[#D4FF3F] font-mono-code truncate">
+                              {profile.role || 'Member'}
+                            </p>
+                            {conn.introNote && (
+                              <p className="text-xs text-[#BBB] italic font-editorial line-clamp-2 mt-1">
+                                “{conn.introNote}”
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-2 border-t border-[#202020]">
+                          <button
+                            onClick={() => handleAccept(conn.id, profile.name)}
+                            disabled={isOperating}
+                            className="flex-1 py-1.5 bg-[#D4FF3F] text-[#080808] text-xs font-mono-code uppercase font-bold tracking-wider hover:bg-[#c2ed2e] transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Accept</span>
+                          </button>
+                          <button
+                            onClick={() => handleDecline(conn.id)}
+                            disabled={isOperating}
+                            className="px-3 py-1.5 border border-[#333] hover:border-red-500/50 text-[#888] hover:text-red-400 text-xs font-mono-code uppercase tracking-wider transition-colors disabled:opacity-50"
+                          >
+                            Decline
+                          </button>
+                          <button
+                            onClick={() => onSelectProfile(profile)}
+                            className="px-2.5 py-1.5 border border-[#333] text-[#888] hover:text-[#FFF] text-xs font-mono-code"
+                            title="View Profile"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Section 2: My Connections Preview */}
             <section id="my-space-overview-connections">
               <div className="flex items-center justify-between mb-4 border-b border-[#1E1E20] pb-3">
                 <div className="flex items-center gap-2">
@@ -623,30 +863,16 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                   </h2>
                 </div>
                 <div className="flex items-center gap-3">
-                  {incomingRequestsList.length > 0 && (
-                    <button
-                      onClick={() => {
-                        setActiveTab('connections');
-                        setConnectionsSubTab('requests');
-                      }}
-                      className="text-xs font-mono-code text-[#D4FF3F] hover:underline flex items-center gap-1 uppercase tracking-wider font-bold"
-                    >
-                      <Inbox className="w-3.5 h-3.5" />
-                      <span>{incomingRequestsList.length} Request{incomingRequestsList.length > 1 ? 's' : ''}</span>
-                    </button>
-                  )}
-                  {myConnectedList.length > 0 && (
-                    <button
-                      onClick={() => {
-                        setActiveTab('connections');
-                        setConnectionsSubTab('all');
-                      }}
-                      className="text-xs font-mono-code text-[#8A8A8A] hover:text-[#D4FF3F] flex items-center gap-1 uppercase tracking-wider transition-colors"
-                    >
-                      <span>View all</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      setActiveTab('connections');
+                      setConnectionsSubTab('all');
+                    }}
+                    className="text-xs font-mono-code text-[#8A8A8A] hover:text-[#D4FF3F] flex items-center gap-1 uppercase tracking-wider transition-colors"
+                  >
+                    <span>View all ({myConnectedList.length})</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
@@ -666,18 +892,18 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                     >
                       Discover Members
                     </button>
-                    {onOpenSpark && (
+                    {onOpenOrb && (
                       <button
-                        onClick={onOpenSpark}
+                        onClick={onOpenOrb}
                         className="px-4 py-2 border border-[#333] text-[#F2F2ED] text-xs font-mono-code uppercase tracking-wider hover:border-[#D4FF3F] hover:text-[#D4FF3F] transition-colors"
                       >
-                        Explore Spark
+                        Explore Orb
                       </button>
                     )}
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {myConnectedList.slice(0, 3).map((conn) => {
                     const profile = getCounterpartProfile(conn, 'all');
                     if (!profile) return null;
@@ -731,7 +957,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
               )}
             </section>
 
-            {/* Section 2: Hubs I Host Preview */}
+            {/* Section 3: Hubs I Host & Manage */}
             <section id="my-space-overview-hosted">
               <div className="flex items-center justify-between mb-4 border-b border-[#1E1E20] pb-3">
                 <div className="flex items-center gap-2">
@@ -742,8 +968,8 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 </div>
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="text-xs font-mono-code text-[#D4FF3F] hover:underline flex items-center gap-1 uppercase tracking-wider"
+                    onClick={() => setIsCreateSpaceModalOpen(true)}
+                    className="text-xs font-mono-code text-[#D4FF3F] hover:underline flex items-center gap-1 uppercase tracking-wider font-bold"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Create Hub</span>
@@ -753,7 +979,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                       onClick={() => setActiveTab('hosted')}
                       className="text-xs font-mono-code text-[#8A8A8A] hover:text-[#D4FF3F] flex items-center gap-1 uppercase tracking-wider transition-colors"
                     >
-                      <span>View all</span>
+                      <span>Manage All</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -771,11 +997,11 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                   </p>
                   <div className="pt-2">
                     <button
-                      onClick={() => setIsCreateModalOpen(true)}
+                      onClick={() => setIsCreateSpaceModalOpen(true)}
                       className="px-4 py-2 bg-[#D4FF3F] text-[#080808] text-xs font-mono-code uppercase font-bold tracking-wider hover:bg-[#c2ed2e] transition-colors inline-flex items-center gap-2"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>Create a Space / Hub</span>
+                      <span>Create a Hub</span>
                     </button>
                   </div>
                 </div>
@@ -804,31 +1030,28 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                         <p className="text-xs text-[#8A8A8A] font-sans-clean mt-1.5 line-clamp-2 leading-relaxed">
                           {space.description}
                         </p>
-
-                        {space.tags && space.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-3">
-                            {space.tags.slice(0, 3).map((tag) => (
-                              <span
-                                key={tag}
-                                className="text-[10px] font-mono-code uppercase text-[#777] bg-[#18181A] px-2 py-0.5 border border-[#262626]"
-                              >
-                                #{tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
                       </div>
 
                       <div className="pt-3 border-t border-[#1C1C1F] flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-mono-code uppercase text-[#D4FF3F] flex items-center gap-1">
-                          <Crown className="w-3 h-3" />
-                          <span>You are Host</span>
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setEditingSpace(space)}
+                            className="px-2.5 py-1 text-xs font-mono-code uppercase text-[#888] hover:text-[#D4FF3F] border border-[#333] hover:border-[#D4FF3F] transition-colors"
+                          >
+                            Edit Hub
+                          </button>
+                          <button
+                            onClick={() => setManagingMembersSpace(space)}
+                            className="px-2.5 py-1 text-xs font-mono-code uppercase text-[#888] hover:text-[#FFF] border border-[#333] hover:border-[#666] transition-colors"
+                          >
+                            Members
+                          </button>
+                        </div>
                         <button
                           onClick={() => onOpenSpace(space.id)}
-                          className="px-3.5 py-1.5 bg-[#1C1C20] hover:bg-[#D4FF3F] hover:text-[#080808] border border-[#333] hover:border-[#D4FF3F] text-[#F2F2ED] text-xs font-mono-code uppercase tracking-wider transition-colors flex items-center gap-1.5"
+                          className="px-3.5 py-1.5 bg-[#1C1C20] hover:bg-[#D4FF3F] hover:text-[#080808] border border-[#333] hover:border-[#D4FF3F] text-[#F2F2ED] text-xs font-mono-code uppercase tracking-wider transition-colors flex items-center gap-1.5 font-bold"
                         >
-                          <span>Open Hub</span>
+                          <span>Open</span>
                           <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>
@@ -838,7 +1061,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
               )}
             </section>
 
-            {/* Section 3: Hubs I Joined Preview */}
+            {/* Section 4: Hubs I Joined */}
             <section id="my-space-overview-joined">
               <div className="flex items-center justify-between mb-4 border-b border-[#1E1E20] pb-3">
                 <div className="flex items-center gap-2">
@@ -847,15 +1070,24 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                     Hubs I Joined ({hubsIJoined.length})
                   </h2>
                 </div>
-                {hubsIJoined.length > 0 && (
+                <div className="flex items-center gap-3">
                   <button
-                    onClick={() => setActiveTab('joined')}
-                    className="text-xs font-mono-code text-[#8A8A8A] hover:text-[#D4FF3F] flex items-center gap-1 uppercase tracking-wider transition-colors"
+                    onClick={onExploreSpaces}
+                    className="text-xs font-mono-code text-[#D4FF3F] hover:underline flex items-center gap-1 uppercase tracking-wider font-bold"
                   >
-                    <span>View all</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>Browse All Hubs</span>
                   </button>
-                )}
+                  {hubsIJoined.length > 0 && (
+                    <button
+                      onClick={() => setActiveTab('joined')}
+                      className="text-xs font-mono-code text-[#8A8A8A] hover:text-[#D4FF3F] flex items-center gap-1 uppercase tracking-wider transition-colors"
+                    >
+                      <span>View All</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {hubsIJoined.length === 0 ? (
@@ -865,14 +1097,15 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                     You haven't joined any Hubs yet
                   </h3>
                   <p className="text-xs text-[#8A8A8A] max-w-md mx-auto leading-relaxed">
-                    Discover active communities, ask questions, and join discussions on topics that obsess you.
+                    Find interest groups and communities that align with your passions and start engaging.
                   </p>
                   <div className="pt-2">
                     <button
                       onClick={onExploreSpaces}
-                      className="px-4 py-2 bg-[#D4FF3F] text-[#080808] text-xs font-mono-code uppercase font-bold tracking-wider hover:bg-[#c2ed2e] transition-colors"
+                      className="px-4 py-2 bg-[#D4FF3F] text-[#080808] text-xs font-mono-code uppercase font-bold tracking-wider hover:bg-[#c2ed2e] transition-colors inline-flex items-center gap-2"
                     >
-                      Explore Hubs
+                      <Compass className="w-3.5 h-3.5" />
+                      <span>Explore Hub Catalog</span>
                     </button>
                   </div>
                 </div>
@@ -885,7 +1118,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                     >
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-2">
-                          <span className="text-[10px] font-mono-code uppercase tracking-wider text-[#8A8A8A] bg-[#18181A] border border-[#262626] px-2 py-0.5">
+                          <span className="text-[10px] font-mono-code uppercase tracking-wider text-[#D4FF3F] bg-[#D4FF3F]/10 border border-[#D4FF3F]/30 px-2 py-0.5">
                             {space.category}
                           </span>
                           <span className="text-[11px] font-mono-code text-[#8A8A8A] flex items-center gap-1.5">
@@ -902,20 +1135,24 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                           {space.description}
                         </p>
 
-                        <div className="flex items-center gap-2 mt-3 text-[11px] font-mono-code text-[#777]">
-                          <span>Host:</span>
-                          <span className="text-[#F2F2ED]">{space.ownerName || 'Misfit Host'}</span>
-                        </div>
+                        {space.ownerName && (
+                          <p className="text-[11px] font-mono-code text-[#666] mt-2">
+                            Hosted by <span className="text-[#AAA]">{space.ownerName}</span>
+                          </p>
+                        )}
                       </div>
 
                       <div className="pt-3 border-t border-[#1C1C1F] flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-mono-code uppercase text-[#8A8A8A] flex items-center gap-1">
-                          <UserCheck className="w-3 h-3 text-[#D4FF3F]" />
-                          <span>Member</span>
-                        </span>
+                        <button
+                          onClick={() => setConfirmLeaveSpaceId(space.id)}
+                          className="px-2.5 py-1 text-xs font-mono-code uppercase text-[#777] hover:text-[#FF5C5C] border border-[#262626] hover:border-[#FF5C5C]/40 transition-colors"
+                          title="Leave Hub"
+                        >
+                          Leave
+                        </button>
                         <button
                           onClick={() => onOpenSpace(space.id)}
-                          className="px-3.5 py-1.5 bg-[#1C1C20] hover:bg-[#D4FF3F] hover:text-[#080808] border border-[#333] hover:border-[#D4FF3F] text-[#F2F2ED] text-xs font-mono-code uppercase tracking-wider transition-colors flex items-center gap-1.5"
+                          className="px-3.5 py-1.5 bg-[#1C1C20] hover:bg-[#D4FF3F] hover:text-[#080808] border border-[#333] hover:border-[#D4FF3F] text-[#F2F2ED] text-xs font-mono-code uppercase tracking-wider transition-colors flex items-center gap-1.5 font-bold"
                         >
                           <span>Open Hub</span>
                           <ArrowRight className="w-3 h-3" />
@@ -925,6 +1162,174 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                   ))}
                 </div>
               )}
+            </section>
+
+            {/* Section 5: My Sparks & Questions */}
+            <section id="my-space-overview-sparks">
+              <div className="flex items-center justify-between mb-4 border-b border-[#1E1E20] pb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#D4FF3F]" />
+                  <h2 className="text-base font-mono-code uppercase tracking-wider text-[#F2F2ED] font-bold">
+                    My Sparks & Rabbit Holes ({mySparks.length})
+                  </h2>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setIsCreateSparkModalOpen(true)}
+                    className="text-xs font-mono-code text-[#D4FF3F] hover:underline flex items-center gap-1 uppercase tracking-wider font-bold"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Post Spark</span>
+                  </button>
+                  {mySparks.length > 0 && (
+                    <button
+                      onClick={() => setActiveTab('sparks')}
+                      className="text-xs font-mono-code text-[#8A8A8A] hover:text-[#D4FF3F] flex items-center gap-1 uppercase tracking-wider transition-colors"
+                    >
+                      <span>View all</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {mySparks.length === 0 ? (
+                <div className="p-8 border border-[#242424] bg-[#111113] text-center space-y-3">
+                  <Sparkles className="w-8 h-8 text-[#555] mx-auto" />
+                  <h3 className="text-sm font-mono-code font-bold text-[#F2F2ED] uppercase tracking-wider">
+                    You haven't posted any Sparks yet
+                  </h3>
+                  <p className="text-xs text-[#8A8A8A] max-w-md mx-auto leading-relaxed">
+                    Share an open question, unusual concept, or discussion starter on the community Curiosity Board.
+                  </p>
+                  <div className="pt-2">
+                    <button
+                      onClick={() => setIsCreateSparkModalOpen(true)}
+                      className="px-4 py-2 bg-[#D4FF3F] text-[#080808] text-xs font-mono-code uppercase font-bold tracking-wider hover:bg-[#c2ed2e] transition-colors inline-flex items-center gap-2"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Post a Question / Spark</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {mySparks.slice(0, 2).map((spark) => (
+                    <div
+                      key={spark.id}
+                      className="p-5 border border-[#242424] bg-[#111113] hover:border-[#383838] flex flex-col justify-between gap-4 transition-colors"
+                    >
+                      <div>
+                        {spark.tags && spark.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {spark.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="text-[9px] font-mono-code uppercase text-[#D4FF3F] bg-[#D4FF3F]/10 border border-[#D4FF3F]/30 px-2 py-0.5"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {spark.title && (
+                          <h3 className="text-base font-medium text-[#F2F2ED] font-editorial mb-1">
+                            {spark.title}
+                          </h3>
+                        )}
+
+                        <p className="text-xs text-[#CCC] font-sans-clean line-clamp-3 leading-relaxed">
+                          {spark.content}
+                        </p>
+                      </div>
+
+                      <div className="pt-3 border-t border-[#1C1C1F] flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-mono-code text-[#888] flex items-center gap-1.5">
+                          <MessageSquare className="w-3 h-3 text-[#D4FF3F]" />
+                          <span>{spark.repliesCount || 0} replies</span>
+                        </span>
+
+                        <button
+                          onClick={() => {
+                            if (onOpenSpark) {
+                              onOpenSpark(spark.id);
+                            }
+                          }}
+                          className="px-3.5 py-1.5 bg-[#1C1C20] hover:bg-[#D4FF3F] hover:text-[#080808] border border-[#333] hover:border-[#D4FF3F] text-[#F2F2ED] text-xs font-mono-code uppercase tracking-wider transition-colors flex items-center gap-1.5 font-bold"
+                        >
+                          <span>Open Discussion</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Section 6: Quick Exploration Shortcuts */}
+            <section id="my-space-overview-shortcuts" className="p-6 bg-[#111114] border border-[#222228]">
+              <h3 className="text-xs font-mono-code uppercase tracking-widest text-[#8A8A8A] font-bold mb-4">
+                Explore Misfits Club
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {onOpenOrb && (
+                  <button
+                    onClick={onOpenOrb}
+                    className="p-3.5 bg-[#16161A] border border-[#24242A] hover:border-[#D4FF3F]/50 text-left group transition-all"
+                  >
+                    <Radio className="w-4 h-4 text-[#D4FF3F] mb-1.5" />
+                    <span className="text-xs font-mono-code uppercase tracking-wider font-bold text-[#F2F2ED] block group-hover:text-[#D4FF3F]">
+                      The Orb
+                    </span>
+                    <span className="text-[10px] text-[#777] font-mono-code">
+                      Living globe of connections
+                    </span>
+                  </button>
+                )}
+
+                <button
+                  onClick={onExploreMembers}
+                  className="p-3.5 bg-[#16161A] border border-[#24242A] hover:border-[#D4FF3F]/50 text-left group transition-all"
+                >
+                  <Compass className="w-4 h-4 text-[#D4FF3F] mb-1.5" />
+                  <span className="text-xs font-mono-code uppercase tracking-wider font-bold text-[#F2F2ED] block group-hover:text-[#D4FF3F]">
+                    Discover
+                  </span>
+                  <span className="text-[10px] text-[#777] font-mono-code">
+                    Directory of members
+                  </span>
+                </button>
+
+                <button
+                  onClick={onExploreSpaces}
+                  className="p-3.5 bg-[#16161A] border border-[#24242A] hover:border-[#D4FF3F]/50 text-left group transition-all"
+                >
+                  <Layers className="w-4 h-4 text-[#D4FF3F] mb-1.5" />
+                  <span className="text-xs font-mono-code uppercase tracking-wider font-bold text-[#F2F2ED] block group-hover:text-[#D4FF3F]">
+                    Hubs
+                  </span>
+                  <span className="text-[10px] text-[#777] font-mono-code">
+                    Browse all communities
+                  </span>
+                </button>
+
+                {onOpenMessages && (
+                  <button
+                    onClick={onOpenMessages}
+                    className="p-3.5 bg-[#16161A] border border-[#24242A] hover:border-[#D4FF3F]/50 text-left group transition-all"
+                  >
+                    <MessageSquare className="w-4 h-4 text-[#D4FF3F] mb-1.5" />
+                    <span className="text-xs font-mono-code uppercase tracking-wider font-bold text-[#F2F2ED] block group-hover:text-[#D4FF3F]">
+                      Messages
+                    </span>
+                    <span className="text-[10px] text-[#777] font-mono-code">
+                      Direct private conversations
+                    </span>
+                  </button>
+                )}
+              </div>
             </section>
 
           </div>
@@ -1021,7 +1426,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                   <Filter className="w-3 h-3" />
                   <span>Intent:</span>
                 </span>
-                {['All', 'Build', 'Learn', 'Collaborate', 'Discuss'].map((intent) => (
+                {['All', 'Build Together', 'Exchange Ideas', 'Collaborate', 'Learn Together'].map((intent) => (
                   <button
                     key={intent}
                     onClick={() => setSelectedIntentFilter(intent)}
@@ -1335,7 +1740,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 3: HUBS I HOST (Full List) */}
+        {/* TAB 4: HUBS I HOST (Full Management & Editing) */}
         {/* ========================================================================= */}
         {activeTab === 'hosted' && (
           <div className="space-y-6">
@@ -1350,7 +1755,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
               </div>
 
               <button
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={() => setIsCreateSpaceModalOpen(true)}
                 className="px-4 py-2 bg-[#D4FF3F] text-[#080808] text-xs font-mono-code uppercase font-bold tracking-widest hover:bg-[#c2ed2e] transition-colors inline-flex items-center gap-2 self-start sm:self-auto"
               >
                 <Plus className="w-4 h-4" />
@@ -1384,7 +1789,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                     </p>
                     <div className="pt-2">
                       <button
-                        onClick={() => setIsCreateModalOpen(true)}
+                        onClick={() => setIsCreateSpaceModalOpen(true)}
                         className="px-4 py-2 bg-[#D4FF3F] text-[#080808] text-xs font-mono-code uppercase font-bold tracking-wider hover:bg-[#c2ed2e] transition-colors inline-flex items-center gap-2"
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -1444,11 +1849,24 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                       )}
                     </div>
 
-                    <div className="pt-4 border-t border-[#1C1C1F] flex items-center justify-between gap-3">
-                      <span className="text-[11px] font-mono-code uppercase text-[#D4FF3F] flex items-center gap-1.5">
-                        <Crown className="w-3.5 h-3.5" />
-                        <span className="font-bold">Hub Creator</span>
-                      </span>
+                    <div className="pt-4 border-t border-[#1C1C1F] flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setEditingSpace(space)}
+                          className="px-3 py-1.5 border border-[#333] hover:border-[#D4FF3F] text-[#CCC] hover:text-[#D4FF3F] text-xs font-mono-code uppercase tracking-wider transition-colors flex items-center gap-1"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>Edit Hub</span>
+                        </button>
+
+                        <button
+                          onClick={() => setManagingMembersSpace(space)}
+                          className="px-3 py-1.5 border border-[#333] hover:border-[#666] text-[#CCC] hover:text-[#FFF] text-xs font-mono-code uppercase tracking-wider transition-colors flex items-center gap-1"
+                        >
+                          <Users className="w-3 h-3" />
+                          <span>Members</span>
+                        </button>
+                      </div>
 
                       <button
                         onClick={() => onOpenSpace(space.id)}
@@ -1466,7 +1884,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 4: HUBS I JOINED (Full List) */}
+        {/* TAB 5: HUBS I JOINED (Full List & Leave Action) */}
         {/* ========================================================================= */}
         {activeTab === 'joined' && (
           <div className="space-y-6">
@@ -1630,15 +2048,208 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
           </div>
         )}
 
+        {/* ========================================================================= */}
+        {/* TAB 6: MY SPARKS (Inquiries, Questions, Rabbit Holes Created by User) */}
+        {/* ========================================================================= */}
+        {activeTab === 'sparks' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#242424] pb-4">
+              <div>
+                <h2 className="text-xl font-editorial font-light text-[#F2F2ED]">
+                  My Sparks & Questions
+                </h2>
+                <p className="text-xs font-mono-code text-[#8A8A8A] uppercase tracking-wider mt-0.5">
+                  Curiosity inquiries and philosophical questions you posted ({filteredMySparks.length} total)
+                </p>
+              </div>
+
+              <button
+                onClick={() => setIsCreateSparkModalOpen(true)}
+                className="px-4 py-2 bg-[#D4FF3F] text-[#080808] text-xs font-mono-code uppercase font-bold tracking-widest hover:bg-[#c2ed2e] transition-colors inline-flex items-center gap-2 self-start sm:self-auto"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Post New Spark</span>
+              </button>
+            </div>
+
+            {filteredMySparks.length === 0 ? (
+              <div className="p-12 border border-[#242424] bg-[#111113] text-center space-y-4">
+                <Sparkles className="w-10 h-10 text-[#555] mx-auto" />
+                {searchQuery ? (
+                  <>
+                    <h3 className="text-base font-mono-code font-bold text-[#F2F2ED] uppercase tracking-wider">
+                      No sparks match "{searchQuery}"
+                    </h3>
+                    <p className="text-xs text-[#8A8A8A]">Try adjusting your search query.</p>
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="px-4 py-2 border border-[#333] text-xs font-mono-code text-[#F2F2ED] uppercase"
+                    >
+                      Clear Search
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-base font-mono-code font-bold text-[#F2F2ED] uppercase tracking-wider">
+                      You haven't posted any Sparks yet
+                    </h3>
+                    <p className="text-xs text-[#8A8A8A] max-w-md mx-auto leading-relaxed">
+                      Post an open thought, question, or rabbit hole on the Curiosity Board to start thoughtful conversations.
+                    </p>
+                    <div className="pt-2">
+                      <button
+                        onClick={() => setIsCreateSparkModalOpen(true)}
+                        className="px-4 py-2 bg-[#D4FF3F] text-[#080808] text-xs font-mono-code uppercase font-bold tracking-wider hover:bg-[#c2ed2e] transition-colors inline-flex items-center gap-2"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Post a Spark</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredMySparks.map((spark) => {
+                  const isConfirmingDelete = deletingSparkId === spark.id;
+
+                  return (
+                    <div
+                      key={spark.id}
+                      className="p-6 border border-[#242424] bg-[#111113] hover:border-[#383838] flex flex-col justify-between gap-5 transition-colors"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-2.5">
+                          {spark.tags && spark.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {spark.tags.map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="text-[10px] font-mono-code uppercase text-[#D4FF3F] bg-[#D4FF3F]/10 border border-[#D4FF3F]/30 px-2 py-0.5"
+                                >
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          <span className="text-[11px] font-mono-code text-[#777]">
+                            {spark.timestamp || 'Recently'}
+                          </span>
+                        </div>
+
+                        {spark.title && (
+                          <h3 className="text-lg font-medium text-[#F2F2ED] font-editorial mb-1.5">
+                            {spark.title}
+                          </h3>
+                        )}
+
+                        <p className="text-xs text-[#CCC] font-sans-clean leading-relaxed line-clamp-4">
+                          {spark.content}
+                        </p>
+                      </div>
+
+                      <div className="pt-4 border-t border-[#1C1C1F]">
+                        {isConfirmingDelete ? (
+                          <div className="flex items-center justify-between gap-2 p-2 bg-[#1C1212] border border-[#FF5C5C]/40">
+                            <span className="text-[11px] font-mono-code text-[#FF5C5C]">
+                              Delete this spark?
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleDeleteSpark(spark.id)}
+                                className="px-2.5 py-1 bg-[#FF5C5C] text-[#080808] text-[10px] font-mono-code uppercase font-bold hover:bg-[#ff4040]"
+                              >
+                                Yes, Delete
+                              </button>
+                              <button
+                                onClick={() => setDeletingSparkId(null)}
+                                className="px-2 py-1 border border-[#444] text-[#AAA] text-[10px] font-mono-code uppercase hover:text-[#FFF]"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-3">
+                            <button
+                              onClick={() => setDeletingSparkId(spark.id)}
+                              className="text-[11px] font-mono-code uppercase tracking-wider text-[#777] hover:text-[#FF5C5C] transition-colors flex items-center gap-1"
+                              title="Delete Spark"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete</span>
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                if (onOpenSpark) {
+                                  onOpenSpark(spark.id);
+                                }
+                              }}
+                              className="px-4 py-2 bg-[#D4FF3F] text-[#080808] hover:bg-[#c2ed2e] text-xs font-mono-code uppercase tracking-wider font-bold transition-all flex items-center gap-1.5"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5" />
+                              <span>Discussion ({spark.repliesCount || 0})</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
       </main>
 
       {/* Create Space / Hub Modal */}
       <CreateSpaceModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        isOpen={isCreateSpaceModalOpen}
+        onClose={() => setIsCreateSpaceModalOpen(false)}
         currentUser={currentUser}
         onSpaceCreated={handleSpaceCreated}
       />
+
+      {/* Create Spark Modal */}
+      <CreateSparkModal
+        isOpen={isCreateSparkModalOpen}
+        onClose={() => setIsCreateSparkModalOpen(false)}
+        currentUser={currentUser}
+        onSparkCreated={handleSparkCreated}
+      />
+
+      {/* Edit Hosted Hub Modal */}
+      {editingSpace && (
+        <EditSpaceModal
+          space={editingSpace}
+          hostId={currentUserId}
+          isOpen={!!editingSpace}
+          onClose={() => setEditingSpace(null)}
+          onSpaceUpdated={(updated) => {
+            setSpaces((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+            setEditingSpace(null);
+            setActionSuccessMsg(`Hub "${updated.name}" updated successfully.`);
+            setTimeout(() => setActionSuccessMsg(null), 3500);
+          }}
+        />
+      )}
+
+      {/* Manage Hosted Hub Members Modal */}
+      {managingMembersSpace && (
+        <ManageHubMembersModal
+          space={managingMembersSpace}
+          hostId={currentUserId}
+          isOpen={!!managingMembersSpace}
+          onClose={() => setManagingMembersSpace(null)}
+          onSelectProfile={onSelectProfile}
+          onSpaceUpdated={(updated) => {
+            setSpaces((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+          }}
+        />
+      )}
 
     </div>
   );

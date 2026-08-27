@@ -898,6 +898,7 @@ function MainApp() {
             <MySpaceView
               currentUser={user || INITIAL_USER}
               connections={connections}
+              onOpenProfile={() => navigate('/profile')}
               onOpenChat={(connId) => {
                 setActiveConnectionId(connId);
                 navigate('/messages');
@@ -921,6 +922,12 @@ function MainApp() {
                   navigate('/board');
                 }
               }}
+              onUpdateProfile={async (updated) => {
+                await updateUser(updated);
+              }}
+              onOpenOrb={() => navigate('/orb')}
+              onOpenMessages={() => navigate('/messages')}
+              onOpenOnboarding={() => navigate('/onboarding')}
               onAcceptRequest={handleAcceptConnection}
               onDeclineRequest={handleDeclineConnection}
               onCancelRequest={handleCancelConnectionRequest}

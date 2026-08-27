@@ -90,11 +90,11 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
   if (safeConnections.length === 0) {
     return (
-      <div className="min-h-[75vh] flex flex-col items-center justify-center text-center px-6 max-w-md mx-auto py-20 bg-[#09090B] text-[#F5F5F0] selection:bg-[#D4FF3F] selection:text-[#080808]">
+      <div className="min-h-[75vh] flex flex-col items-center justify-center text-center px-6 max-w-md mx-auto py-12 sm:py-20 bg-[#09090B] text-[#F5F5F0] selection:bg-[#D4FF3F] selection:text-[#080808]">
         <div className="w-12 h-12 bg-[#121216] border border-[#1E1E24] flex items-center justify-center mb-6">
           <Sparkles className="w-5 h-5 text-[#D4FF3F]" />
         </div>
-        <h2 className="font-editorial text-3xl font-light tracking-tight text-[#F5F5F0] mb-3">
+        <h2 className="font-editorial text-2xl sm:text-3xl font-light tracking-tight text-[#F5F5F0] mb-3">
           No conversations yet
         </h2>
         <p className="text-xs text-[#8E8E93] mb-8 leading-relaxed font-sans-clean">
@@ -112,7 +112,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   }
 
   return (
-    <div className="h-[calc(100vh-5rem)] max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-3 sm:py-5 flex flex-col bg-[#09090B] text-[#F5F5F0] selection:bg-[#D4FF3F] selection:text-[#080808]">
+    <div className="h-[calc(100dvh-8.5rem)] md:h-[calc(100vh-5rem)] max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-2 sm:py-5 flex flex-col bg-[#09090B] text-[#F5F5F0] selection:bg-[#D4FF3F] selection:text-[#080808]">
       <div className="flex-1 flex border border-[#1E1E24] bg-[#0E0E12] overflow-hidden relative shadow-2xl">
         
         {/* Left Sidebar: Conversations List */}

@@ -266,11 +266,11 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         
         {/* Navigation Sub-Tabs */}
-        <div className="flex items-center gap-2 border-b border-[#1E1E24] pb-2 sm:pb-0 sm:border-0">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-none border-b border-[#1E1E24] sm:border-0 w-full lg:w-auto">
           <button
             id="tab-btn-connected"
             onClick={() => setActiveTab('connected')}
-            className={`px-4 py-2 text-xs font-mono-code uppercase tracking-wider font-semibold transition-all border ${
+            className={`whitespace-nowrap px-3.5 sm:px-4 py-2 text-xs font-mono-code uppercase tracking-wider font-semibold transition-all border shrink-0 ${
               activeTab === 'connected'
                 ? 'bg-lime-grained text-[#080808] border-[#D4FF3F] font-bold'
                 : 'bg-[#101014] text-[#8E8E93] border-[#222228] hover:text-[#F5F5F0] hover:border-[#383844]'
@@ -282,7 +282,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
           <button
             id="tab-btn-received"
             onClick={() => setActiveTab('received')}
-            className={`px-4 py-2 text-xs font-mono-code uppercase tracking-wider font-semibold transition-all border relative ${
+            className={`whitespace-nowrap px-3.5 sm:px-4 py-2 text-xs font-mono-code uppercase tracking-wider font-semibold transition-all border shrink-0 relative ${
               activeTab === 'received'
                 ? 'bg-lime-grained text-[#080808] border-[#D4FF3F] font-bold'
                 : 'bg-[#101014] text-[#8E8E93] border-[#222228] hover:text-[#F5F5F0] hover:border-[#383844]'
@@ -299,7 +299,7 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
           <button
             id="tab-btn-sent"
             onClick={() => setActiveTab('sent')}
-            className={`px-4 py-2 text-xs font-mono-code uppercase tracking-wider font-semibold transition-all border ${
+            className={`whitespace-nowrap px-3.5 sm:px-4 py-2 text-xs font-mono-code uppercase tracking-wider font-semibold transition-all border shrink-0 ${
               activeTab === 'sent'
                 ? 'bg-lime-grained text-[#080808] border-[#D4FF3F] font-bold'
                 : 'bg-[#101014] text-[#8E8E93] border-[#222228] hover:text-[#F5F5F0] hover:border-[#383844]'

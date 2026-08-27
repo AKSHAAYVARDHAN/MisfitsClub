@@ -202,7 +202,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
   }, [selectedLocation, connectedProfileIds]);
 
   return (
-    <div className="relative w-full min-h-[calc(100vh-65px)] bg-[#0B0B0C] text-[#F5F5F0] overflow-hidden flex flex-col justify-between select-none">
+    <div className="relative w-full min-h-[calc(100dvh-4rem)] md:min-h-[calc(100vh-65px)] bg-[#0B0B0C] text-[#F5F5F0] overflow-x-hidden flex flex-col justify-between select-none pb-24 md:pb-6">
       
       {/* Background Subtle Grid Texture */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#F5F5F0_1px,transparent_1px)] [background-size:24px_24px]" />
@@ -210,12 +210,12 @@ export const OrbView: React.FC<OrbViewProps> = ({
       {/* =========================================================================
           1. ORB HEADER (EDITORIAL INTRODUCTION & CONNECTION METRICS)
           ========================================================================= */}
-      <header className="relative z-10 pt-5 sm:pt-7 lg:pt-8 px-4 sm:px-8 lg:px-12 max-w-7xl mx-auto w-full">
-        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+      <header className="relative z-10 pt-4 sm:pt-6 lg:pt-8 px-4 sm:px-8 lg:px-12 max-w-7xl mx-auto w-full">
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 sm:gap-6">
           
           {/* Left Column: Branding, Editorial Headline & Dynamic Stats */}
           <div className="max-w-2xl">
-            <div className="flex items-center gap-2.5 mb-2">
+            <div className="flex items-center gap-2.5 mb-1.5 sm:mb-2">
               <span className="text-[10px] font-bold uppercase tracking-widest text-[#D4FF3F] bg-[#D4FF3F]/10 border border-[#D4FF3F]/30 px-2.5 py-0.5 font-mono-code">
                 THE ORB
               </span>
@@ -229,14 +229,14 @@ export const OrbView: React.FC<OrbViewProps> = ({
               Your world is <span className="italic font-normal text-[#F5F5F0]">getting bigger</span>.
             </h1>
 
-            <p className="font-sans-clean text-xs sm:text-sm text-[#8E8E93] mt-2 leading-relaxed max-w-lg font-normal">
+            <p className="font-sans-clean text-xs sm:text-sm text-[#8E8E93] mt-1.5 sm:mt-2 leading-relaxed max-w-lg font-normal line-clamp-2 sm:line-clamp-none">
               Look at the people you’ve met around the planet. Every node represents a real human conversation, shared inquiry, or collaborative spark.
             </p>
 
             {/* Dynamic Metrics Hierarchy */}
-            <div className="flex items-center gap-5 sm:gap-7 mt-3.5 pt-3 border-t border-[#1E1E24]">
+            <div className="flex items-center gap-4 sm:gap-7 mt-2.5 sm:mt-3.5 pt-2.5 sm:pt-3 border-t border-[#1E1E24]">
               <div>
-                <span className="font-editorial text-xl sm:text-2xl lg:text-3xl font-light text-[#F5F5F0] block leading-none">
+                <span className="font-editorial text-lg sm:text-2xl lg:text-3xl font-light text-[#F5F5F0] block leading-none">
                   {demoZeroState ? '0' : stats.count}
                 </span>
                 <span className="text-[9px] font-bold uppercase tracking-widest text-[#7A7A82] font-mono-code mt-1 block">
@@ -244,10 +244,10 @@ export const OrbView: React.FC<OrbViewProps> = ({
                 </span>
               </div>
 
-              <div className="h-6 w-px bg-[#1E1E24]" />
+              <div className="h-5 sm:h-6 w-px bg-[#1E1E24]" />
 
               <div>
-                <span className="font-editorial text-xl sm:text-2xl lg:text-3xl font-light text-[#F5F5F0] block leading-none">
+                <span className="font-editorial text-lg sm:text-2xl lg:text-3xl font-light text-[#F5F5F0] block leading-none">
                   {demoZeroState ? '0' : stats.countries}
                 </span>
                 <span className="text-[9px] font-bold uppercase tracking-widest text-[#7A7A82] font-mono-code mt-1 block">
@@ -255,10 +255,10 @@ export const OrbView: React.FC<OrbViewProps> = ({
                 </span>
               </div>
 
-              <div className="h-6 w-px bg-[#1E1E24]" />
+              <div className="h-5 sm:h-6 w-px bg-[#1E1E24]" />
 
               <div>
-                <span className="font-editorial text-xl sm:text-2xl lg:text-3xl font-light text-[#D4FF3F] block leading-none whitespace-nowrap">
+                <span className="font-editorial text-lg sm:text-2xl lg:text-3xl font-light text-[#D4FF3F] block leading-none whitespace-nowrap">
                   {userGeo.city}
                 </span>
                 <span className="text-[9px] font-bold uppercase tracking-widest text-[#7A7A82] font-mono-code mt-1 block whitespace-nowrap">
@@ -268,22 +268,22 @@ export const OrbView: React.FC<OrbViewProps> = ({
             </div>
           </div>
 
-          {/* Right Column: Prominent Primary Action + Clean Secondary Controls */}
-          <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-3 self-start">
+          {/* Right Column: Primary Action + Secondary Controls Group */}
+          <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2.5 sm:gap-3 self-start w-full lg:w-auto">
             
             {/* Primary Action: Explore Thinkers */}
             <button
               id="orb-explore-network-btn"
               onClick={onExplore}
-              className="btn-primary flex items-center gap-2 text-xs w-full sm:w-auto justify-center shadow-lg hover:shadow-lime-glow transition-all"
+              className="btn-primary flex items-center justify-center gap-2 text-xs w-full sm:w-auto shadow-lg hover:shadow-lime-glow transition-all h-10 px-5"
             >
               <Compass className="w-4 h-4 text-[#080808]" />
               <span className="font-bold tracking-wide">Explore Thinkers</span>
               <ChevronRight className="w-3.5 h-3.5 text-[#080808] opacity-70" />
             </button>
 
-            {/* Secondary Controls Group (Visually Quieter & Structured) */}
-            <div className="flex items-center flex-wrap gap-2 pt-1 w-full sm:w-auto justify-start lg:justify-end">
+            {/* Secondary Controls Group (Clean horizontal row on mobile/tablet) */}
+            <div className="flex items-center gap-1.5 sm:gap-2 pt-0.5 w-full sm:w-auto justify-between sm:justify-start lg:justify-end overflow-x-auto scrollbar-none">
               
               {/* State View Selector */}
               <button
@@ -291,7 +291,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
                 onClick={() => setDemoZeroState(!demoZeroState)}
                 title="Toggle between populated world and zero connection starting state"
                 aria-label="Toggle network view state"
-                className={`border px-3 py-1.5 text-[10px] font-mono-code font-bold uppercase tracking-widest transition-all flex items-center gap-1.5 ${
+                className={`border px-2.5 sm:px-3 py-1.5 text-[10px] font-mono-code font-bold uppercase tracking-widest transition-all flex items-center gap-1.5 shrink-0 min-h-[32px] ${
                   demoZeroState
                     ? 'border-[#D4FF3F]/60 text-[#D4FF3F] bg-[#141418]'
                     : 'border-[#24242C] text-[#8E8E93] hover:text-[#F5F5F0] hover:border-[#383844] bg-[#0E0E12]'
@@ -307,7 +307,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
                 onClick={() => setAutoRotate(!autoRotate)}
                 title={autoRotate ? "Pause automatic globe rotation" : "Enable automatic globe rotation"}
                 aria-label={autoRotate ? "Pause rotation" : "Enable rotation"}
-                className={`px-3 py-1.5 text-[10px] font-mono-code font-bold uppercase tracking-widest border transition-all flex items-center gap-1.5 ${
+                className={`px-2.5 sm:px-3 py-1.5 text-[10px] font-mono-code font-bold uppercase tracking-widest border transition-all flex items-center gap-1.5 shrink-0 min-h-[32px] ${
                   autoRotate
                     ? 'border-[#24242C] text-[#F5F5F0] bg-[#121216]'
                     : 'border-[#1E1E24] text-[#7A7A82] bg-[#0E0E12]'
@@ -324,7 +324,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
                 onClick={() => setShowArcs(!showArcs)}
                 title={showArcs ? "Hide 3D connection arcs" : "Show 3D connection arcs"}
                 aria-label={showArcs ? "Hide connection arcs" : "Show connection arcs"}
-                className={`px-3 py-1.5 text-[10px] font-mono-code font-bold uppercase tracking-widest border transition-all flex items-center gap-1.5 ${
+                className={`px-2.5 sm:px-3 py-1.5 text-[10px] font-mono-code font-bold uppercase tracking-widest border transition-all flex items-center gap-1.5 shrink-0 min-h-[32px] ${
                   showArcs
                     ? 'border-[#24242C] text-[#F5F5F0] bg-[#121216]'
                     : 'border-[#1E1E24] text-[#7A7A82] bg-[#0E0E12]'
@@ -342,9 +342,9 @@ export const OrbView: React.FC<OrbViewProps> = ({
       </header>
 
       {/* =========================================================================
-          2. 3D GLOBE EXPERIENCE & INTERACTION AREA
+          2. DEDICATED RESPONSIVE 3D GLOBE EXPERIENCE & INTERACTION VIEWPORT
           ========================================================================= */}
-      <div className="relative w-full flex-1 min-h-[460px] sm:min-h-[540px] lg:min-h-[580px] my-1 sm:my-2">
+      <div className="relative w-full h-[320px] xs:h-[360px] sm:h-[440px] md:h-[500px] lg:flex-1 lg:min-h-[580px] my-1 sm:my-2 overflow-hidden flex items-center justify-center">
         
         {/* Globe WebGL Canvas Component */}
         <OrbGlobe
@@ -367,7 +367,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
         />
 
         {/* --- Globe Control Zone: Grouped Precision Navigation Cluster --- */}
-        <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-8 z-10 flex items-center gap-2 pointer-events-auto">
+        <div className="absolute bottom-2.5 right-2.5 sm:bottom-4 sm:right-6 lg:bottom-6 lg:right-8 z-10 flex items-center gap-2 pointer-events-auto">
           {/* Zoom In & Out Pair */}
           <div className="flex items-center border border-[#1E1E24] bg-[#0E0E12]/95 backdrop-blur-md shadow-2xl">
             <button
@@ -378,7 +378,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
               }}
               title="Zoom out (−)"
               aria-label="Zoom out"
-              className="p-2 text-[#8E8E93] hover:text-[#D4FF3F] hover:bg-[#141418] transition-colors border-r border-[#1E1E24] active:bg-[#1E1E24]"
+              className="p-2 sm:p-2.5 text-[#8E8E93] hover:text-[#D4FF3F] hover:bg-[#141418] transition-colors border-r border-[#1E1E24] active:bg-[#1E1E24] min-w-[34px] min-h-[34px] flex items-center justify-center"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
@@ -390,7 +390,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
               }}
               title="Zoom in (+)"
               aria-label="Zoom in"
-              className="p-2 text-[#8E8E93] hover:text-[#D4FF3F] hover:bg-[#141418] transition-colors active:bg-[#1E1E24]"
+              className="p-2 sm:p-2.5 text-[#8E8E93] hover:text-[#D4FF3F] hover:bg-[#141418] transition-colors active:bg-[#1E1E24] min-w-[34px] min-h-[34px] flex items-center justify-center"
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
@@ -405,7 +405,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
             }}
             title={`Recenter on home: ${userGeo.city}`}
             aria-label={`Recenter on ${userGeo.city}`}
-            className="bg-[#0E0E12]/95 backdrop-blur-md border border-[#1E1E24] hover:border-[#D4FF3F]/50 text-[#F5F5F0] hover:text-[#D4FF3F] px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all shadow-xl flex items-center gap-1.5 font-mono-code active:bg-[#141418]"
+            className="bg-[#0E0E12]/95 backdrop-blur-md border border-[#1E1E24] hover:border-[#D4FF3F]/50 text-[#F5F5F0] hover:text-[#D4FF3F] px-2.5 sm:px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all shadow-xl flex items-center gap-1.5 font-mono-code active:bg-[#141418] min-h-[34px]"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F] animate-pulse" />
             <span>Recenter • {userGeo.city}</span>
@@ -413,7 +413,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
         </div>
 
         {/* --- Subtle Interaction Hints (Unobtrusive & Quiet) --- */}
-        <div className={`absolute bottom-4 left-4 sm:bottom-6 sm:left-8 z-10 pointer-events-none transition-opacity duration-500 hidden sm:flex items-center gap-3 ${hasInteracted ? 'opacity-40 hover:opacity-100' : 'opacity-80'}`}>
+        <div className={`absolute bottom-3 left-3 sm:bottom-6 sm:left-8 z-10 pointer-events-none transition-opacity duration-500 hidden sm:flex items-center gap-3 ${hasInteracted ? 'opacity-40 hover:opacity-100' : 'opacity-80'}`}>
           <div className="bg-[#0E0E12]/80 backdrop-blur-md border border-[#1E1E24]/60 px-3 py-1.5 text-[10px] text-[#8E8E93] font-mono-code uppercase tracking-wider flex items-center gap-2">
             <span>Drag to rotate</span>
             <span className="text-[#383844]">·</span>
@@ -426,17 +426,17 @@ export const OrbView: React.FC<OrbViewProps> = ({
         {/* --- Zero State Overlay (Preserving Globe in Background) --- */}
         {demoZeroState && (
           <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none p-4">
-            <div className="bg-[#0E0E12]/95 backdrop-blur-md border border-[#1E1E24] p-6 sm:p-8 max-w-md text-center pointer-events-auto shadow-2xl animate-fadeIn">
-              <div className="w-10 h-10 rounded-full bg-[#D4FF3F]/10 border border-[#D4FF3F]/30 flex items-center justify-center mx-auto mb-3">
-                <Sparkles className="w-5 h-5 text-[#D4FF3F]" />
+            <div className="bg-[#0E0E12]/95 backdrop-blur-md border border-[#1E1E24] p-5 sm:p-8 max-w-md text-center pointer-events-auto shadow-2xl animate-fadeIn">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#D4FF3F]/10 border border-[#D4FF3F]/30 flex items-center justify-center mx-auto mb-3">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#D4FF3F]" />
               </div>
               <span className="text-[10px] text-[#D4FF3F] font-mono-code uppercase tracking-widest font-bold block mb-1">
                 Zero Connections
               </span>
-              <h2 className="font-editorial text-2xl sm:text-3xl text-[#F5F5F0] font-light">
+              <h2 className="font-editorial text-xl sm:text-3xl text-[#F5F5F0] font-light">
                 Your Orb is just beginning.
               </h2>
-              <p className="text-xs text-[#8E8E93] mt-2 mb-6 leading-relaxed max-w-xs mx-auto">
+              <p className="text-xs text-[#8E8E93] mt-1.5 sm:mt-2 mb-5 sm:mb-6 leading-relaxed max-w-xs mx-auto">
                 Connect with your first Misfit and watch your personal world expand across continents.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
@@ -484,10 +484,10 @@ export const OrbView: React.FC<OrbViewProps> = ({
 
         {/* --- Selected Thinker Context Popover / Drawer --- */}
         {selectedLocation && selectedLocation.profile && (
-          <div className="absolute right-4 top-4 bottom-4 sm:top-6 sm:right-8 sm:bottom-auto sm:max-h-[520px] w-[calc(100%-2rem)] sm:w-80 md:w-96 z-20 bg-[#0E0E12]/98 border border-[#1E1E24] p-5 sm:p-6 backdrop-blur-xl shadow-2xl flex flex-col justify-between animate-fadeIn overflow-y-auto">
+          <div className="absolute inset-x-3 bottom-3 sm:bottom-auto sm:inset-x-auto sm:right-8 sm:top-6 max-h-[80%] sm:max-h-[520px] w-auto sm:w-80 md:w-96 z-30 bg-[#0E0E12]/98 border border-[#1E1E24] p-4 sm:p-6 backdrop-blur-xl shadow-2xl flex flex-col justify-between animate-fadeIn overflow-y-auto">
             <div>
               {/* Header Status Bar */}
-              <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-[#1E1E24]">
+              <div className="flex items-center justify-between gap-3 mb-3 sm:mb-4 pb-2.5 sm:pb-3 border-b border-[#1E1E24]">
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${isSelectedConnected ? 'bg-[#D4FF3F] animate-pulse' : 'bg-[#7A7A82]'}`} />
                   <span className={`text-[10px] font-bold uppercase tracking-widest font-mono-code ${isSelectedConnected ? 'text-[#D4FF3F]' : 'text-[#8E8E93]'}`}>
@@ -505,18 +505,18 @@ export const OrbView: React.FC<OrbViewProps> = ({
               </div>
 
               {/* Avatar & Core Profile Information */}
-              <div className="flex items-start gap-3.5 mb-4">
+              <div className="flex items-start gap-3 sm:gap-3.5 mb-3 sm:mb-4">
                 <img
                   src={selectedLocation.profile.avatarUrl}
                   alt={selectedLocation.name}
                   referrerPolicy="no-referrer"
-                  className="w-12 h-12 object-cover border border-[#24242C] flex-shrink-0"
+                  className="w-10 h-10 sm:w-12 sm:h-12 object-cover border border-[#24242C] flex-shrink-0"
                 />
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-editorial text-xl text-white font-medium truncate">
+                  <h3 className="font-editorial text-lg sm:text-xl text-white font-medium truncate">
                     {selectedLocation.name}
                   </h3>
-                  <p className="text-[11px] text-[#8E8E93] uppercase tracking-widest font-mono-code flex items-center gap-1 mt-0.5 truncate">
+                  <p className="text-[10px] sm:text-[11px] text-[#8E8E93] uppercase tracking-widest font-mono-code flex items-center gap-1 mt-0.5 truncate">
                     <MapPin className="w-3 h-3 text-[#D4FF3F] flex-shrink-0" />
                     {selectedLocation.city}, {selectedLocation.country}
                   </p>
@@ -528,11 +528,11 @@ export const OrbView: React.FC<OrbViewProps> = ({
 
               {/* Tagline / Active Obsession */}
               {selectedLocation.profile.tagline && (
-                <div className="bg-[#121216] border border-[#1E1E24] p-3 mb-3.5">
+                <div className="bg-[#121216] border border-[#1E1E24] p-2.5 sm:p-3 mb-2.5 sm:mb-3.5">
                   <span className="text-[9px] uppercase tracking-widest text-[#7A7A82] font-mono-code block mb-1">
                     Active Rabbit Hole / Obsession
                   </span>
-                  <p className="font-editorial text-xs sm:text-sm italic text-[#F5F5F0] leading-snug line-clamp-3">
+                  <p className="font-editorial text-xs sm:text-sm italic text-[#F5F5F0] leading-snug line-clamp-2 sm:line-clamp-3">
                     “{selectedLocation.profile.tagline}”
                   </p>
                 </div>
@@ -540,11 +540,11 @@ export const OrbView: React.FC<OrbViewProps> = ({
 
               {/* Shared / Connection Intentions */}
               {selectedLocation.intents && selectedLocation.intents.length > 0 && (
-                <div className="mb-3.5">
+                <div className="mb-2.5 sm:mb-3.5">
                   <span className="text-[9px] uppercase tracking-widest text-[#7A7A82] font-mono-code block mb-1.5">
                     Connection Intentions
                   </span>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1 sm:gap-1.5">
                     {selectedLocation.intents.map((it) => (
                       <span
                         key={it}
@@ -559,7 +559,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
 
               {/* Currently Questioning / Topics */}
               {selectedLocation.profile.curiousAbout && Array.isArray(selectedLocation.profile.curiousAbout) && selectedLocation.profile.curiousAbout.length > 0 && (
-                <div className="mb-4">
+                <div className="mb-3 sm:mb-4">
                   <span className="text-[9px] uppercase tracking-widest text-[#7A7A82] font-mono-code block mb-1.5">
                     Currently Questioning
                   </span>
@@ -578,12 +578,12 @@ export const OrbView: React.FC<OrbViewProps> = ({
             </div>
 
             {/* Contextual Action Buttons */}
-            <div className="pt-3 border-t border-[#1E1E24] flex items-center gap-2">
+            <div className="pt-2.5 sm:pt-3 border-t border-[#1E1E24] flex items-center gap-2">
               {isSelectedConnected ? (
                 <button
                   id="orb-card-message-btn"
                   onClick={() => handleOpenConversation(selectedLocation.id)}
-                  className="btn-primary flex-1 py-2 text-xs flex items-center justify-center gap-1.5"
+                  className="btn-primary flex-1 py-2 text-xs flex items-center justify-center gap-1.5 min-h-[38px]"
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
                   <span>Open Chat</span>
@@ -592,7 +592,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
                 <button
                   id="orb-card-connect-btn"
                   onClick={() => handleConnectAction(selectedLocation.profile!)}
-                  className="btn-primary flex-1 py-2 text-xs flex items-center justify-center gap-1.5"
+                  className="btn-primary flex-1 py-2 text-xs flex items-center justify-center gap-1.5 min-h-[38px]"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>Connect</span>
@@ -604,7 +604,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
                 onClick={() => handleViewProfileModal(selectedLocation.profile!)}
                 title="View Full Profile"
                 aria-label="View Full Profile"
-                className="btn-secondary px-3.5 py-2 text-xs flex items-center justify-center gap-1"
+                className="btn-secondary px-3.5 py-2 text-xs flex items-center justify-center gap-1 min-h-[38px]"
               >
                 <User className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Profile</span>
@@ -618,10 +618,10 @@ export const OrbView: React.FC<OrbViewProps> = ({
       {/* =========================================================================
           3. ORB FILTER BAR & 4. SEPARATED VISUAL LEGEND / HELP
           ========================================================================= */}
-      <footer className="relative z-10 pb-5 sm:pb-6 px-4 sm:px-8 lg:px-12 max-w-7xl mx-auto w-full flex flex-col gap-3">
+      <footer className="relative z-10 pb-2 sm:pb-6 px-4 sm:px-8 lg:px-12 max-w-7xl mx-auto w-full flex flex-col gap-2.5 sm:gap-3">
         
         {/* Dedicated Intent Filter Rail (Clean Single Row with Horizontal Scroll) */}
-        <div className="relative w-full border border-[#1E1E24] bg-[#0E0E12]/90 backdrop-blur-md p-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="relative w-full border border-[#1E1E24] bg-[#0E0E12]/90 backdrop-blur-md p-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           
           <div className="flex items-center gap-2 flex-shrink-0 px-1">
             <span className="text-[9px] font-bold uppercase tracking-widest text-[#7A7A82] font-mono-code whitespace-nowrap flex items-center gap-1">
@@ -633,7 +633,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
           {/* Horizontally scrollable filter list */}
           <div
             ref={filterScrollRef}
-            className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth w-full sm:w-auto py-0.5"
+            className="flex items-center gap-1.5 overflow-x-auto scrollbar-none scroll-smooth w-full sm:w-auto py-0.5"
           >
             {allIntentsList.map((intent) => {
               const isSelected = activeIntentFilter === intent;
@@ -642,7 +642,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
                   key={intent}
                   id={`orb-filter-${intent.toLowerCase().replace(/\s+/g, '-')}`}
                   onClick={() => setActiveIntentFilter(intent)}
-                  className={`px-2.5 py-1 text-[10px] font-mono-code font-bold uppercase tracking-wider whitespace-nowrap transition-all border ${
+                  className={`px-2.5 py-1 text-[10px] font-mono-code font-bold uppercase tracking-wider whitespace-nowrap transition-all border shrink-0 min-h-[30px] ${
                     isSelected
                       ? 'bg-[#D4FF3F] text-[#080808] border-[#D4FF3F] shadow-sm'
                       : 'bg-[#121216] text-[#8E8E93] border-[#1E1E24] hover:border-[#383844] hover:text-[#F5F5F0]'
@@ -658,7 +658,7 @@ export const OrbView: React.FC<OrbViewProps> = ({
           <div className="sm:hidden flex items-center justify-end pt-1 border-t border-[#1E1E24]">
             <button
               onClick={() => setShowMobileHelp(!showMobileHelp)}
-              className="text-[9px] font-mono-code uppercase tracking-widest text-[#8E8E93] hover:text-[#D4FF3F] flex items-center gap-1"
+              className="text-[9px] font-mono-code uppercase tracking-widest text-[#8E8E93] hover:text-[#D4FF3F] flex items-center gap-1 py-1"
             >
               <HelpCircle className="w-3 h-3" />
               <span>How the Orb works</span>
@@ -667,10 +667,10 @@ export const OrbView: React.FC<OrbViewProps> = ({
         </div>
 
         {/* Separated Visual Legend & Interaction Guide */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[10px] font-mono-code text-[#7A7A82] uppercase tracking-wider px-1">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 text-[10px] font-mono-code text-[#7A7A82] uppercase tracking-wider px-1">
           
           {/* Visual Legend */}
-          <div className="flex items-center flex-wrap gap-4">
+          <div className="flex items-center flex-wrap gap-3 sm:gap-4">
             <span className="text-[#8E8E93] font-bold">Legend:</span>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#D4FF3F]" />

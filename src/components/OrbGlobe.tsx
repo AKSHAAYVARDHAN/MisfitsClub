@@ -84,9 +84,9 @@ export const OrbGlobe = forwardRef<OrbGlobeRef, OrbGlobeProps>(({
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0B0B0C);
 
-    // Camera
+    // Camera - vertically centered exactly at origin (0, 0, initialDistance)
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 0.2, initialDistance);
+    camera.position.set(0, 0, initialDistance);
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({

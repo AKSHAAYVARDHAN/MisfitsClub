@@ -172,7 +172,7 @@ function MainApp() {
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const [selectedSparkId, setSelectedSparkId] = useState<string | null>(null);
 
-  // Sync selectedSparkId from URL pathname (e.g. /spark/bp-1 or /board/bp-1)
+  // Sync selectedSparkId and selectedSpaceId from URL pathname (e.g. /spark/bp-1, /board/bp-1, /hub/s-1, /spaces/s-1)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
@@ -182,6 +182,15 @@ function MainApp() {
       } else if (path.startsWith('/board/')) {
         const id = path.replace('/board/', '').split('/')[0].split('?')[0];
         if (id) setSelectedSparkId(id);
+      } else if (path.startsWith('/spaces/')) {
+        const id = path.replace('/spaces/', '').split('/')[0].split('?')[0];
+        if (id) setSelectedSpaceId(id);
+      } else if (path.startsWith('/hub/')) {
+        const id = path.replace('/hub/', '').split('/')[0].split('?')[0];
+        if (id) setSelectedSpaceId(id);
+      } else if (path.startsWith('/hubs/')) {
+        const id = path.replace('/hubs/', '').split('/')[0].split('?')[0];
+        if (id) setSelectedSpaceId(id);
       }
     }
   }, [currentPath]);

@@ -31,12 +31,39 @@ function normalizePath(rawPath: string): AppRoute {
   if (path === '/signup' || path === '/register' || path === '/join') return '/signup';
   if (path === '/orb') return '/orb';
   if (path === '/discover') return '/discover';
-  if (path === '/board' || path === '/explore' || path === '/spark' || path.startsWith('/spark/') || path.startsWith('/board/')) return '/board';
-  if (path.startsWith('/spaces')) return '/spaces';
+  if (
+    path === '/board' || 
+    path === '/explore' || 
+    path === '/spark' || 
+    path.startsWith('/spark/') || 
+    path.startsWith('/board/') ||
+    path.startsWith('/explore/')
+  ) {
+    return '/board';
+  }
+  if (
+    path === '/hub' ||
+    path === '/hubs' ||
+    path === '/spaces' ||
+    path === '/space' ||
+    path.startsWith('/spaces/') ||
+    path.startsWith('/space/') ||
+    path.startsWith('/hub/') ||
+    path.startsWith('/hubs/')
+  ) {
+    return '/spaces';
+  }
   if (path === '/connections' || path === '/circle') return '/connections';
   if (path === '/messages' || path === '/chat') return '/messages';
   if (path === '/my-space' || path === '/myspace' || path === '/my_space') return '/my-space';
-  if (path === '/profile') return '/profile';
+  if (
+    path === '/profile' ||
+    path.startsWith('/profile/') ||
+    path.startsWith('/member/') ||
+    path.startsWith('/user/')
+  ) {
+    return '/profile';
+  }
   if (path === '/onboarding') return '/onboarding';
   
   // Default to root

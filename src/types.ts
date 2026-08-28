@@ -276,6 +276,8 @@ export type ActiveTab = 'landing' | 'orb' | 'discover' | 'board' | 'explore' | '
 
 export type AdminRole = 'OWNER' | 'ADMIN' | 'MODERATOR' | 'SUPPORT' | 'MEMBER';
 
+export type AccountStatus = 'active' | 'restricted' | 'suspended' | 'pending';
+
 export interface StaffMember {
   uid: string;
   email: string;
@@ -284,6 +286,60 @@ export interface StaffMember {
   status: 'active' | 'suspended';
   assignedBy?: string;
   assignedAt: string;
+  updatedAt?: string;
+}
+
+export type ReportSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type ReportStatus = 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'DISMISSED';
+export type ReportTargetType = 'SPARK' | 'MEMBER' | 'SPACE' | 'COMMENT' | 'MESSAGE';
+
+export interface ModerationReport {
+  id: string;
+  targetType: ReportTargetType;
+  targetId: string;
+  targetTitle?: string;
+  targetSnippet?: string;
+  reporterId: string;
+  reporterName: string;
+  reporterEmail?: string;
+  reportedUserId?: string;
+  reportedUserName?: string;
+  reason: string;
+  details?: string;
+  severity: ReportSeverity;
+  status: ReportStatus;
+  resolutionNotes?: string;
+  resolvedBy?: string;
+  resolvedAt?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface SystemBroadcast {
+  id: string;
+  title: string;
+  message: string;
+  type: 'ANNOUNCEMENT' | 'MAINTENANCE' | 'SECURITY' | 'UPDATE';
+  audience: 'ALL' | 'MEMBERS' | 'STAFF';
+  authorName: string;
+  authorRole: string;
+  createdAt: string;
+  active: boolean;
+}
+
+export interface AdminConnectionItem {
+  id: string;
+  requesterId: string;
+  requesterName: string;
+  requesterAvatar?: string;
+  requesterRole?: string;
+  targetId: string;
+  targetName: string;
+  targetAvatar?: string;
+  targetRole?: string;
+  status: 'pending' | 'connected' | 'declined';
+  introNote?: string;
+  createdAt: string;
   updatedAt?: string;
 }
 

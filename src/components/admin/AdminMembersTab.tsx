@@ -618,30 +618,83 @@ export const AdminMembersTab: React.FC<AdminMembersTabProps> = ({
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="pt-4 border-t border-[#F5F5F0]/10 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    navigate(`/profile/${selectedMember.uid || selectedMember.id}`);
-                  }}
-                  className="px-4 py-2 bg-[#14141A] hover:bg-[#1A1A24] border border-[#262630] text-xs font-mono-code text-[#F5F5F0] uppercase tracking-wider transition-colors inline-flex items-center gap-2"
-                >
-                  <ExternalLink className="w-3.5 h-3.5 text-[#D4FF3F]" />
-                  <span>View in App Profile</span>
-                </button>
+            {/* Action Buttons & Moderation Controls */}
+            <div className="pt-4 border-t border-[#F5F5F0]/10 space-y-4">
+              {/* Account Status Control */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-[#121217] p-3 border border-[#22222A]">
+                <div className="text-xs font-mono-code">
+                  <span className="text-[#64646E] uppercase block text-[10px]">Account Access Status</span>
+                  <span className="text-[#F5F5F0] font-bold uppercase">
+                    {(selectedMember as any).accountStatus || 'ACTIVE'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  {(['active', 'restricted', 'suspended'] as const).map((st) => (
+                    <button
+                      key={st}
+                      onClick={async () => {
+                        if (!isElevatedStaff) {
+                          alert('Only Admins/Owners can modify account status.');
+                          return;
+                        }
+                        const reason = window.prompt(`Reason for setting status to ${st.toUpperCase()}?`, 'Administrative review');
+                        if (reason === null) return;
+                        try {
+                          await adminService.updateMemberStatus(
+                            { uid: currentStaff.uid, email: currentStaff.email, role: currentStaff.role },
+                            { uid: selectedMember.uid || selectedMember.id, name: selectedMember.name, email: selectedMember.email },
+                            st,
+                            reason
+                          );
+                          setSelectedMember((prev) => prev ? { ...prev, accountStatus: st } as any : null);
+                          setMembers((prev) =>
+                            prev.map((m) =>
+                              (m.uid || m.id) === (selectedMember.uid || selectedMember.id)
+                                ? ({ ...m, accountStatus: st } as any)
+                                : m
+                            )
+                          );
+                        } catch (err: any) {
+                          alert(err?.message || 'Failed to update status.');
+                        }
+                      }}
+                      className={`px-2.5 py-1 text-[10px] font-mono-code uppercase tracking-wider border transition-colors ${
+                        ((selectedMember as any).accountStatus || 'active') === st
+                          ? 'bg-[#D4FF3F] text-[#080808] font-bold border-[#D4FF3F]'
+                          : 'bg-[#14141A] text-[#969696] border-[#262630] hover:text-[#F5F5F0]'
+                      }`}
+                    >
+                      {st}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {isElevatedStaff && (
-                <button
-                  onClick={() => handleDeleteMember(selectedMember)}
-                  disabled={isDeleting}
-                  className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-xs font-mono-code text-red-400 uppercase tracking-wider transition-colors inline-flex items-center gap-2"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>{isDeleting ? 'Deleting...' : 'Delete Member Record'}</span>
-                </button>
-              )}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      navigate(`/profile/${selectedMember.uid || selectedMember.id}`);
+                    }}
+                    className="px-4 py-2 bg-[#14141A] hover:bg-[#1A1A24] border border-[#262630] text-xs font-mono-code text-[#F5F5F0] uppercase tracking-wider transition-colors inline-flex items-center gap-2"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-[#D4FF3F]" />
+                    <span>View in App Profile</span>
+                  </button>
+                </div>
+
+                {isElevatedStaff && (
+                  <button
+                    onClick={() => handleDeleteMember(selectedMember)}
+                    disabled={isDeleting}
+                    className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-xs font-mono-code text-red-400 uppercase tracking-wider transition-colors inline-flex items-center gap-2"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{isDeleting ? 'Deleting...' : 'Delete Member Record'}</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

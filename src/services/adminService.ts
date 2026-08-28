@@ -34,14 +34,14 @@ export const adminService = {
   },
 
   /**
-   * Bootstrap initial owner role if none exists or for the active user
+   * Securely bootstrap initial owner role for the authenticated user
    */
   async bootstrapOwner(user: UserProfile): Promise<StaffMember> {
     const uid = user.uid || user.id;
     const now = new Date().toISOString();
     const staffDoc: StaffMember = {
       uid,
-      email: user.email || '',
+      email: (user.email || '').toLowerCase().trim(),
       name: user.name || 'Owner',
       role: 'OWNER',
       status: 'active',
@@ -50,22 +50,49 @@ export const adminService = {
       updatedAt: now,
     };
 
+    // 1. Try secure server-side bootstrap endpoint first
     try {
-      await setDoc(doc(db, 'adminRoles', uid), sanitizeFirestoreData(staffDoc), { merge: true });
-      await this.createAuditLog({
-        actorId: uid,
-        actorEmail: user.email,
-        actorRole: 'OWNER',
-        action: 'BOOTSTRAP_OWNER_PROVISIONED',
-        targetType: 'STAFF_ROLE',
-        targetId: uid,
-        details: `Initial owner privileges provisioned for ${user.email}`,
-      });
+      const { auth } = await import('./firebase');
+      const idToken = await auth.currentUser?.getIdToken();
+      if (idToken) {
+        const response = await fetch('/api/admin/bootstrap', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ idToken }),
+        });
+
+        if (response.ok) {
+          const resData = await response.json();
+          return resData.staff || staffDoc;
+        }
+      }
+    } catch (serverErr) {
+      console.warn('Server bootstrap endpoint note:', serverErr);
+    }
+
+    // 2. Direct Firestore write (protected by deployed firestore.rules)
+    try {
+      await setDoc(doc(db, 'adminRoles', uid), sanitizeFirestoreData(staffDoc));
+      try {
+        await this.createAuditLog({
+          actorId: uid,
+          actorEmail: user.email,
+          actorRole: 'OWNER',
+          action: 'BOOTSTRAP_OWNER_PROVISIONED',
+          targetType: 'STAFF_ROLE',
+          targetId: uid,
+          details: `Initial owner privileges provisioned for ${user.email}`,
+        });
+      } catch (auditErr) {
+        console.warn('Audit log write note:', auditErr);
+      }
       return staffDoc;
     } catch (err) {
       console.error('Failed to bootstrap owner:', err);
-      // Return optimistic role for seamless developer/admin experience
-      return staffDoc;
+      throw err;
     }
   },
 

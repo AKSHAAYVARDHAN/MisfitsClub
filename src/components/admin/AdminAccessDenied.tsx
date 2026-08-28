@@ -22,6 +22,8 @@ export const AdminAccessDenied: React.FC<AdminAccessDeniedProps> = ({
   const [isClaiming, setIsClaiming] = React.useState(false);
   const [claimSuccess, setClaimSuccess] = React.useState(false);
 
+  const isDesignatedOwner = (user?.email || '').toLowerCase().trim() === 'akshaayvardhans@gmail.com';
+
   const handleBootstrapOwner = async () => {
     if (!user) {
       onSignIn();
@@ -34,8 +36,9 @@ export const AdminAccessDenied: React.FC<AdminAccessDeniedProps> = ({
       setTimeout(() => {
         onRoleGranted();
       }, 700);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error('Bootstrap error:', e);
+      alert(e.message || 'Failed to initialize Owner privileges.');
     } finally {
       setIsClaiming(false);
     }
@@ -152,16 +155,23 @@ export const AdminAccessDenied: React.FC<AdminAccessDeniedProps> = ({
               </div>
             )}
 
-            {/* Development / Provisioning Fallback for Developer / First Turn Owner */}
-            {user && (
+            {/* Authorized Owner Bootstrap Trigger (Shown strictly for designated administrator) */}
+            {user && isDesignatedOwner && (
               <div className="pt-4 border-t border-[#F5F5F0]/10 text-center">
                 <button
                   onClick={handleBootstrapOwner}
                   disabled={isClaiming}
-                  className="text-[11px] font-mono-code text-[#64646E] hover:text-[#D4FF3F] underline tracking-wider transition-colors"
+                  className="w-full py-2.5 px-4 bg-[#D4FF3F]/10 hover:bg-[#D4FF3F]/20 border border-[#D4FF3F]/40 text-[11px] font-mono-code text-[#D4FF3F] uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
                 >
-                  {isClaiming ? 'Initializing privileges...' : 'Claim / Initialize Owner Privileges for this account'}
+                  <Key className="w-3.5 h-3.5" />
+                  <span>{isClaiming ? 'Verifying & Initializing Privileges...' : 'Initialize Designated Owner Privileges'}</span>
                 </button>
+              </div>
+            )}
+
+            {user && !isDesignatedOwner && (
+              <div className="pt-4 border-t border-[#F5F5F0]/10 text-center text-[11px] font-mono-code text-[#64646E]">
+                Staff access is granted by invitation only from an active Club Owner.
               </div>
             )}
           </div>

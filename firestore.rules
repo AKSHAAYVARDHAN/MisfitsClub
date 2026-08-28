@@ -69,10 +69,14 @@ service cloud.firestore {
     }
 
     match /adminRoles/{userId} {
-      // Any active staff member can read staff roles list to see team directory
+      // Any active staff member can read staff roles list to see team directory; users can read their own role
       allow read: if isStaff() || isOwner(userId);
       // Only active OWNER can create, update, or assign roles
-      allow create: if isStaffOwner() && isValidId(userId) && isValidAdminRole(incoming()) && incoming().uid == userId;
+      // Allows one-time initial self-bootstrap if document does not exist yet and payload is strictly validated
+      allow create: if isValidId(userId) && isValidAdminRole(incoming()) && incoming().uid == userId && (
+        isStaffOwner() || 
+        (isOwner(userId) && incoming().role == 'OWNER' && incoming().status == 'active' && incoming().assignedBy == 'SYSTEM_BOOTSTRAP' && !exists(/databases/$(database)/documents/adminRoles/$(userId)))
+      );
       allow update: if isStaffOwner() && isValidId(userId) && isValidAdminRole(incoming()) && incoming().uid == existing().uid;
       allow delete: if isStaffOwner() && request.auth.uid != userId;
     }

@@ -642,9 +642,237 @@
         }
       },
       "required": ["id", "participantIds", "createdAt", "updatedAt"]
+    },
+    "AdminRole": {
+      "title": "AdminRole",
+      "description": "Authoritative staff and team role assignment",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Member UID matching auth.uid",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "Staff member email",
+          "maxLength": 120
+        },
+        "name": {
+          "type": "string",
+          "description": "Staff member name",
+          "maxLength": 100
+        },
+        "role": {
+          "type": "string",
+          "description": "Assigned administrative role",
+          "enum": ["OWNER", "ADMIN", "MODERATOR", "SUPPORT"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Active or suspended status",
+          "enum": ["active", "suspended"]
+        },
+        "assignedBy": {
+          "type": "string",
+          "description": "UID of owner/admin who assigned role",
+          "maxLength": 128
+        },
+        "assignedAt": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["uid", "email", "role", "status", "assignedAt"]
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "description": "User suggestions and platform critique",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Feedback item ID",
+          "maxLength": 128
+        },
+        "category": {
+          "type": "string",
+          "description": "Feedback category",
+          "maxLength": 100
+        },
+        "content": {
+          "type": "string",
+          "description": "Feedback content text",
+          "maxLength": 4000
+        },
+        "email": {
+          "type": "string",
+          "description": "Optional submitter email",
+          "maxLength": 120
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Author UID if signed in",
+          "maxLength": 128
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the feedback item",
+          "enum": ["new", "in_review", "resolved", "archived"]
+        },
+        "adminNotes": {
+          "type": "string",
+          "description": "Internal notes from staff",
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "category", "content", "status", "createdAt"]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "Direct inquiries submitted through the contact form",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Message ID",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Submitter name",
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "description": "Submitter email",
+          "maxLength": 120
+        },
+        "message": {
+          "type": "string",
+          "description": "Message content",
+          "maxLength": 5000
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Author UID if signed in",
+          "maxLength": 128
+        },
+        "status": {
+          "type": "string",
+          "description": "Inquiry status",
+          "enum": ["new", "in_progress", "responded", "archived"]
+        },
+        "assignedTo": {
+          "type": "string",
+          "description": "Staff UID assigned to handle inquiry",
+          "maxLength": 128
+        },
+        "adminNotes": {
+          "type": "string",
+          "description": "Internal staff notes",
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "name", "email", "message", "status", "createdAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable log of privileged administrative actions",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Log ID",
+          "maxLength": 128
+        },
+        "actorId": {
+          "type": "string",
+          "description": "UID of admin who took action",
+          "maxLength": 128
+        },
+        "actorEmail": {
+          "type": "string",
+          "description": "Email of admin",
+          "maxLength": 120
+        },
+        "actorRole": {
+          "type": "string",
+          "description": "Role of admin at time of action",
+          "maxLength": 50
+        },
+        "action": {
+          "type": "string",
+          "description": "Action descriptor (e.g. ROLE_ASSIGNED, CONTENT_MODERATED)",
+          "maxLength": 100
+        },
+        "targetType": {
+          "type": "string",
+          "description": "Target entity type (USER, POST, SPACE, FEEDBACK, CONTACT)",
+          "maxLength": 50
+        },
+        "targetId": {
+          "type": "string",
+          "description": "ID of target entity",
+          "maxLength": 128
+        },
+        "details": {
+          "type": "string",
+          "description": "Action summary context",
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "actorId", "actorRole", "action", "createdAt"]
     }
   },
   "firestore": {
+    "/adminRoles/{userId}": {
+      "schema": "AdminRole",
+      "description": "Authoritative staff and role allocations"
+    },
+    "/feedback/{feedbackId}": {
+      "schema": "Feedback",
+      "description": "Persisted feedback submissions"
+    },
+    "/contactMessages/{messageId}": {
+      "schema": "ContactMessage",
+      "description": "Direct contact inquiries"
+    },
+    "/auditLogs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Immutable administrative action audit logs"
+    },
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "Member profile directory documents"

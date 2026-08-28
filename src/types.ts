@@ -272,7 +272,72 @@ export interface CuriousBoardPost {
   };
 }
 
-export type ActiveTab = 'landing' | 'orb' | 'discover' | 'board' | 'explore' | 'spaces' | 'connections' | 'messages' | 'profile' | 'signin' | 'signup' | 'onboarding';
+export type ActiveTab = 'landing' | 'orb' | 'discover' | 'board' | 'explore' | 'spaces' | 'connections' | 'messages' | 'profile' | 'signin' | 'signup' | 'onboarding' | 'admin';
+
+export type AdminRole = 'OWNER' | 'ADMIN' | 'MODERATOR' | 'SUPPORT' | 'MEMBER';
+
+export interface StaffMember {
+  uid: string;
+  email: string;
+  name?: string;
+  role: AdminRole;
+  status: 'active' | 'suspended';
+  assignedBy?: string;
+  assignedAt: string;
+  updatedAt?: string;
+}
+
+export type FeedbackStatus = 'new' | 'in_review' | 'resolved' | 'archived';
+
+export interface FeedbackItem {
+  id: string;
+  category: string;
+  content: string;
+  email?: string;
+  authorId?: string;
+  status: FeedbackStatus;
+  adminNotes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export type ContactStatus = 'new' | 'in_progress' | 'responded' | 'archived';
+
+export interface ContactMessageItem {
+  id: string;
+  name: string;
+  email: string;
+  message: string;
+  authorId?: string;
+  status: ContactStatus;
+  assignedTo?: string;
+  adminNotes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface AuditLogItem {
+  id: string;
+  actorId: string;
+  actorEmail?: string;
+  actorRole: string;
+  action: string;
+  targetType?: string;
+  targetId?: string;
+  details?: string;
+  createdAt: string;
+}
+
+export interface PlatformMetric {
+  totalUsers: number;
+  totalSparks: number;
+  totalSpaces: number;
+  totalConnections: number;
+  pendingFeedbackCount: number;
+  pendingContactCount: number;
+  activeStaffCount: number;
+}
+
 
 export type SpaceCategory = 
   | 'Building'

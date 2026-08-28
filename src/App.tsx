@@ -35,6 +35,7 @@ import { MySpaceView } from './components/MySpaceView';
 import { ProfileView } from './components/ProfileView';
 import { SignInView } from './components/SignInView';
 import { SignUpView } from './components/SignUpView';
+import { AdminDashboard } from './components/admin/AdminDashboard';
 
 const INITIAL_SAMPLE_CONNECTIONS: Connection[] = [
   {
@@ -687,12 +688,20 @@ function MainApp() {
 
   const isPublicView = currentPath === '/' || currentPath === '/signin' || currentPath === '/signup';
   const isOnboardingView = currentPath === '/onboarding';
+  const isAdminView = currentPath === '/admin';
 
   return (
     <div className="min-h-screen bg-[#080808] text-[#F2F2ED] flex flex-col font-sans-clean selection:bg-[#D4FF3F] selection:text-[#080808]">
       
+      {/* 0. DEDICATED ISOLATED RBAC ADMIN AREA */}
+      {isAdminView && (
+        <main className="flex-1 flex flex-col">
+          <AdminDashboard />
+        </main>
+      )}
+
       {/* 1. PUBLIC MARKETING & AUTHENTICATION VIEWS (Signed Out) */}
-      {isPublicView && (
+      {!isAdminView && isPublicView && (
         <div className="flex-1 flex flex-col">
           {/* Public Navbar shown ONLY for Landing Page */}
           {currentPath === '/' && (
@@ -753,7 +762,7 @@ function MainApp() {
       )}
 
       {/* 3. AUTHENTICATED PLATFORM SHELL (Signed In) */}
-      {!isPublicView && !isOnboardingView && (
+      {!isAdminView && !isPublicView && !isOnboardingView && (
         <PlatformShell
           currentPath={currentPath}
           onNavigate={(route) => {

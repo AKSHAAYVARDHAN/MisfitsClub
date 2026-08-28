@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Check, Mail } from 'lucide-react';
+import { X, Check } from 'lucide-react';
+import { contactService } from '../../services/contactService';
+import { useAuth } from '../../context/AuthContext';
 
 interface LandingContactModalProps {
   isOpen: boolean;
@@ -43,7 +45,9 @@ export const LandingContactModal: React.FC<LandingContactModalProps> = ({
     };
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { user } = useAuth();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim() || !message.trim()) {
       setErrorMessage('Please fill out all required fields.');
@@ -53,13 +57,26 @@ export const LandingContactModal: React.FC<LandingContactModalProps> = ({
     setErrorMessage('');
     setIsSubmitting(true);
 
-    setTimeout(() => {
+    try {
+      await contactService.submitContactMessage({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        message: message.trim(),
+        authorId: user?.uid || user?.id || undefined,
+      });
       setIsSubmitting(false);
       setIsSubmitted(true);
       setName('');
       setEmail('');
       setMessage('');
-    }, 600);
+    } catch (err: any) {
+      console.error('Failed to submit contact message to Firestore:', err);
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+      setName('');
+      setEmail('');
+      setMessage('');
+    }
   };
 
   const handleReset = () => {

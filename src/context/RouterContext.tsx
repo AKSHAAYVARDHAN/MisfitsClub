@@ -13,7 +13,8 @@ export type AppRoute =
   | '/messages'
   | '/my-space'
   | '/profile'
-  | '/onboarding';
+  | '/onboarding'
+  | '/admin';
 
 interface RouterContextType {
   currentPath: AppRoute;
@@ -29,6 +30,7 @@ function normalizePath(rawPath: string): AppRoute {
   if (path === '' || path === '/' || path === '/landing') return '/';
   if (path === '/signin' || path === '/login') return '/signin';
   if (path === '/signup' || path === '/register' || path === '/join') return '/signup';
+  if (path === '/admin' || path.startsWith('/admin/')) return '/admin';
   if (path === '/orb') return '/orb';
   if (path === '/discover') return '/discover';
   if (
@@ -115,14 +117,19 @@ export const RouterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     // Wait until initial auth loading has completed to avoid race conditions or redirect flashes
     if (isLoading) return;
 
-    const publicRoutes: AppRoute[] = ['/', '/signin', '/signup'];
+    const publicRoutes: AppRoute[] = ['/', '/signin', '/signup', '/admin'];
 
     // CASE 1: Signed-Out User
     if (!isAuthenticated || !userId) {
-      // If signed out and trying to access any protected authenticated route or onboarding
+      // If signed out and trying to access any protected authenticated route or onboarding (except /admin which has its own access portal)
       if (!publicRoutes.includes(currentPath)) {
         navigate('/signin', { replace: true });
       }
+      return;
+    }
+
+    // Special case: /admin is a dedicated staff portal and should not be intercepted
+    if (currentPath === '/admin') {
       return;
     }
 

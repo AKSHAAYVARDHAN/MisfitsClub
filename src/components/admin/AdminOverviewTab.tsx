@@ -31,7 +31,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
       value: metrics.totalUsers,
       subtext: 'Across all global hubs',
       icon: Users,
-      action: () => onNavigateTab('roles'),
+      action: () => onNavigateTab('members'),
       color: 'text-[#D4FF3F]',
       badge: 'Live',
     },

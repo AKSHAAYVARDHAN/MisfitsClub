@@ -19,19 +19,32 @@ import { adminService } from '../../services/adminService';
 import { AdminRole, StaffMember, PlatformMetric } from '../../types';
 import { AdminAccessDenied } from './AdminAccessDenied';
 import { AdminOverviewTab } from './AdminOverviewTab';
+import { AdminMembersTab } from './AdminMembersTab';
 import { AdminRolesTab } from './AdminRolesTab';
 import { AdminInboxTab } from './AdminInboxTab';
 import { AdminModerationTab } from './AdminModerationTab';
 import { AdminAuditTab } from './AdminAuditTab';
 import { AuthModal } from '../AuthModal';
 
+export type AdminTab = 'overview' | 'members' | 'inbox' | 'moderation' | 'roles' | 'audit';
+
 export const AdminDashboard: React.FC = () => {
   const { user, isAuthenticated, signOut, isLoading: authLoading } = useAuth();
   const { navigate } = useRouter();
 
+  const parseTabFromPath = (): AdminTab => {
+    const path = window.location.pathname.toLowerCase();
+    if (path === '/admin/members') return 'members';
+    if (path === '/admin/inbox') return 'inbox';
+    if (path === '/admin/moderation') return 'moderation';
+    if (path === '/admin/team' || path === '/admin/roles') return 'roles';
+    if (path === '/admin/audit') return 'audit';
+    return 'overview';
+  };
+
   const [staffRole, setStaffRole] = useState<StaffMember | null>(null);
   const [isVerifying, setIsVerifying] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'roles' | 'inbox' | 'moderation' | 'audit'>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>(parseTabFromPath);
   const [metrics, setMetrics] = useState<PlatformMetric>({
     totalUsers: 0,
     totalSparks: 0,
@@ -43,6 +56,27 @@ export const AdminDashboard: React.FC = () => {
   });
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const handleTabChange = (tab: AdminTab) => {
+    setActiveTab(tab);
+    const targetPath =
+      tab === 'overview'
+        ? '/admin'
+        : tab === 'roles'
+        ? '/admin/team'
+        : `/admin/${tab}`;
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState(null, '', targetPath);
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setActiveTab(parseTabFromPath());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const uid = user?.uid || user?.id;
 
@@ -146,20 +180,38 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const navItems = [
+  const navItems: { id: AdminTab; label: string; icon: any; badge?: number }[] = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'members', label: 'Members', icon: Users, badge: metrics.totalUsers },
     { id: 'inbox', label: 'Triage Inbox', icon: Mail, badge: metrics.pendingFeedbackCount + metrics.pendingContactCount },
     { id: 'moderation', label: 'Moderation', icon: Sparkles },
-    { id: 'roles', label: 'Team & RBAC', icon: Users, badge: staffList.length },
+    { id: 'roles', label: 'Team & RBAC', icon: ShieldCheck, badge: staffList.length },
     { id: 'audit', label: 'Audit Trail', icon: History },
   ];
+
+  const getBreadcrumbLabel = (tab: AdminTab) => {
+    switch (tab) {
+      case 'overview':
+        return 'OVERVIEW';
+      case 'members':
+        return 'MEMBERS';
+      case 'inbox':
+        return 'TRIAGE INBOX';
+      case 'moderation':
+        return 'MODERATION';
+      case 'roles':
+        return 'TEAM & RBAC';
+      case 'audit':
+        return 'AUDIT TRAIL';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#08080A] text-[#F5F5F0] font-sans-clean selection:bg-[#D4FF3F] selection:text-[#08080A] flex flex-col">
       {/* Admin Command Topbar */}
       <header className="sticky top-0 z-40 bg-[#0E0E12]/95 backdrop-blur-md border-b border-[#F5F5F0]/10 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
-        {/* Left Branding */}
-        <div className="flex items-center gap-3">
+        {/* Left Branding & Dynamic Breadcrumb */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <div className="w-2.5 h-2.5 bg-[#D4FF3F] rotate-45" />
           <span className="font-mono-code text-xs uppercase tracking-widest text-[#F5F5F0] font-bold">
             MISFITS CLUB
@@ -168,8 +220,12 @@ export const AdminDashboard: React.FC = () => {
           <span className="text-xs text-[#969696] font-mono-code uppercase">
             ADMIN TERMINAL
           </span>
+          <span className="text-xs text-[#64646E] font-mono-code">/</span>
+          <span className="text-xs text-[#D4FF3F] font-mono-code uppercase font-bold tracking-wider">
+            {getBreadcrumbLabel(activeTab)}
+          </span>
           <span
-            className={`text-[10px] font-mono-code font-bold uppercase tracking-wider px-2 py-0.5 border ${roleBadgeStyle(
+            className={`text-[10px] font-mono-code font-bold uppercase tracking-wider px-2 py-0.5 border ml-1 ${roleBadgeStyle(
               staffRole.role
             )}`}
           >
@@ -214,7 +270,7 @@ export const AdminDashboard: React.FC = () => {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id as any)}
+                onClick={() => handleTabChange(item.id)}
                 className={`px-4 py-2.5 text-xs font-mono-code uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-2 border-b-2 ${
                   isActive
                     ? 'border-[#D4FF3F] text-[#D4FF3F] font-bold bg-[#14141A]'
@@ -254,7 +310,22 @@ export const AdminDashboard: React.FC = () => {
               <AdminOverviewTab
                 metrics={metrics}
                 currentStaff={staffRole}
-                onNavigateTab={(t) => setActiveTab(t as any)}
+                onNavigateTab={(t) => handleTabChange(t as AdminTab)}
+              />
+            </motion.div>
+          )}
+
+          {activeTab === 'members' && (
+            <motion.div
+              key="members"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <AdminMembersTab
+                currentStaff={staffRole}
+                onRefreshMetrics={handleRefreshAll}
               />
             </motion.div>
           )}

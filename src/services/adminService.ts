@@ -215,6 +215,85 @@ export const adminService = {
   },
 
   /**
+   * Fetch all registered club members directly from users collection (Authorized Staff only)
+   */
+  async getAllMembers(): Promise<UserProfile[]> {
+    try {
+      const snap = await getDocs(collection(db, 'users'));
+      const list: UserProfile[] = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        list.push({
+          id: d.id,
+          uid: data.uid || d.id,
+          name: data.name || 'Anonymous Builder',
+          email: data.email || '',
+          handle: data.handle || '',
+          role: data.role || 'Member',
+          bio: data.bio || '',
+          skills: Array.isArray(data.skills) ? data.skills : [],
+          interests: Array.isArray(data.interests) ? data.interests : [],
+          curiousAbout: Array.isArray(data.curiousAbout) ? data.curiousAbout : [],
+          intents: Array.isArray(data.intents) ? data.intents : [],
+          college: data.college || '',
+          department: data.department || '',
+          year: data.year || '',
+          location: data.location || (data.city ? `${data.city}, ${data.country || ''}` : ''),
+          city: data.city || '',
+          country: data.country || '',
+          avatarUrl: data.avatarUrl || data.profilePhoto || '',
+          profilePhoto: data.profilePhoto || data.avatarUrl || '',
+          onboardingCompleted: data.onboardingCompleted ?? true,
+          joinedDate: data.joinedDate || data.createdAt || '',
+          createdAt: data.createdAt || data.joinedDate || '',
+          updatedAt: data.updatedAt || '',
+          tagline: data.tagline || '',
+          building: data.building || '',
+          learning: data.learning || '',
+          openQuestion: data.openQuestion || '',
+          links: data.links || {},
+        });
+      });
+      return list;
+    } catch (err) {
+      console.warn('Failed to load members from Firestore:', err);
+      return [];
+    }
+  },
+
+  /**
+   * Delete a member document (Authorized Owner or Admin only)
+   */
+  async deleteMember(
+    actor: { uid: string; email?: string; role: AdminRole },
+    target: { uid: string; email?: string; name: string }
+  ): Promise<void> {
+    const userPath = `users/${target.uid}`;
+    try {
+      await deleteDoc(doc(db, 'users', target.uid));
+      
+      // Also attempt cleanup of public profile if present
+      try {
+        await deleteDoc(doc(db, 'publicProfiles', target.uid));
+      } catch (pubErr) {
+        console.warn('Public profile cleanup note:', pubErr);
+      }
+
+      await this.createAuditLog({
+        actorId: actor.uid,
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        action: 'MEMBER_RECORD_DELETED',
+        targetType: 'MEMBER',
+        targetId: target.uid,
+        details: `Deleted member account for ${target.name} (${target.email || target.uid})`,
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, userPath);
+    }
+  },
+
+  /**
    * Fetch aggregate platform metrics
    */
   async getPlatformMetrics(): Promise<PlatformMetric> {

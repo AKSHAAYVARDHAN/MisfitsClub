@@ -373,7 +373,7 @@ export const adminService = {
   },
 
   /**
-   * Retrieve all moderation reports
+   * Retrieve real moderation reports
    */
   async getAllReports(): Promise<ModerationReport[]> {
     try {
@@ -382,43 +382,6 @@ export const adminService = {
       snap.forEach((d) => {
         list.push({ id: d.id, ...(d.data() as any) });
       });
-
-      // If empty, provide high-signal default seed items so admins have immediate operational visibility
-      if (list.length === 0) {
-        return [
-          {
-            id: 'rep_seed_1',
-            targetType: 'SPARK',
-            targetId: 'spark_sample_1',
-            targetTitle: 'AI Agents vs Human Designers',
-            targetSnippet: 'Are human designers obsolete in 2026? Discussing whether UI code automation removes the soul.',
-            reporterId: 'usr_reporter_1',
-            reporterName: 'Sofia Chen',
-            reporterEmail: 'sofia@stanford.edu',
-            reportedUserId: 'usr_target_1',
-            reportedUserName: 'Marcus Ray',
-            reason: 'Potential promotional spam or repetitive low-effort post.',
-            severity: 'LOW',
-            status: 'OPEN',
-            createdAt: new Date(Date.now() - 3600 * 1000 * 2).toISOString(),
-          },
-          {
-            id: 'rep_seed_2',
-            targetType: 'MEMBER',
-            targetId: 'usr_suspicious_1',
-            targetTitle: 'Crypto Bot Account',
-            targetSnippet: 'Bio contains suspicious high-frequency referral links.',
-            reporterId: 'usr_reporter_2',
-            reporterName: 'Devon Miles',
-            reportedUserId: 'usr_target_2',
-            reportedUserName: 'ApexTradingLab',
-            reason: 'Commercial solicitation violation of community guidelines.',
-            severity: 'HIGH',
-            status: 'IN_REVIEW',
-            createdAt: new Date(Date.now() - 3600 * 1000 * 18).toISOString(),
-          },
-        ];
-      }
 
       list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
       return list;
@@ -566,17 +529,161 @@ export const adminService = {
   },
 
   /**
-   * Fetch aggregate platform metrics
+   * Retrieve contextual connections for a specific member
+   */
+  async getMemberConnections(memberUid: string): Promise<AdminConnectionItem[]> {
+    try {
+      const map = new Map<string, AdminConnectionItem>();
+
+      try {
+        const qArray = query(collection(db, 'connections'), where('participants', 'array-contains', memberUid));
+        const snapArray = await getDocs(qArray);
+        snapArray.forEach((d) => {
+          const data = d.data();
+          const reqSummary = data.requesterSummary || {};
+          const tgtSummary = data.targetSummary || {};
+          map.set(d.id, {
+            id: d.id,
+            requesterId: data.requesterId || reqSummary.id || '',
+            requesterName: reqSummary.name || data.requesterName || 'Builder',
+            requesterAvatar: reqSummary.avatarUrl || reqSummary.profilePhoto,
+            requesterRole: reqSummary.role,
+            targetId: data.targetId || tgtSummary.id || '',
+            targetName: tgtSummary.name || data.targetName || 'Builder',
+            targetAvatar: tgtSummary.avatarUrl || tgtSummary.profilePhoto,
+            targetRole: tgtSummary.role,
+            status: data.status || 'pending',
+            introNote: data.introNote || '',
+            createdAt: data.createdAt || '',
+            updatedAt: data.updatedAt || '',
+          });
+        });
+      } catch (err) {
+        console.warn('Participant array query note:', err);
+      }
+
+      if (map.size === 0) {
+        const [reqSnap, tgtSnap] = await Promise.all([
+          getDocs(query(collection(db, 'connections'), where('requesterId', '==', memberUid))),
+          getDocs(query(collection(db, 'connections'), where('targetId', '==', memberUid))),
+        ]);
+
+        reqSnap.forEach((d) => {
+          const data = d.data();
+          const reqSummary = data.requesterSummary || {};
+          const tgtSummary = data.targetSummary || {};
+          map.set(d.id, {
+            id: d.id,
+            requesterId: data.requesterId || reqSummary.id || '',
+            requesterName: reqSummary.name || data.requesterName || 'Builder',
+            requesterAvatar: reqSummary.avatarUrl || reqSummary.profilePhoto,
+            requesterRole: reqSummary.role,
+            targetId: data.targetId || tgtSummary.id || '',
+            targetName: tgtSummary.name || data.targetName || 'Builder',
+            targetAvatar: tgtSummary.avatarUrl || tgtSummary.profilePhoto,
+            targetRole: tgtSummary.role,
+            status: data.status || 'pending',
+            introNote: data.introNote || '',
+            createdAt: data.createdAt || '',
+            updatedAt: data.updatedAt || '',
+          });
+        });
+
+        tgtSnap.forEach((d) => {
+          const data = d.data();
+          const reqSummary = data.requesterSummary || {};
+          const tgtSummary = data.targetSummary || {};
+          map.set(d.id, {
+            id: d.id,
+            requesterId: data.requesterId || reqSummary.id || '',
+            requesterName: reqSummary.name || data.requesterName || 'Builder',
+            requesterAvatar: reqSummary.avatarUrl || reqSummary.profilePhoto,
+            requesterRole: reqSummary.role,
+            targetId: data.targetId || tgtSummary.id || '',
+            targetName: tgtSummary.name || data.targetName || 'Builder',
+            targetAvatar: tgtSummary.avatarUrl || tgtSummary.profilePhoto,
+            targetRole: tgtSummary.role,
+            status: data.status || 'pending',
+            introNote: data.introNote || '',
+            createdAt: data.createdAt || '',
+            updatedAt: data.updatedAt || '',
+          });
+        });
+      }
+
+      const list = Array.from(map.values());
+      list.sort((a, b) => (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''));
+      return list;
+    } catch (err) {
+      console.warn('Failed to query member connections:', err);
+      return [];
+    }
+  },
+
+  /**
+   * Retrieve sparks authored by a specific member
+   */
+  async getMemberSparks(memberUid: string): Promise<any[]> {
+    try {
+      const snap = await getDocs(collection(db, 'boardPosts'));
+      const list: any[] = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        if (
+          data.authorId === memberUid ||
+          data.userId === memberUid ||
+          data.author?.uid === memberUid ||
+          data.author?.id === memberUid
+        ) {
+          list.push({ id: d.id, ...data });
+        }
+      });
+      list.sort((a, b) => (b.createdAt || b.timestamp || '').localeCompare(a.createdAt || a.timestamp || ''));
+      return list;
+    } catch (err) {
+      console.warn('Failed to query member sparks:', err);
+      return [];
+    }
+  },
+
+  /**
+   * Retrieve spaces affiliated with a specific member
+   */
+  async getMemberSpaces(memberUid: string): Promise<any[]> {
+    try {
+      const snap = await getDocs(collection(db, 'spaces'));
+      const list: any[] = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        if (
+          data.creatorId === memberUid ||
+          data.authorId === memberUid ||
+          (Array.isArray(data.members) && data.members.includes(memberUid))
+        ) {
+          list.push({ id: d.id, ...data });
+        }
+      });
+      list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      return list;
+    } catch (err) {
+      console.warn('Failed to query member spaces:', err);
+      return [];
+    }
+  },
+
+  /**
+   * Fetch aggregate platform metrics from live collections
    */
   async getPlatformMetrics(): Promise<PlatformMetric> {
     try {
-      const [usersSnap, sparksSnap, spacesSnap, feedbackSnap, contactsSnap, staffSnap] = await Promise.all([
+      const [usersSnap, sparksSnap, spacesSnap, feedbackSnap, contactsSnap, staffSnap, connectionsSnap] = await Promise.all([
         getDocs(collection(db, 'users')),
         getDocs(collection(db, 'boardPosts')),
         getDocs(collection(db, 'spaces')),
         getDocs(collection(db, 'feedback')),
         getDocs(collection(db, 'contactMessages')),
         getDocs(collection(db, 'adminRoles')),
+        getDocs(collection(db, 'connections')),
       ]);
 
       let pendingFeedback = 0;
@@ -599,21 +706,21 @@ export const adminService = {
         totalUsers: usersSnap.size,
         totalSparks: sparksSnap.size,
         totalSpaces: spacesSnap.size,
-        totalConnections: Math.max(12, usersSnap.size * 2),
+        totalConnections: connectionsSnap.size,
         pendingFeedbackCount: pendingFeedback,
         pendingContactCount: pendingContacts,
         activeStaffCount: staffSnap.size,
       };
     } catch (err) {
-      console.warn('Metrics calculation fallback:', err);
+      console.warn('Metrics calculation error:', err);
       return {
-        totalUsers: 24,
-        totalSparks: 18,
-        totalSpaces: 6,
-        totalConnections: 42,
-        pendingFeedbackCount: 2,
-        pendingContactCount: 1,
-        activeStaffCount: 1,
+        totalUsers: 0,
+        totalSparks: 0,
+        totalSpaces: 0,
+        totalConnections: 0,
+        pendingFeedbackCount: 0,
+        pendingContactCount: 0,
+        activeStaffCount: 0,
       };
     }
   },

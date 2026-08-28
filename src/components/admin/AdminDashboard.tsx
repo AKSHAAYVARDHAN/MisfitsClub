@@ -12,8 +12,7 @@ import {
   RefreshCw,
   Layers,
   Lock,
-  ShieldAlert,
-  Share2,
+  ShieldAlert, 
   Zap,
   Settings,
   Menu,
@@ -30,7 +29,6 @@ import { AdminOverviewTab } from './AdminOverviewTab';
 import { AdminMembersTab } from './AdminMembersTab';
 import { AdminReportsTab } from './AdminReportsTab';
 import { AdminSparksTab } from './AdminSparksTab';
-import { AdminConnectionsTab } from './AdminConnectionsTab';
 import { AdminInboxTab } from './AdminInboxTab';
 import { AdminAuditTab } from './AdminAuditTab';
 import { AdminSystemTab } from './AdminSystemTab';
@@ -42,7 +40,6 @@ export type AdminTab =
   | 'members' 
   | 'reports' 
   | 'sparks' 
-  | 'connections' 
   | 'inbox' 
   | 'audit' 
   | 'system' 
@@ -57,7 +54,6 @@ export const AdminDashboard: React.FC = () => {
     if (path === '/admin/members') return 'members';
     if (path === '/admin/reports' || path === '/admin/moderation') return 'reports';
     if (path === '/admin/sparks') return 'sparks';
-    if (path === '/admin/connections') return 'connections';
     if (path === '/admin/inbox') return 'inbox';
     if (path === '/admin/audit') return 'audit';
     if (path === '/admin/system' || path === '/admin/broadcasts') return 'system';
@@ -211,7 +207,6 @@ export const AdminDashboard: React.FC = () => {
       group: 'COMMUNITY',
       items: [
         { id: 'members' as AdminTab, label: 'Members', icon: Users, badge: metrics.totalUsers },
-        { id: 'connections' as AdminTab, label: 'Connections', icon: Share2, badge: metrics.totalConnections },
         { id: 'sparks' as AdminTab, label: 'Sparks & Spaces', icon: Sparkles, badge: metrics.totalSparks },
       ],
     },
@@ -238,7 +233,6 @@ export const AdminDashboard: React.FC = () => {
       case 'members': return 'MEMBERS';
       case 'reports': return 'MODERATION REPORTS';
       case 'sparks': return 'SPARKS & CONTENT';
-      case 'connections': return 'CONNECTIONS GRAPH';
       case 'inbox': return 'TRIAGE INBOX';
       case 'audit': return 'SECURITY AUDIT LOG';
       case 'system': return 'SYSTEM & BROADCASTS';
@@ -484,21 +478,6 @@ export const AdminDashboard: React.FC = () => {
                 transition={{ duration: 0.15 }}
               >
                 <AdminSparksTab
-                  currentStaff={staffRole}
-                  onRefreshMetrics={handleRefreshAll}
-                />
-              </motion.div>
-            )}
-
-            {activeTab === 'connections' && (
-              <motion.div
-                key="connections"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.15 }}
-              >
-                <AdminConnectionsTab
                   currentStaff={staffRole}
                   onRefreshMetrics={handleRefreshAll}
                 />

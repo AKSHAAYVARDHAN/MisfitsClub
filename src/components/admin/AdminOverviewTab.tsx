@@ -15,7 +15,6 @@ import {
   CheckCircle2,
   Filter,
   UserCheck,
-  Share2,
   ChevronRight
 } from 'lucide-react';
 import { PlatformMetric, StaffMember, ModerationReport, FeedbackItem, ContactMessageItem } from '../../types';
@@ -151,16 +150,6 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
       color: 'text-amber-400',
     },
     {
-      id: 'connections',
-      label: 'CONNECTIONS',
-      value: metrics.totalConnections.toLocaleString(),
-      subtext: 'Network Graph Matches',
-      icon: Share2,
-      action: () => onNavigateTab('connections'),
-      badge: 'Healthy',
-      color: 'text-blue-400',
-    },
-    {
       id: 'inbox',
       label: 'PENDING INBOX',
       value: (metrics.pendingFeedbackCount + metrics.pendingContactCount).toString(),
@@ -206,7 +195,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-mono-code uppercase tracking-widest text-[#969696] font-bold">
-            Platform KPI Metrics
+            Platform Attention & KPI Metrics
           </h3>
           <span className="text-[11px] font-mono-code text-[#64646E] flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF3F] animate-pulse" />
@@ -214,7 +203,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {statKPIs.map((kpi) => {
             const Icon = kpi.icon;
             return (

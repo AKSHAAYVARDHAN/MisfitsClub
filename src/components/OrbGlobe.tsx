@@ -314,22 +314,37 @@ export const OrbGlobe = forwardRef<OrbGlobeRef, OrbGlobeProps>(({
     }
 
     // Resize Handler
+    let resizeRafId: number | null = null;
     const handleResize = () => {
       if (!containerRef.current || !threeRef.current) return;
       const newWidth = containerRef.current.clientWidth;
       const newHeight = containerRef.current.clientHeight;
 
+      if (newWidth <= 0 || newHeight <= 0) return;
+
       threeRef.current.camera.aspect = newWidth / newHeight;
       threeRef.current.camera.updateProjectionMatrix();
-      threeRef.current.renderer.setSize(newWidth, newHeight);
+      threeRef.current.renderer.setSize(newWidth, newHeight, false);
     };
 
-    const resizeObserver = new ResizeObserver(() => handleResize());
-    resizeObserver.observe(containerRef.current);
+    const resizeObserver = new ResizeObserver(() => {
+      if (resizeRafId !== null) {
+        cancelAnimationFrame(resizeRafId);
+      }
+      resizeRafId = requestAnimationFrame(() => {
+        handleResize();
+      });
+    });
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
 
     return () => {
       if (threeRef.current?.animId) {
         cancelAnimationFrame(threeRef.current.animId);
+      }
+      if (resizeRafId !== null) {
+        cancelAnimationFrame(resizeRafId);
       }
       resizeObserver.disconnect();
       renderer.dispose();

@@ -35,6 +35,7 @@ import { MySpaceView } from './components/MySpaceView';
 import { ProfileView } from './components/ProfileView';
 import { SignInView } from './components/SignInView';
 import { SignUpView } from './components/SignUpView';
+import { ResetPasswordView } from './components/ResetPasswordView';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 
 const INITIAL_SAMPLE_CONNECTIONS: Connection[] = [
@@ -686,7 +687,7 @@ function MainApp() {
   const activeConnectionsCount = connections.filter((c) => c.status === 'connected').length;
   const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
 
-  const isPublicView = currentPath === '/' || currentPath === '/signin' || currentPath === '/signup';
+  const isPublicView = currentPath === '/' || currentPath === '/signin' || currentPath === '/signup' || currentPath === '/reset-password';
   const isOnboardingView = currentPath === '/onboarding';
   const isAdminView = currentPath === '/admin';
 
@@ -744,6 +745,14 @@ function MainApp() {
                 onSuccess={handleAuthSuccess}
                 onNavigateToSignIn={() => navigate('/signin')}
                 onClose={() => navigate('/')}
+              />
+            )}
+
+            {/* Password Reset / Firebase Action Handler View */}
+            {currentPath === '/reset-password' && (
+              <ResetPasswordView
+                onNavigateToSignIn={() => navigate('/signin')}
+                onClose={() => navigate('/signin')}
               />
             )}
           </main>

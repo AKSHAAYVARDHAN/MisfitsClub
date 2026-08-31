@@ -24,11 +24,17 @@ export const SignInView: React.FC<SignInViewProps> = ({
   const [forgotSent, setForgotSent] = useState(false);
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
-      setError('Please enter your email or member handle');
+      setError('Please enter your email or member handle.');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your password.');
       return;
     }
     setError(null);
@@ -60,22 +66,19 @@ export const SignInView: React.FC<SignInViewProps> = ({
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!forgotEmail) return;
-    await authService.forgotPassword(forgotEmail);
-    setForgotSent(true);
-  };
-
-  const handleQuickLogin = async (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword('password123');
-    setIsLoading(true);
+    if (!forgotEmail || !forgotEmail.trim()) {
+      setForgotError('Please enter your email address.');
+      return;
+    }
+    setForgotError(null);
+    setForgotLoading(true);
     try {
-      const user = await signIn(demoEmail, 'password123');
-      onSuccess(user);
+      await authService.forgotPassword(forgotEmail);
+      setForgotSent(true);
     } catch (err: any) {
-      setError(err?.message || 'Quick login failed');
+      setForgotError(err?.message || 'Unable to send password reset email.');
     } finally {
-      setIsLoading(false);
+      setForgotLoading(false);
     }
   };
 
@@ -210,29 +213,6 @@ export const SignInView: React.FC<SignInViewProps> = ({
           <span>{isGoogleLoading ? 'Connecting...' : 'CONTINUE WITH GOOGLE'}</span>
         </button>
 
-        {/* Quick Demo Switcher */}
-        <div className="mt-6 pt-5 border-t border-[#1C1C1C]">
-          <span className="block text-[9px] font-mono-code uppercase tracking-widest text-[#8A8A8A] mb-2.5">
-            Instant Demo Profiles:
-          </span>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('maya@misfits.club')}
-              className="px-2.5 py-1.5 bg-[#101010] border border-[#242424] text-[10px] text-[#8A8A8A] hover:text-[#F2F2ED] hover:border-[#D4FF3F]/50 transition-colors text-left truncate font-mono-code"
-            >
-              Maya · Storyteller
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('alex@misfits.club')}
-              className="px-2.5 py-1.5 bg-[#101010] border border-[#242424] text-[10px] text-[#8A8A8A] hover:text-[#F2F2ED] hover:border-[#D4FF3F]/50 transition-colors text-left truncate font-mono-code"
-            >
-              Alex · AI Hacker
-            </button>
-          </div>
-        </div>
-
         {/* Bottom Switch to Sign Up */}
         <div className="mt-8 pt-4 border-t border-[#242424] text-center">
           <p className="text-xs text-[#8A8A8A] font-sans-clean">
@@ -253,15 +233,16 @@ export const SignInView: React.FC<SignInViewProps> = ({
       {/* Forgot Password Modal */}
       {isForgotModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0B0B0B] border border-[#242424] max-w-sm w-full p-6 text-left shadow-2xl">
+          <div className="bg-[#0B0B0B] border border-[#242424] max-w-sm w-full p-6 text-left shadow-2xl relative">
             <div className="flex items-center justify-between mb-4">
               <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#D4FF3F]">
-                PASSWORD RESET
+                PASSWORD RECOVERY
               </span>
               <button
                 onClick={() => {
                   setIsForgotModalOpen(false);
                   setForgotSent(false);
+                  setForgotError(null);
                 }}
                 className="text-xs text-[#8A8A8A] hover:text-[#F2F2ED]"
               >
@@ -269,36 +250,49 @@ export const SignInView: React.FC<SignInViewProps> = ({
               </button>
             </div>
 
+            {forgotError && (
+              <div className="mb-4 p-2.5 bg-red-950/40 border border-red-800/50 flex items-start gap-2 text-xs text-red-300">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span className="font-sans-clean">{forgotError}</span>
+              </div>
+            )}
+
             {forgotSent ? (
               <div className="py-4 text-center">
                 <div className="w-10 h-10 rounded-full bg-[#141414] border border-[#D4FF3F]/40 flex items-center justify-center mx-auto mb-3">
                   <Check className="w-4 h-4 text-[#D4FF3F]" />
                 </div>
-                <h4 className="text-sm font-bold uppercase tracking-wider text-[#F2F2ED] mb-1">
+                <h4 className="text-sm font-bold uppercase tracking-wider text-[#F2F2ED] mb-1 font-mono-code">
                   RESET LINK SENT
                 </h4>
                 <p className="text-xs text-[#8A8A8A] font-sans-clean leading-relaxed">
-                  We sent instructions to <strong className="text-[#F2F2ED]">{forgotEmail}</strong>.
+                  We sent recovery instructions to <strong className="text-[#F2F2ED]">{forgotEmail}</strong>. Click the link in your email to choose a new password.
                 </p>
                 <button
-                  onClick={() => setIsForgotModalOpen(false)}
-                  className="mt-5 w-full bg-[#F2F2ED] text-[#080808] py-2 text-xs font-mono-code font-bold uppercase tracking-wider hover:bg-[#D4FF3F]"
+                  onClick={() => {
+                    setIsForgotModalOpen(false);
+                    setForgotSent(false);
+                  }}
+                  className="mt-5 w-full bg-[#D4FF3F] text-[#080808] py-2.5 text-xs font-mono-code font-bold uppercase tracking-wider hover:bg-[#F2F2ED] transition-colors"
                 >
-                  CLOSE
+                  RETURN TO SIGN IN
                 </button>
               </div>
             ) : (
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <p className="text-xs text-[#8A8A8A] font-sans-clean leading-relaxed">
-                  Enter your email address to receive password recovery instructions.
+                  Enter your registered account email. We will send you a secure link to reset your password.
                 </p>
                 <div>
                   <input
                     type="email"
                     required
                     value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    placeholder="your@email.com"
+                    onChange={(e) => {
+                      setForgotEmail(e.target.value);
+                      setForgotError(null);
+                    }}
+                    placeholder="you@domain.com"
                     className="w-full bg-[#121212] border border-[#242424] px-3.5 py-2.5 text-xs text-[#F2F2ED] placeholder-[#8A8A8A]/40 focus:border-[#D4FF3F] focus:outline-none"
                     autoFocus
                   />
@@ -306,16 +300,20 @@ export const SignInView: React.FC<SignInViewProps> = ({
                 <div className="flex gap-2 pt-2">
                   <button
                     type="button"
-                    onClick={() => setIsForgotModalOpen(false)}
+                    onClick={() => {
+                      setIsForgotModalOpen(false);
+                      setForgotError(null);
+                    }}
                     className="flex-1 border border-[#242424] py-2 text-xs font-mono-code uppercase tracking-wider text-[#8A8A8A] hover:text-[#F2F2ED]"
                   >
                     CANCEL
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 bg-[#D4FF3F] text-[#080808] py-2 text-xs font-mono-code font-bold uppercase tracking-wider hover:bg-[#F2F2ED]"
+                    disabled={forgotLoading}
+                    className="flex-1 bg-[#D4FF3F] text-[#080808] py-2 text-xs font-mono-code font-bold uppercase tracking-wider hover:bg-[#F2F2ED] disabled:opacity-50"
                   >
-                    SEND LINK
+                    {forgotLoading ? 'SENDING...' : 'SEND LINK'}
                   </button>
                 </div>
               </form>

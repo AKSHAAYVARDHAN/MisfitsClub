@@ -36,15 +36,15 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError('Please provide your name or preferred moniker');
+      setError('Please enter your name.');
       return;
     }
     if (!email.trim() || !email.includes('@')) {
-      setError('Please provide a valid email address');
+      setError('Please enter a valid email address.');
       return;
     }
     if (password.length < 6) {
-      setError('Password should be at least 6 characters');
+      setError('Choose a stronger password.');
       return;
     }
 

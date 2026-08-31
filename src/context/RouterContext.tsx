@@ -5,6 +5,7 @@ export type AppRoute =
   | '/'
   | '/signin'
   | '/signup'
+  | '/reset-password'
   | '/orb'
   | '/discover'
   | '/board'
@@ -25,8 +26,25 @@ interface RouterContextType {
 const RouterContext = createContext<RouterContextType | undefined>(undefined);
 
 function normalizePath(rawPath: string): AppRoute {
+  // Check if this is a Firebase Auth Action or Password Reset link with query params
+  if (typeof window !== 'undefined') {
+    const search = window.location.search;
+    if (search.includes('oobCode=') || search.includes('mode=resetPassword') || search.includes('mode=verifyEmail')) {
+      return '/reset-password';
+    }
+  }
+
   const path = rawPath.split('?')[0].split('#')[0].toLowerCase();
   
+  if (
+    path === '/reset-password' || 
+    path === '/reset' || 
+    path === '/auth/action' || 
+    path === '/__/auth/action' ||
+    path.startsWith('/reset-password/')
+  ) {
+    return '/reset-password';
+  }
   if (path === '' || path === '/' || path === '/landing') return '/';
   if (path === '/signin' || path === '/login') return '/signin';
   if (path === '/signup' || path === '/register' || path === '/join') return '/signup';
@@ -77,7 +95,7 @@ export const RouterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   
   const [currentPath, setCurrentPath] = useState<AppRoute>(() => {
     if (typeof window !== 'undefined') {
-      return normalizePath(window.location.pathname);
+      return normalizePath(window.location.pathname + window.location.search);
     }
     return '/';
   });
@@ -101,7 +119,7 @@ export const RouterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   // Listen to browser forward/back buttons (popstate)
   useEffect(() => {
     const handlePopState = () => {
-      const path = normalizePath(window.location.pathname);
+      const path = normalizePath(window.location.pathname + window.location.search);
       setCurrentPath(path);
     };
 
@@ -117,7 +135,7 @@ export const RouterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     // Wait until initial auth loading has completed to avoid race conditions or redirect flashes
     if (isLoading) return;
 
-    const publicRoutes: AppRoute[] = ['/', '/signin', '/signup', '/admin'];
+    const publicRoutes: AppRoute[] = ['/', '/signin', '/signup', '/reset-password', '/admin'];
 
     // CASE 1: Signed-Out User
     if (!isAuthenticated || !userId) {
@@ -128,8 +146,8 @@ export const RouterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       return;
     }
 
-    // Special case: /admin is a dedicated staff portal and should not be intercepted
-    if (currentPath === '/admin') {
+    // Special case: /admin and /reset-password should not be intercepted
+    if (currentPath === '/admin' || currentPath === '/reset-password') {
       return;
     }
 
@@ -152,7 +170,7 @@ export const RouterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     // Authenticated routes (/orb, /discover, /board, /connections, /messages, /profile) remain directly accessible.
   }, [isLoading, isAuthenticated, userId, onboardingCompleted, currentPath, navigate]);
 
-  const isPublicRoute = currentPath === '/' || currentPath === '/signin' || currentPath === '/signup';
+  const isPublicRoute = currentPath === '/' || currentPath === '/signin' || currentPath === '/signup' || currentPath === '/reset-password';
 
   return (
     <RouterContext.Provider value={{ currentPath, navigate, isPublicRoute }}>

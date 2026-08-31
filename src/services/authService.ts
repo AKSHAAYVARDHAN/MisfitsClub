@@ -30,15 +30,27 @@ export function getFriendlyAuthErrorMessage(error: any): string {
   const code = error.code || '';
   const message = error.message || '';
 
+  if (
+    code === 'auth/account-exists-with-different-credential' ||
+    code === 'auth/credential-already-in-use' ||
+    message.includes('auth/account-exists-with-different-credential') ||
+    message.includes('auth/credential-already-in-use')
+  ) {
+    return 'An account already exists with this email using Google sign-in. Please continue with Google.';
+  }
+
   if (code === 'auth/operation-not-allowed' || message.includes('auth/operation-not-allowed')) {
     return 'Email and password authentication is currently unavailable.';
   }
+
   if (code === 'auth/email-already-in-use' || message.includes('auth/email-already-in-use')) {
-    return 'An account with this email already exists. Try signing in instead.';
+    return 'An account with this email already exists. If you previously registered with Google, please click "Continue with Google"; otherwise, sign in with your password.';
   }
+
   if (code === 'auth/user-not-found' || message.includes('auth/user-not-found')) {
     return 'No Misfits Club account was found with this email.';
   }
+
   if (
     code === 'auth/invalid-credential' ||
     code === 'auth/wrong-password' ||
@@ -47,27 +59,35 @@ export function getFriendlyAuthErrorMessage(error: any): string {
   ) {
     return 'The email or password is incorrect.';
   }
+
   if (code === 'auth/weak-password' || message.includes('auth/weak-password')) {
     return 'Choose a stronger password.';
   }
+
   if (code === 'auth/invalid-email' || message.includes('auth/invalid-email')) {
     return 'Please enter a valid email address.';
   }
+
   if (code === 'auth/expired-action-code' || message.includes('auth/expired-action-code')) {
     return 'This password reset link has expired. Please request a new one.';
   }
+
   if (code === 'auth/invalid-action-code' || message.includes('auth/invalid-action-code')) {
     return 'This password reset link is invalid or has already been used. Please request a new one.';
   }
+
   if (code === 'auth/user-disabled' || message.includes('auth/user-disabled')) {
     return 'This account has been disabled. Please contact support.';
   }
+
   if (code === 'auth/too-many-requests' || message.includes('auth/too-many-requests')) {
     return 'Access temporarily disabled due to too many failed attempts. Please try again later.';
   }
+
   if (code === 'auth/network-request-failed' || message.includes('auth/network-request-failed')) {
     return 'Unable to connect to Firebase. Check your connection and try again.';
   }
+
   if (
     code === 'auth/popup-closed-by-user' ||
     code === 'auth/cancelled-popup-request' ||

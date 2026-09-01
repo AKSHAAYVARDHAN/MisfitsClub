@@ -3,6 +3,7 @@ import { Space, UserProfile, PublicProfile } from '../types';
 import { spaceService } from '../services/spaceService';
 import { DiscussionFeed } from './DiscussionFeed';
 import { EditSpaceModal } from './EditSpaceModal';
+import { DeleteSpaceModal } from './DeleteSpaceModal';
 import { RemoveMemberModal } from './RemoveMemberModal';
 import { 
   ArrowLeft, 
@@ -18,7 +19,8 @@ import {
   MessageSquare,
   Edit3,
   UserMinus,
-  Settings
+  Settings,
+  Trash2
 } from 'lucide-react';
 
 interface SpaceDetailViewProps {
@@ -28,6 +30,7 @@ interface SpaceDetailViewProps {
   onBack: () => void;
   onSelectMember: (member: PublicProfile) => void;
   onStartMessage?: (recipientUid: string) => void;
+  onSpaceDeleted?: (spaceId: string) => void;
 }
 
 export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
@@ -37,6 +40,7 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
   onBack,
   onSelectMember,
   onStartMessage,
+  onSpaceDeleted,
 }) => {
   const [space, setSpace] = useState<Space | null>(initialSpace || null);
   const [members, setMembers] = useState<PublicProfile[]>([]);
@@ -50,6 +54,7 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
 
   // Host Management Modals
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<PublicProfile | null>(null);
   const [isRemovingMember, setIsRemovingMember] = useState(false);
 
@@ -205,18 +210,31 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
         </button>
 
         <div className="flex items-center gap-2">
-          {/* Host Edit Hub Button */}
+          {/* Host Actions: Edit and Delete Hub */}
           {isOwner && (
-            <button
-              id="space-detail-edit-hub-btn"
-              type="button"
-              onClick={() => setIsEditModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#141418] hover:bg-[#1E1E24] border border-[#D4FF3F]/40 hover:border-[#D4FF3F] text-xs font-mono-code text-[#D4FF3F] transition-all shadow-sm"
-              title="Edit Hub Settings and Details"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Edit Hub</span>
-            </button>
+            <>
+              <button
+                id="space-detail-edit-hub-btn"
+                type="button"
+                onClick={() => setIsEditModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#141418] hover:bg-[#1E1E24] border border-[#D4FF3F]/40 hover:border-[#D4FF3F] text-xs font-mono-code text-[#D4FF3F] transition-all shadow-sm"
+                title="Edit Hub Settings and Details"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Edit Hub</span>
+              </button>
+
+              <button
+                id="space-detail-delete-hub-btn"
+                type="button"
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#141418] hover:bg-red-950/40 border border-red-800/60 hover:border-red-600 text-xs font-mono-code text-red-400 hover:text-red-300 transition-all shadow-sm"
+                title="Delete this Hub"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Hub</span>
+              </button>
+            </>
           )}
 
           <button
@@ -353,6 +371,14 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
                   >
                     <Edit3 className="w-3.5 h-3.5 text-[#D4FF3F]" />
                     Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-[#1A1A20] hover:bg-red-950/40 border border-[#333] hover:border-red-800 text-xs font-mono-code text-red-400 hover:text-red-300 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete Hub
                   </button>
                 </div>
               ) : isMember ? (
@@ -599,6 +625,22 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
           onClose={() => setIsEditModalOpen(false)}
           onSpaceUpdated={(updated) => {
             setSpace(updated);
+          }}
+        />
+      )}
+
+      {/* Host Delete Hub Modal */}
+      {isOwner && currentUserId && (
+        <DeleteSpaceModal
+          space={space}
+          currentUserId={currentUserId}
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onDeleted={(deletedId) => {
+            if (onSpaceDeleted) {
+              onSpaceDeleted(deletedId);
+            }
+            onBack();
           }}
         />
       )}

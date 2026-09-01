@@ -58,6 +58,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
   const [membershipTab, setMembershipTab] = useState<'all' | 'my-spaces'>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeSpace, setActiveSpace] = useState<Space | null>(null);
+  const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
   const [showRefinePanel, setShowRefinePanel] = useState<boolean>(false);
   const [showDesktopRefine, setShowDesktopRefine] = useState<boolean>(false);
 
@@ -135,6 +136,27 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
     setActiveSpace(newSpace);
     if (onSelectSpaceId) {
       onSelectSpaceId(newSpace.id);
+    }
+  };
+
+  const handleSpaceDeleted = (deletedSpaceId: string) => {
+    setSpaces((prev) => prev.filter((s) => s.id !== deletedSpaceId));
+    if (activeSpace && activeSpace.id === deletedSpaceId) {
+      setActiveSpace(null);
+      if (onSelectSpaceId) {
+        onSelectSpaceId(null);
+      }
+    }
+    setFeedbackNotice('Hub deleted.');
+    setTimeout(() => {
+      setFeedbackNotice(null);
+    }, 4000);
+  };
+
+  const handleSpaceUpdated = (updatedSpace: Space) => {
+    setSpaces((prev) => prev.map((s) => (s.id === updatedSpace.id ? updatedSpace : s)));
+    if (activeSpace && activeSpace.id === updatedSpace.id) {
+      setActiveSpace(updatedSpace);
     }
   };
 
@@ -216,13 +238,26 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
         onBack={handleBackToSpaces}
         onSelectMember={onSelectMember}
         onStartMessage={onStartMessage}
+        onSpaceDeleted={handleSpaceDeleted}
       />
     );
   }
 
   return (
     <div id="spaces-view-root" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-fade-in">
-      
+      {/* Feedback Banner (e.g. Hub deleted) */}
+      {feedbackNotice && (
+        <div className="mb-6 p-3 bg-[#D4FF3F]/10 border border-[#D4FF3F]/40 text-[#D4FF3F] text-xs font-mono-code flex items-center justify-between animate-fade-in">
+          <span>{feedbackNotice}</span>
+          <button
+            onClick={() => setFeedbackNotice(null)}
+            className="text-xs font-mono-code text-[#888] hover:text-[#F5F5F0]"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* 1. Header & Hero */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6 pb-5 sm:pb-6 border-b border-[#1E1E24] mb-6 sm:mb-8">
         <div>
@@ -753,6 +788,8 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
               onSelect={handleSelectSpace}
               onJoin={handleJoinSpace}
               onLeave={handleLeaveSpace}
+              onDelete={handleSpaceDeleted}
+              onSpaceUpdated={handleSpaceUpdated}
             />
           ))}
         </div>

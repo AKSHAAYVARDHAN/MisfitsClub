@@ -5,6 +5,7 @@ import {
   getDocs,
   setDoc,
   updateDoc,
+  deleteDoc,
   query,
   where,
   orderBy,
@@ -486,6 +487,65 @@ export const spaceService = {
       });
     } catch (error: any) {
       handleFirestoreError(error, OperationType.UPDATE, `spaces/${spaceId}`);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete a Space / Hub and its associated posts, comments, and reactions.
+   * Can only be performed by the authoritative Hub Host (ownerId === actorUid) or authorized staff.
+   */
+  async deleteSpace(spaceId: string, actorUid: string): Promise<void> {
+    if (!actorUid) {
+      throw new Error('You must be signed in to delete a Hub.');
+    }
+    if (!spaceId) {
+      throw new Error('Invalid Hub ID.');
+    }
+
+    const spaceDocRef = doc(db, 'spaces', spaceId);
+
+    try {
+      // 1. Verify existence
+      const spaceSnap = await getDoc(spaceDocRef);
+      if (!spaceSnap.exists()) {
+        // Already deleted or non-existent
+        return;
+      }
+
+      // 2. Cascade delete subcollections: posts, comments, reactions
+      try {
+        const postsRef = collection(db, 'spaces', spaceId, 'posts');
+        const postsSnap = await getDocs(postsRef);
+
+        for (const postDoc of postsSnap.docs) {
+          const postId = postDoc.id;
+
+          // Delete comments in post
+          const commentsRef = collection(db, 'spaces', spaceId, 'posts', postId, 'comments');
+          const commentsSnap = await getDocs(commentsRef);
+          for (const commentDoc of commentsSnap.docs) {
+            await deleteDoc(commentDoc.ref).catch((err) => console.warn('Comment cleanup notice:', err));
+          }
+
+          // Delete reactions in post
+          const reactionsRef = collection(db, 'spaces', spaceId, 'posts', postId, 'reactions');
+          const reactionsSnap = await getDocs(reactionsRef);
+          for (const reactionDoc of reactionsSnap.docs) {
+            await deleteDoc(reactionDoc.ref).catch((err) => console.warn('Reaction cleanup notice:', err));
+          }
+
+          // Delete the post document itself
+          await deleteDoc(postDoc.ref).catch((err) => console.warn('Post cleanup notice:', err));
+        }
+      } catch (subErr) {
+        console.warn('Subcollection cleanup notice during Hub deletion:', subErr);
+      }
+
+      // 3. Delete the parent space document (authoritatively protected by Firestore security rules)
+      await deleteDoc(spaceDocRef);
+    } catch (error: any) {
+      handleFirestoreError(error, OperationType.DELETE, `spaces/${spaceId}`);
       throw error;
     }
   },

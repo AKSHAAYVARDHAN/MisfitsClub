@@ -13,6 +13,7 @@ import { connectionService } from '../services/connectionService';
 import { CreateSpaceModal } from './CreateSpaceModal';
 import { EditSpaceModal } from './EditSpaceModal';
 import { ManageHubMembersModal } from './ManageHubMembersModal';
+import { DeleteSpaceModal } from './DeleteSpaceModal';
 import { CreateSparkModal } from './CreateSparkModal';
 import { 
   LayoutGrid, 
@@ -113,6 +114,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
   const [isCreateSparkModalOpen, setIsCreateSparkModalOpen] = useState<boolean>(false);
   const [editingSpace, setEditingSpace] = useState<Space | null>(null);
   const [managingMembersSpace, setManagingMembersSpace] = useState<Space | null>(null);
+  const [deletingSpace, setDeletingSpace] = useState<Space | null>(null);
   const [deletingSparkId, setDeletingSparkId] = useState<string | null>(null);
 
   // Search & Filter state
@@ -1982,6 +1984,15 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                           <Users className="w-3 h-3" />
                           <span>Members</span>
                         </button>
+
+                        <button
+                          onClick={() => setDeletingSpace(space)}
+                          className="px-3 py-1.5 border border-red-900/50 hover:border-red-600 bg-red-950/20 hover:bg-red-950/50 text-red-400 hover:text-red-300 text-xs font-mono-code uppercase tracking-wider transition-colors flex items-center gap-1"
+                          title="Delete Hub"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Delete</span>
+                        </button>
                       </div>
 
                       <button
@@ -2348,6 +2359,22 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
             setSpaces((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
             setEditingSpace(null);
             setActionSuccessMsg(`Hub "${updated.name}" updated successfully.`);
+            setTimeout(() => setActionSuccessMsg(null), 3500);
+          }}
+        />
+      )}
+
+      {/* Delete Hosted Hub Modal */}
+      {deletingSpace && (
+        <DeleteSpaceModal
+          space={deletingSpace}
+          currentUserId={currentUserId}
+          isOpen={!!deletingSpace}
+          onClose={() => setDeletingSpace(null)}
+          onDeleted={(deletedId) => {
+            setSpaces((prev) => prev.filter((s) => s.id !== deletedId));
+            setDeletingSpace(null);
+            setActionSuccessMsg('Hub deleted.');
             setTimeout(() => setActionSuccessMsg(null), 3500);
           }}
         />

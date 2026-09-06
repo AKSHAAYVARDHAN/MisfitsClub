@@ -74,7 +74,7 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
       case '/orb': return 'ORB GLOBE';
       case '/discover': return 'DISCOVER MEMBERS';
       case '/board': return 'SPARK CURIOSITY';
-      case '/spaces': return 'HUB';
+      case '/spaces': return 'COMMUNITIES';
       case '/connections': return 'CONNECTIONS CIRCLE';
       case '/messages': return 'CONVERSATIONS';
       case '/my-space': return 'MY SPACE';
@@ -284,12 +284,12 @@ export const PlatformShell: React.FC<PlatformShellProps> = ({
             <Sparkles className="h-5 w-5" />
           </button>
 
-          {/* 4. HUB */}
+          {/* 4. COMMUNITIES */}
           <button
             id="mobile-nav-spaces"
             onClick={() => onNavigate('/spaces')}
-            aria-label="Hub"
-            title="Hub"
+            aria-label="Communities"
+            title="Communities"
             className={`relative flex items-center justify-center h-11 w-full transition-colors duration-150 focus:outline-none ${
               currentPath === '/spaces'
                 ? 'text-white'

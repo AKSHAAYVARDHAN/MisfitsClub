@@ -51,14 +51,14 @@ export const RemoveMemberModal: React.FC<RemoveMemberModalProps> = ({
 
         {/* Title */}
         <h3 className="text-base font-bold font-mono-code text-[#F5F5F0] mb-2">
-          Remove Member from Hub?
+          Remove Member from Community?
         </h3>
 
         {/* Description */}
         <p className="text-xs text-[#A0A09A] leading-relaxed mb-4">
           Are you sure you want to remove{' '}
           <span className="text-[#F5F5F0] font-bold">{member.name}</span> from{' '}
-          <span className="text-[#D4FF3F] font-bold">{space.name}</span>? They will no longer be a participant in this Hub.
+          <span className="text-[#D4FF3F] font-bold">{space.name}</span>? They will no longer be a participant in this Community.
         </p>
 
         {/* Target Member Card Preview */}

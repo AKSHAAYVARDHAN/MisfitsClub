@@ -221,7 +221,7 @@ export const AdminMembersTab: React.FC<AdminMembersTabProps> = ({
             </span>
           </div>
           <p className="text-xs text-[#969696] font-sans-clean mt-1">
-            Authoritative member population directory across all global Misfits Club hubs.
+            Authoritative member population directory across all global Misfits Club communities.
           </p>
         </div>
 
@@ -282,7 +282,7 @@ export const AdminMembersTab: React.FC<AdminMembersTabProps> = ({
               onChange={(e) => setLocationFilter(e.target.value)}
               className="w-full bg-[#14141A] border border-[#262630] text-xs font-mono-code text-[#F5F5F0] px-2.5 py-2 outline-none focus:border-[#D4FF3F]/60"
             >
-              <option value="all">All Hubs & Locations</option>
+              <option value="all">All Communities & Locations</option>
               {uniqueLocations.map((loc) => (
                 <option key={loc} value={loc}>
                   {loc}

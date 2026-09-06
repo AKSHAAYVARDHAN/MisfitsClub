@@ -15,6 +15,7 @@ import { EditSpaceModal } from './EditSpaceModal';
 import { ManageHubMembersModal } from './ManageHubMembersModal';
 import { DeleteSpaceModal } from './DeleteSpaceModal';
 import { CreateSparkModal } from './CreateSparkModal';
+import { getConnectedProfileSnippet } from './ConnectionsView';
 import { 
   LayoutGrid, 
   Users, 
@@ -360,7 +361,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
     try {
       await spaceService.leaveSpace(spaceId, currentUserId);
       setConfirmLeaveSpaceId(null);
-      setActionSuccessMsg('Successfully left the Hub.');
+      setActionSuccessMsg('Successfully left the Community.');
       setTimeout(() => setActionSuccessMsg(null), 3500);
     } catch (err: any) {
       console.error('Error leaving space:', err);
@@ -384,7 +385,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
 
   const handleSpaceCreated = (newSpace: Space) => {
     setIsCreateSpaceModalOpen(false);
-    setActionSuccessMsg(`Hub "${newSpace.name}" created successfully.`);
+    setActionSuccessMsg(`Community "${newSpace.name}" created successfully.`);
     setTimeout(() => setActionSuccessMsg(null), 3500);
     onOpenSpace(newSpace.id);
   };
@@ -490,7 +491,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#D4FF3F] text-[#080808] font-mono-code text-xs uppercase font-bold tracking-widest hover:bg-[#c2ed2e] transition-transform active:scale-95 shadow-sm"
               >
                 <Plus className="w-4 h-4 text-[#080808]" />
-                <span>Create a Hub</span>
+                <span>Create a Community</span>
               </button>
             </div>
           </div>
@@ -567,7 +568,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
               </div>
             </button>
 
-            {/* Metric 2: Hubs I Host */}
+            {/* Metric 2: Communities I Host */}
             <button
               id="my-space-metric-hosted-btn"
               onClick={() => setActiveTab('hosted')}
@@ -579,7 +580,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
             >
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#8A8A8A] group-hover:text-[#D4FF3F] transition-colors">
-                  Hubs I Host
+                  Communities I Host
                 </span>
                 <Crown className="w-4 h-4 text-[#D4FF3F]" />
               </div>
@@ -593,7 +594,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
               </div>
             </button>
 
-            {/* Metric 3: Hubs I Joined */}
+            {/* Metric 3: Communities I Joined */}
             <button
               id="my-space-metric-joined-btn"
               onClick={() => setActiveTab('joined')}
@@ -605,7 +606,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
             >
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#8A8A8A] group-hover:text-[#D4FF3F] transition-colors">
-                  Hubs I Joined
+                  Communities I Joined
                 </span>
                 <Layers className="w-4 h-4 text-[#8A8A8A] group-hover:text-[#D4FF3F] transition-colors" />
               </div>
@@ -700,7 +701,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 }`}
               >
                 <Crown className="w-3.5 h-3.5 text-[#D4FF3F]" />
-                <span>Hubs I Host</span>
+                <span>Communities I Host</span>
                 <span className="px-1.5 py-0.2 bg-[#222] text-[#AAA] text-[10px] rounded-none">
                   {hubsIHost.length}
                 </span>
@@ -716,7 +717,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>Hubs I Joined</span>
+                <span>Communities I Joined</span>
                 <span className="px-1.5 py-0.2 bg-[#222] text-[#AAA] text-[10px] rounded-none">
                   {hubsIJoined.length}
                 </span>
@@ -782,10 +783,10 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                     My Connections ({myConnectedList.length})
                   </option>
                   <option value="hosted" className="bg-[#141416] text-[#F2F2ED]">
-                    Hubs I Host ({hubsIHost.length})
+                    Communities I Host ({hubsIHost.length})
                   </option>
                   <option value="joined" className="bg-[#141416] text-[#F2F2ED]">
-                    Hubs I Joined ({hubsIJoined.length})
+                    Communities I Joined ({hubsIJoined.length})
                   </option>
                   <option value="sparks" className="bg-[#141416] text-[#F2F2ED]">
                     My Sparks ({mySparks.length})
@@ -1020,13 +1021,13 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
               )}
             </section>
 
-            {/* Section 3: Hubs I Host & Manage */}
+            {/* Section 3: Communities I Host & Manage */}
             <section id="my-space-overview-hosted">
               <div className="flex items-center justify-between mb-4 border-b border-[#1E1E20] pb-3">
                 <div className="flex items-center gap-2">
                   <Crown className="w-4 h-4 text-[#D4FF3F]" />
                   <h2 className="text-base font-mono-code uppercase tracking-wider text-[#F2F2ED] font-bold">
-                    Hubs I Host ({hubsIHost.length})
+                    Communities I Host ({hubsIHost.length})
                   </h2>
                 </div>
                 <div className="flex items-center gap-3">
@@ -1035,7 +1036,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                     className="text-xs font-mono-code text-[#D4FF3F] hover:underline flex items-center gap-1 uppercase tracking-wider font-bold"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Create Hub</span>
+                    <span>Create Community</span>
                   </button>
                   {hubsIHost.length > 0 && (
                     <button
@@ -1053,10 +1054,10 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 <div className="p-8 border border-[#242424] bg-[#111113] text-center space-y-3">
                   <Crown className="w-8 h-8 text-[#555] mx-auto" />
                   <h3 className="text-sm font-mono-code font-bold text-[#F2F2ED] uppercase tracking-wider">
-                    You haven't created any Hubs yet
+                    You haven't created any Communities yet
                   </h3>
                   <p className="text-xs text-[#8A8A8A] max-w-md mx-auto leading-relaxed">
-                    Host a Space around a shared interest, unusual project, craft, skill, or curiosity to gather fellow misfits.
+                    Host a Community around a shared interest, unusual project, craft, skill, or curiosity to gather fellow misfits.
                   </p>
                   <div className="pt-2">
                     <button
@@ -1064,7 +1065,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                       className="px-4 py-2 bg-[#D4FF3F] text-[#080808] text-xs font-mono-code uppercase font-bold tracking-wider hover:bg-[#c2ed2e] transition-colors inline-flex items-center gap-2"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>Create a Hub</span>
+                      <span>Create a Community</span>
                     </button>
                   </div>
                 </div>
@@ -1101,7 +1102,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                             onClick={() => setEditingSpace(space)}
                             className="px-2.5 py-1 text-xs font-mono-code uppercase text-[#888] hover:text-[#D4FF3F] border border-[#333] hover:border-[#D4FF3F] transition-colors"
                           >
-                            Edit Hub
+                            Edit Community
                           </button>
                           <button
                             onClick={() => setManagingMembersSpace(space)}
@@ -1124,13 +1125,13 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
               )}
             </section>
 
-            {/* Section 4: Hubs I Joined */}
+            {/* Section 4: Communities I Joined */}
             <section id="my-space-overview-joined">
               <div className="flex items-center justify-between mb-4 border-b border-[#1E1E20] pb-3">
                 <div className="flex items-center gap-2">
                   <Layers className="w-4 h-4 text-[#D4FF3F]" />
                   <h2 className="text-base font-mono-code uppercase tracking-wider text-[#F2F2ED] font-bold">
-                    Hubs I Joined ({hubsIJoined.length})
+                    Communities I Joined ({hubsIJoined.length})
                   </h2>
                 </div>
                 <div className="flex items-center gap-3">
@@ -1139,7 +1140,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                     className="text-xs font-mono-code text-[#D4FF3F] hover:underline flex items-center gap-1 uppercase tracking-wider font-bold"
                   >
                     <Compass className="w-3.5 h-3.5" />
-                    <span>Browse All Hubs</span>
+                    <span>Browse All Communities</span>
                   </button>
                   {hubsIJoined.length > 0 && (
                     <button
@@ -1157,7 +1158,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 <div className="p-8 border border-[#242424] bg-[#111113] text-center space-y-3">
                   <Layers className="w-8 h-8 text-[#555] mx-auto" />
                   <h3 className="text-sm font-mono-code font-bold text-[#F2F2ED] uppercase tracking-wider">
-                    You haven't joined any Hubs yet
+                    You haven't joined any Communities yet
                   </h3>
                   <p className="text-xs text-[#8A8A8A] max-w-md mx-auto leading-relaxed">
                     Find interest groups and communities that align with your passions and start engaging.
@@ -1168,7 +1169,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                       className="px-4 py-2 bg-[#D4FF3F] text-[#080808] text-xs font-mono-code uppercase font-bold tracking-wider hover:bg-[#c2ed2e] transition-colors inline-flex items-center gap-2"
                     >
                       <Compass className="w-3.5 h-3.5" />
-                      <span>Explore Hub Catalog</span>
+                      <span>Explore Communities Catalog</span>
                     </button>
                   </div>
                 </div>
@@ -1209,7 +1210,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                         <button
                           onClick={() => setConfirmLeaveSpaceId(space.id)}
                           className="px-2.5 py-1 text-xs font-mono-code uppercase text-[#777] hover:text-[#FF5C5C] border border-[#262626] hover:border-[#FF5C5C]/40 transition-colors"
-                          title="Leave Hub"
+                          title="Leave Community"
                         >
                           Leave
                         </button>
@@ -1217,7 +1218,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                           onClick={() => onOpenSpace(space.id)}
                           className="px-3.5 py-1.5 bg-[#1C1C20] hover:bg-[#D4FF3F] hover:text-[#080808] border border-[#333] hover:border-[#D4FF3F] text-[#F2F2ED] text-xs font-mono-code uppercase tracking-wider transition-colors flex items-center gap-1.5 font-bold"
                         >
-                          <span>Open Hub</span>
+                          <span>Open Community</span>
                           <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>
@@ -1371,7 +1372,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 >
                   <Layers className="w-4 h-4 text-[#D4FF3F] mb-1.5" />
                   <span className="text-xs font-mono-code uppercase tracking-wider font-bold text-[#F2F2ED] block group-hover:text-[#D4FF3F]">
-                    Hubs
+                    Communities
                   </span>
                   <span className="text-[10px] text-[#777] font-mono-code">
                     Browse all communities
@@ -1865,10 +1866,10 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#242424] pb-4">
               <div>
                 <h2 className="text-xl font-editorial font-light text-[#F2F2ED]">
-                  Hubs I Host
+                  Communities I Host
                 </h2>
                 <p className="text-xs font-mono-code text-[#8A8A8A] uppercase tracking-wider mt-0.5">
-                  Hubs you created and curate ({filteredHostedHubs.length} total)
+                  Communities you created and curate ({filteredHostedHubs.length} total)
                 </p>
               </div>
 
@@ -1877,7 +1878,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 className="px-4 py-2 bg-[#D4FF3F] text-[#080808] text-xs font-mono-code uppercase font-bold tracking-widest hover:bg-[#c2ed2e] transition-colors inline-flex items-center gap-2 self-start sm:self-auto"
               >
                 <Plus className="w-4 h-4" />
-                <span>Create a Hub</span>
+                <span>Create a Community</span>
               </button>
             </div>
 
@@ -1887,7 +1888,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 {searchQuery ? (
                   <>
                     <h3 className="text-base font-mono-code font-bold text-[#F2F2ED] uppercase tracking-wider">
-                      No hosted hubs match "{searchQuery}"
+                      No hosted communities match "{searchQuery}"
                     </h3>
                     <p className="text-xs text-[#8A8A8A]">Try adjusting your search query.</p>
                     <button
@@ -1900,7 +1901,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 ) : (
                   <>
                     <h3 className="text-base font-mono-code font-bold text-[#F2F2ED] uppercase tracking-wider">
-                      You haven't created any Hubs yet
+                      You haven't created any Communities yet
                     </h3>
                     <p className="text-xs text-[#8A8A8A] max-w-md mx-auto leading-relaxed">
                       Bring people together around an obscure topic, collaborative project, or specialized passion.
@@ -1911,7 +1912,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                         className="px-4 py-2 bg-[#D4FF3F] text-[#080808] text-xs font-mono-code uppercase font-bold tracking-wider hover:bg-[#c2ed2e] transition-colors inline-flex items-center gap-2"
                       >
                         <Plus className="w-3.5 h-3.5" />
-                        <span>Create a Hub</span>
+                        <span>Create a Community</span>
                       </button>
                     </div>
                   </>
@@ -1974,7 +1975,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                           className="px-3 py-1.5 border border-[#333] hover:border-[#D4FF3F] text-[#CCC] hover:text-[#D4FF3F] text-xs font-mono-code uppercase tracking-wider transition-colors flex items-center gap-1"
                         >
                           <Edit3 className="w-3 h-3" />
-                          <span>Edit Hub</span>
+                          <span>Edit Community</span>
                         </button>
 
                         <button
@@ -1988,7 +1989,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                         <button
                           onClick={() => setDeletingSpace(space)}
                           className="px-3 py-1.5 border border-red-900/50 hover:border-red-600 bg-red-950/20 hover:bg-red-950/50 text-red-400 hover:text-red-300 text-xs font-mono-code uppercase tracking-wider transition-colors flex items-center gap-1"
-                          title="Delete Hub"
+                          title="Delete Community"
                         >
                           <Trash2 className="w-3 h-3" />
                           <span>Delete</span>
@@ -1999,7 +2000,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                         onClick={() => onOpenSpace(space.id)}
                         className="px-4 py-2 bg-[#D4FF3F] text-[#080808] hover:bg-[#c2ed2e] text-xs font-mono-code uppercase tracking-wider font-bold transition-all flex items-center gap-1.5"
                       >
-                        <span>Open Hub</span>
+                        <span>Open Community</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -2018,10 +2019,10 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#242424] pb-4">
               <div>
                 <h2 className="text-xl font-editorial font-light text-[#F2F2ED]">
-                  Hubs I Joined
+                  Communities I Joined
                 </h2>
                 <p className="text-xs font-mono-code text-[#8A8A8A] uppercase tracking-wider mt-0.5">
-                  Hubs you are a member of ({filteredJoinedHubs.length} total)
+                  Communities you are a member of ({filteredJoinedHubs.length} total)
                 </p>
               </div>
 
@@ -2030,7 +2031,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 className="px-3.5 py-2 border border-[#333] hover:border-[#D4FF3F] text-[#F2F2ED] hover:text-[#D4FF3F] text-xs font-mono-code uppercase tracking-wider transition-colors inline-flex items-center gap-2 self-start sm:self-auto"
               >
                 <Compass className="w-3.5 h-3.5" />
-                <span>Explore More Hubs</span>
+                <span>Explore More Communities</span>
               </button>
             </div>
 
@@ -2040,7 +2041,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 {searchQuery ? (
                   <>
                     <h3 className="text-base font-mono-code font-bold text-[#F2F2ED] uppercase tracking-wider">
-                      No joined hubs match "{searchQuery}"
+                      No joined communities match "{searchQuery}"
                     </h3>
                     <p className="text-xs text-[#8A8A8A]">Try adjusting your search query.</p>
                     <button
@@ -2053,17 +2054,17 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                 ) : (
                   <>
                     <h3 className="text-base font-mono-code font-bold text-[#F2F2ED] uppercase tracking-wider">
-                      You haven't joined any Hubs yet
+                      You haven't joined any Communities yet
                     </h3>
                     <p className="text-xs text-[#8A8A8A] max-w-md mx-auto leading-relaxed">
-                      Explore active hubs to join discussions, share ideas, and connect with people who share your passions.
+                      Explore active communities to join discussions, share ideas, and connect with people who share your passions.
                     </p>
                     <div className="pt-2">
                       <button
                         onClick={onExploreSpaces}
                         className="px-4 py-2 bg-[#D4FF3F] text-[#080808] text-xs font-mono-code uppercase font-bold tracking-wider hover:bg-[#c2ed2e] transition-colors"
                       >
-                        Explore Hubs
+                        Explore Communities
                       </button>
                     </div>
                   </>
@@ -2128,7 +2129,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                         {isConfirmingLeave ? (
                           <div className="flex items-center justify-between gap-2 p-2 bg-[#1C1212] border border-[#FF5C5C]/40">
                             <span className="text-[11px] font-mono-code text-[#FF5C5C]">
-                              Leave this Hub?
+                              Leave this Community?
                             </span>
                             <div className="flex items-center gap-2">
                               <button
@@ -2154,14 +2155,14 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
                               title="Leave this Space"
                             >
                               <LogOut className="w-3.5 h-3.5" />
-                              <span>Leave Hub</span>
+                              <span>Leave Community</span>
                             </button>
 
                             <button
                               onClick={() => onOpenSpace(space.id)}
                               className="px-4 py-2 bg-[#D4FF3F] text-[#080808] hover:bg-[#c2ed2e] text-xs font-mono-code uppercase tracking-wider font-bold transition-all flex items-center gap-1.5"
                             >
-                              <span>Open Hub</span>
+                              <span>Open Community</span>
                               <ArrowRight className="w-3.5 h-3.5" />
                             </button>
                           </div>
@@ -2358,7 +2359,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
           onSpaceUpdated={(updated) => {
             setSpaces((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
             setEditingSpace(null);
-            setActionSuccessMsg(`Hub "${updated.name}" updated successfully.`);
+            setActionSuccessMsg(`Community "${updated.name}" updated successfully.`);
             setTimeout(() => setActionSuccessMsg(null), 3500);
           }}
         />
@@ -2374,7 +2375,7 @@ export const MySpaceView: React.FC<MySpaceViewProps> = ({
           onDeleted={(deletedId) => {
             setSpaces((prev) => prev.filter((s) => s.id !== deletedId));
             setDeletingSpace(null);
-            setActionSuccessMsg('Hub deleted.');
+            setActionSuccessMsg('Community deleted.');
             setTimeout(() => setActionSuccessMsg(null), 3500);
           }}
         />

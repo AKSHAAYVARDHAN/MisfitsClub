@@ -29,7 +29,7 @@ export interface CreateSpaceInput {
 function normalizeSpace(data: any, id: string): Space {
   return {
     id: data.id || id,
-    name: data.name || 'Untitled Hub',
+    name: data.name || 'Untitled Community',
     description: data.description || '',
     category: (data.category as SpaceCategory) || 'Building',
     tags: Array.isArray(data.tags) ? data.tags : [],
@@ -359,18 +359,18 @@ export const spaceService = {
    */
   async updateSpace(spaceId: string, hostId: string, input: UpdateSpaceInput): Promise<Space> {
     if (!hostId) {
-      throw new Error('You must be signed in to edit this Hub.');
+      throw new Error('You must be signed in to edit this Community.');
     }
     if (!spaceId) {
-      throw new Error('Invalid Hub ID.');
+      throw new Error('Invalid Community ID.');
     }
 
     if (!input.name || input.name.trim().length === 0) {
-      throw new Error('Hub name cannot be empty.');
+      throw new Error('Community name cannot be empty.');
     }
 
     if (!input.description || input.description.trim().length === 0) {
-      throw new Error('Hub description cannot be empty.');
+      throw new Error('Community description cannot be empty.');
     }
 
     const docRef = doc(db, 'spaces', spaceId);
@@ -379,12 +379,12 @@ export const spaceService = {
       return await runTransaction(db, async (transaction) => {
         const snap = await transaction.get(docRef);
         if (!snap.exists()) {
-          throw new Error('This Hub was not found or no longer exists.');
+          throw new Error('This Community was not found or no longer exists.');
         }
 
         const existingData = snap.data();
         if (existingData.ownerId !== hostId) {
-          throw new Error('Unauthorized: Only the Hub Host can edit this Hub.');
+          throw new Error('Unauthorized: Only the Community Host can edit this Community.');
         }
 
         const cleanTags = (input.tags || [])
@@ -433,7 +433,7 @@ export const spaceService = {
       throw new Error('You must be signed in as the Host to remove members.');
     }
     if (!spaceId) {
-      throw new Error('Invalid Hub ID.');
+      throw new Error('Invalid Community ID.');
     }
     if (!memberIdToRemove) {
       throw new Error('Invalid member ID to remove.');
@@ -445,16 +445,16 @@ export const spaceService = {
       return await runTransaction(db, async (transaction) => {
         const snap = await transaction.get(docRef);
         if (!snap.exists()) {
-          throw new Error('This Hub was not found or no longer exists.');
+          throw new Error('This Community was not found or no longer exists.');
         }
 
         const data = snap.data();
         if (data.ownerId !== hostId) {
-          throw new Error('Unauthorized: Only the Hub Host can remove members.');
+          throw new Error('Unauthorized: Only the Community Host can remove members.');
         }
 
         if (memberIdToRemove === data.ownerId || memberIdToRemove === hostId) {
-          throw new Error('The Host cannot be removed from their own Hub.');
+          throw new Error('The Host cannot be removed from their own Community.');
         }
 
         const currentMemberIds: string[] = Array.isArray(data.memberIds) ? data.memberIds : [];
@@ -497,10 +497,10 @@ export const spaceService = {
    */
   async deleteSpace(spaceId: string, actorUid: string): Promise<void> {
     if (!actorUid) {
-      throw new Error('You must be signed in to delete a Hub.');
+      throw new Error('You must be signed in to delete a Community.');
     }
     if (!spaceId) {
-      throw new Error('Invalid Hub ID.');
+      throw new Error('Invalid Community ID.');
     }
 
     const spaceDocRef = doc(db, 'spaces', spaceId);

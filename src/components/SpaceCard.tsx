@@ -146,7 +146,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({
                     id={`space-card-menu-btn-${space.id}`}
                     type="button"
                     onClick={handleMenuToggle}
-                    title="Manage Hub"
+                    title="Manage Community"
                     className="p-1 hover:bg-[#1C1C22] border border-transparent hover:border-[#32323E] text-[#8E8E93] hover:text-[#F5F5F0] transition-colors"
                   >
                     <MoreVertical className="w-3.5 h-3.5" />
@@ -156,7 +156,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({
                   {isMenuOpen && (
                     <div
                       id={`space-card-menu-dropdown-${space.id}`}
-                      className="absolute right-0 top-full mt-1.5 w-36 bg-[#121216] border border-[#2A2A32] shadow-2xl z-30 py-1 font-mono-code text-xs animate-fade-in"
+                      className="absolute right-0 top-full mt-1.5 w-40 bg-[#121216] border border-[#2A2A32] shadow-2xl z-30 py-1 font-mono-code text-xs animate-fade-in"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
@@ -166,7 +166,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({
                         className="w-full px-3 py-1.5 text-left text-[#C8C8C2] hover:text-[#D4FF3F] hover:bg-[#1A1A22] flex items-center gap-2 transition-colors"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
-                        <span>Edit Hub</span>
+                        <span>Edit Community</span>
                       </button>
 
                       <button
@@ -176,7 +176,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({
                         className="w-full px-3 py-1.5 text-left text-[#C8C8C2] hover:text-[#F5F5F0] hover:bg-[#1A1A22] flex items-center gap-2 transition-colors"
                       >
                         <Sliders className="w-3.5 h-3.5" />
-                        <span>Manage Hub</span>
+                        <span>Manage Community</span>
                       </button>
 
                       <div className="my-1 border-t border-[#22222A]" />
@@ -188,7 +188,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({
                         className="w-full px-3 py-1.5 text-left text-red-400 hover:text-red-300 hover:bg-red-950/40 flex items-center gap-2 transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        <span>Delete Hub</span>
+                        <span>Delete Community</span>
                       </button>
                     </div>
                   )}
@@ -254,7 +254,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({
                 id={`space-leave-btn-${space.id}`}
                 onClick={handleActionClick}
                 disabled={isProcessing}
-                title="Click to leave hub"
+                title="Click to leave community"
                 className="group/btn inline-flex items-center gap-1 px-2.5 py-1 bg-[#141418] hover:bg-[#EF4444]/10 border border-[#282832] hover:border-[#EF4444]/40 text-[#B0B0A8] hover:text-[#EF4444] text-[10px] font-mono-code transition-all"
               >
                 {isProcessing ? (

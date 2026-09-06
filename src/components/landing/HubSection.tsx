@@ -82,7 +82,7 @@ export const HubSection: React.FC<HubSectionProps> = ({ onExplore }) => {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
           <span className="text-[10px] text-[#D4FF3F] uppercase tracking-widest font-mono-code font-bold border border-[#D4FF3F]/30 bg-[#D4FF3F]/10 px-3 py-1 inline-block mb-3">
-            06 / HUBS
+            06 / COMMUNITIES
           </span>
           <h2 className="font-editorial text-4xl sm:text-5xl lg:text-6xl text-[#F5F5F0] font-light leading-[1.12]">
             Find your people around <br className="hidden sm:inline" />
@@ -93,7 +93,7 @@ export const HubSection: React.FC<HubSectionProps> = ({ onExplore }) => {
           </p>
         </motion.div>
 
-        {/* 6 Hub Cards Grid */}
+        {/* 6 Community Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {hubs.map((hub, idx) => (
             <motion.div
@@ -139,7 +139,7 @@ export const HubSection: React.FC<HubSectionProps> = ({ onExplore }) => {
                   #{hub.tag}
                 </span>
                 <span className="text-xs font-mono-code text-[#969696] group-hover:text-[#D4FF3F] flex items-center gap-1">
-                  <span>Explore Hub</span>
+                  <span>Explore Community</span>
                   <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                 </span>
               </div>

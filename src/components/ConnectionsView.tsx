@@ -23,7 +23,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 
-interface ProfileSnippetResult {
+export interface ProfileSnippetResult {
   label: string;
   content: string;
 }
@@ -36,7 +36,7 @@ interface ProfileSnippetResult {
  * 3. Fallback to "What I'm Learning" (learning)
  * 4. Fallback to "Open Question I'm Pondering" (openQuestion)
  */
-function getConnectedProfileSnippet(p: any): ProfileSnippetResult | null {
+export function getConnectedProfileSnippet(p: any): ProfileSnippetResult | null {
   if (!p) return null;
 
   // 1. "ABOUT ME & CURRENT THINKING"

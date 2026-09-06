@@ -122,7 +122,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
                     onClick={() => handleScrollToSection('hub-section')}
                     className="hover:text-[#D4FF3F] transition-colors py-1 inline-flex items-center min-h-[32px] sm:min-h-[28px] focus:outline-none focus:text-[#D4FF3F]"
                   >
-                    Hub
+                    Communities
                   </button>
                 </li>
                 <li>

@@ -35,7 +35,7 @@ const FAQ_ITEMS: FaqItem[] = [
     category: 'Features',
     question: 'What can I do on the platform?',
     answer:
-      'You can explore global thinkers across the 3D Orb, discover members based on mutual intent (Building Together, Exchanging Ideas, Mentorship, Learning), spark philosophical and technical discussions on the Spark board, participate in thematic Hubs, and initiate direct, intentional 1-on-1 conversations.',
+      'You can explore global thinkers across the 3D Orb, discover members based on mutual intent (Building Together, Exchanging Ideas, Mentorship, Learning), spark philosophical and technical discussions on the Spark board, participate in thematic Communities, and initiate direct, intentional 1-on-1 conversations.',
   },
   {
     id: 'faq-connections',
@@ -47,9 +47,9 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     id: 'faq-hubs',
     category: 'Features',
-    question: 'What are Hubs?',
+    question: 'What are Communities?',
     answer:
-      'Hubs are focused interest spaces built around specific disciplines—such as Autonomous AI, Tactile Computing & Hardware, Experimental Cinema, Philosophy of Technology, and Synthetic Biology. They provide spaces to share works in progress, exchange papers, and coordinate projects.',
+      'Communities are focused interest spaces built around specific disciplines—such as Autonomous AI, Tactile Computing & Hardware, Experimental Cinema, Philosophy of Technology, and Synthetic Biology. They provide spaces to share works in progress, exchange papers, and coordinate projects.',
   },
   {
     id: 'faq-spark',

@@ -97,7 +97,7 @@ export const ManageHubMembersModal: React.FC<ManageHubMembersModalProps> = ({
     try {
       const updated = await spaceService.removeMember(space.id, hostId, targetUid);
       setMembers((prev) => prev.filter((m) => (m.uid || m.id) !== targetUid));
-      setSuccessMsg(`Removed ${memberToRemove.name} from the Hub.`);
+      setSuccessMsg(`Removed ${memberToRemove.name} from the Community.`);
       setMemberToRemove(null);
       onSpaceUpdated?.(updated);
       setTimeout(() => setSuccessMsg(null), 3500);
@@ -130,7 +130,7 @@ export const ManageHubMembersModal: React.FC<ManageHubMembersModalProps> = ({
               </div>
               <div>
                 <span className="text-[10px] font-mono-code uppercase tracking-widest text-[#D4FF3F] font-bold block">
-                  HUB MANAGEMENT
+                  COMMUNITY MANAGEMENT
                 </span>
                 <h2 className="text-xl sm:text-2xl font-editorial text-[#F2F2ED] font-light truncate max-w-md">
                   {space.name} — Members ({members.length})
@@ -242,7 +242,7 @@ export const ManageHubMembersModal: React.FC<ManageHubMembersModalProps> = ({
                           type="button"
                           onClick={() => setMemberToRemove(member)}
                           className="px-3 py-1.5 border border-red-900/40 hover:border-red-600/70 text-red-400 hover:text-red-300 text-xs font-mono-code uppercase tracking-wider transition-colors inline-flex items-center gap-1.5"
-                          title="Remove member from Hub"
+                          title="Remove member from Community"
                         >
                           <UserMinus className="w-3 h-3" />
                           <span>Remove</span>
@@ -258,7 +258,7 @@ export const ManageHubMembersModal: React.FC<ManageHubMembersModalProps> = ({
           {/* Footer */}
           <div className="mt-4 pt-4 border-t border-[#1E1E24] flex items-center justify-between">
             <span className="text-[11px] font-mono-code text-[#666]">
-              {space.memberCount || space.memberIds?.length || 1} active members in this Hub
+              {space.memberCount || space.memberIds?.length || 1} active members in this Community
             </span>
             <button
               type="button"

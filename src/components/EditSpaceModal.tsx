@@ -128,13 +128,13 @@ export const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setError('Hub name is required.');
+      setError('Community name is required.');
       return;
     }
 
     const trimmedDesc = description.trim();
     if (!trimmedDesc) {
-      setError('Hub description is required.');
+      setError('Community description is required.');
       return;
     }
 
@@ -166,14 +166,14 @@ export const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
       };
 
       const updated = await spaceService.updateSpace(space.id, hostId, input);
-      setSuccessMsg('Hub updated successfully!');
+      setSuccessMsg('Community updated successfully!');
       onSpaceUpdated(updated);
       setTimeout(() => {
         onClose();
       }, 500);
     } catch (err: any) {
-      console.error('Failed to update Hub:', err);
-      setError(err?.message || 'Failed to update Hub.');
+      console.error('Failed to update Community:', err);
+      setError(err?.message || 'Failed to update Community.');
     } finally {
       setIsSubmitting(false);
     }
@@ -199,7 +199,7 @@ export const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold font-mono-code text-[#F5F5F0]">
-                MANAGE HUB
+                MANAGE COMMUNITY
               </h2>
               <p className="text-xs font-mono-code text-[#8A8A8A]">
                 Host Settings & Moderation for <span className="text-[#CCC] font-bold">{space.name}</span>
@@ -232,13 +232,13 @@ export const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Hub Profile Photo / Avatar Section */}
+          {/* Community Profile Photo / Avatar Section */}
           <div className="p-4 bg-[#121216] border border-[#222228]">
             <label className="block text-xs font-mono-code font-bold uppercase tracking-wider text-[#F5F5F0] mb-2">
-              HUB PROFILE PHOTO / BANNER
+              COMMUNITY PROFILE PHOTO / BANNER
             </label>
             <p className="text-xs text-[#8A8A8A] mb-4">
-              Add a custom cover or avatar image to help misfits identify your Hub.
+              Add a custom cover or avatar image to help misfits identify your Community.
             </p>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
@@ -247,7 +247,7 @@ export const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
                 {previewUrl ? (
                   <img
                     src={previewUrl}
-                    alt="Hub Preview"
+                    alt="Community Preview"
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -329,14 +329,14 @@ export const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
             </div>
           </div>
 
-          {/* Hub Name */}
+          {/* Community Name */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label
                 htmlFor="edit-hub-name"
                 className="text-xs font-mono-code font-bold uppercase tracking-wider text-[#F5F5F0]"
               >
-                HUB NAME <span className="text-[#D4FF3F]">*</span>
+                COMMUNITY NAME <span className="text-[#D4FF3F]">*</span>
               </label>
               <span className="text-[11px] font-mono-code text-[#666]">
                 {name.length}/100
@@ -400,7 +400,7 @@ export const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
               maxLength={2000}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what this Hub explores, who it is for, and the collaborative focus..."
+              placeholder="Describe what this Community explores, who it is for, and the collaborative focus..."
               className="w-full bg-[#121216] border border-[#2C2C34] focus:border-[#D4FF3F] p-3 text-sm text-[#F5F5F0] font-sans-clean leading-relaxed outline-none transition-colors resize-y"
             />
           </div>
@@ -485,7 +485,7 @@ export const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
               ) : (
                 <>
                   <Check className="w-4 h-4" />
-                  Save Hub Settings
+                  Save Community Settings
                 </>
               )}
             </button>

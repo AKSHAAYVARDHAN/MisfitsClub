@@ -239,7 +239,7 @@ export const DiscussionFeed: React.FC<DiscussionFeedProps> = ({
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#D4FF3F] hover:bg-[#b8e62f] text-[#080808] text-xs font-mono-code font-bold uppercase tracking-wider transition-all shadow-md"
               >
                 <Sparkles className="w-4 h-4" />
-                Join Hub to Discuss
+                Join Community to Discuss
               </button>
             )
           )}

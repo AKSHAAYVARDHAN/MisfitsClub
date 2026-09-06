@@ -148,7 +148,7 @@ export const LandingLegalModal: React.FC<LandingLegalModalProps> = ({
                     </h3>
                     <ul className="list-disc list-inside space-y-1.5 text-xs sm:text-sm text-[#969696]">
                       <li><strong className="text-[#F5F5F0]">Account & Profile Data:</strong> Name/handle, email, avatar, location, bio, reading list, current obsessions, and connection intents you choose to share.</li>
-                      <li><strong className="text-[#F5F5F0]">Public Activity:</strong> Questions posted on Spark boards, comments in shared Hubs, and public profile details visible to fellow members.</li>
+                      <li><strong className="text-[#F5F5F0]">Public Activity:</strong> Questions posted on Spark boards, comments in shared Communities, and public profile details visible to fellow members.</li>
                       <li><strong className="text-[#F5F5F0]">Direct Communication:</strong> Messages exchanged in intentional 1-on-1 connections are private between conversation participants.</li>
                     </ul>
                   </div>
@@ -158,7 +158,7 @@ export const LandingLegalModal: React.FC<LandingLegalModalProps> = ({
                       3. How We Use Information
                     </h3>
                     <p className="text-[#969696] text-xs sm:text-sm leading-relaxed">
-                      We use your information exclusively to power discovery on the Orb, recommend relevant Hubs, deliver messages, and maintain platform security. We do <strong className="text-[#F5F5F0]">not</strong> sell, rent, or monetize your personal data with third-party advertisers.
+                      We use your information exclusively to power discovery on the Orb, recommend relevant Communities, deliver messages, and maintain platform security. We do <strong className="text-[#F5F5F0]">not</strong> sell, rent, or monetize your personal data with third-party advertisers.
                     </p>
                   </div>
 

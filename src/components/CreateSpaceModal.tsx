@@ -75,12 +75,12 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
     setError(null);
 
     if (!name.trim()) {
-      setError('Please provide a name for your Hub.');
+      setError('Please provide a name for your Community.');
       return;
     }
 
     if (!description.trim()) {
-      setError('Please provide a description explaining what this Hub is about.');
+      setError('Please provide a description explaining what this Community is about.');
       return;
     }
 
@@ -108,7 +108,7 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
       onClose();
     } catch (err: any) {
       console.error('Failed to create space:', err);
-      setError(err?.message || 'Failed to create Hub. Please try again.');
+      setError(err?.message || 'Failed to create Community. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -133,7 +133,7 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold tracking-wider text-[#F5F5F0] font-mono-code uppercase">
-                CREATE A HUB
+                CREATE A COMMUNITY
               </h2>
               <p className="text-xs text-[#8A8A8A]">
                 Gather misfits around a shared obsession, project, or inquiry.
@@ -159,10 +159,10 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
             </div>
           )}
 
-          {/* Hub Name */}
+          {/* Community Name */}
           <div>
             <label className="block text-xs font-mono-code text-[#A0A09A] uppercase tracking-wider mb-1.5">
-              Hub Name <span className="text-[#D4FF3F]">*</span>
+              Community Name <span className="text-[#D4FF3F]">*</span>
             </label>
             <input
               id="create-space-name-input"
@@ -217,7 +217,7 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               maxLength={2000}
               rows={4}
-              placeholder="What is this hub about? Who is it for? What projects, questions, or ideas will members explore together?"
+              placeholder="What is this community about? Who is it for? What projects, questions, or ideas will members explore together?"
               className="w-full px-3.5 py-2.5 bg-[#080808] border border-[#2A2A2E] focus:border-[#D4FF3F] text-[#F5F5F0] placeholder-[#555] text-sm focus:outline-none transition-colors resize-none"
               required
               disabled={isSubmitting}
@@ -295,7 +295,7 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
           <div className="p-3 bg-[#121214] border border-[#222] flex items-center justify-between text-xs font-mono-code text-[#8A8A8A]">
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-[#D4FF3F]" />
-              <span>Public Hub (Open for all verified Misfits to join)</span>
+              <span>Public Community (Open for all verified Misfits to join)</span>
             </div>
             <span className="text-[10px] text-[#D4FF3F] bg-[#D4FF3F]/10 px-2 py-0.5 border border-[#D4FF3F]/20">
               PHASE 1
@@ -338,12 +338,12 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating Hub...
+                  Creating Community...
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  Create Hub
+                  Create Community
                 </>
               )}
             </button>

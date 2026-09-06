@@ -145,7 +145,7 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
       const updated = await spaceService.removeMember(space.id, currentUserId, targetUid);
       setSpace(updated);
       setMembers((prev) => prev.filter((m) => (m.uid || m.id) !== targetUid));
-      setSuccessBanner(`Removed ${memberToRemove.name} from the Hub.`);
+      setSuccessBanner(`Removed ${memberToRemove.name} from the Community.`);
       setMemberToRemove(null);
       setTimeout(() => setSuccessBanner(null), 3500);
     } catch (err: any) {
@@ -161,7 +161,7 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
       <div className="flex flex-col items-center justify-center min-h-[50vh] p-8">
         <Loader2 className="w-8 h-8 animate-spin text-[#D4FF3F] mb-4" />
         <p className="font-mono-code text-xs text-[#8A8A8A] uppercase tracking-wider">
-          Loading Hub details...
+          Loading Community details...
         </p>
       </div>
     );
@@ -172,17 +172,17 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
       <div className="max-w-4xl mx-auto px-4 py-12 text-center">
         <AlertCircle className="w-10 h-10 text-[#FF5555] mx-auto mb-3" />
         <h2 className="text-xl font-bold font-mono-code text-[#F5F5F0] mb-2">
-          Hub Not Found
+          Community Not Found
         </h2>
         <p className="text-sm text-[#888] mb-6">
-          This Hub may have been archived or removed by its host.
+          This Community may have been archived or removed by its host.
         </p>
         <button
           onClick={onBack}
           className="px-4 py-2 bg-[#1A1A1E] border border-[#333] text-[#F5F5F0] font-mono-code text-xs hover:border-[#D4FF3F] transition-colors inline-flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Hubs
+          Back to Communities
         </button>
       </div>
     );
@@ -206,11 +206,11 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
           className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#121215] hover:bg-[#1C1C20] border border-[#26262B] hover:border-[#D4FF3F]/50 text-xs font-mono-code text-[#A0A09A] hover:text-[#F5F5F0] transition-all"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to All Hubs
+          Back to All Communities
         </button>
 
         <div className="flex items-center gap-2">
-          {/* Host Actions: Edit and Delete Hub */}
+          {/* Host Actions: Edit and Delete Community */}
           {isOwner && (
             <>
               <button
@@ -218,10 +218,10 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
                 type="button"
                 onClick={() => setIsEditModalOpen(true)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#141418] hover:bg-[#1E1E24] border border-[#D4FF3F]/40 hover:border-[#D4FF3F] text-xs font-mono-code text-[#D4FF3F] transition-all shadow-sm"
-                title="Edit Hub Settings and Details"
+                title="Edit Community Settings and Details"
               >
                 <Edit3 className="w-3.5 h-3.5" />
-                <span>Edit Hub</span>
+                <span>Edit Community</span>
               </button>
 
               <button
@@ -229,10 +229,10 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
                 type="button"
                 onClick={() => setIsDeleteModalOpen(true)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#141418] hover:bg-red-950/40 border border-red-800/60 hover:border-red-600 text-xs font-mono-code text-red-400 hover:text-red-300 transition-all shadow-sm"
-                title="Delete this Hub"
+                title="Delete this Community"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete Hub</span>
+                <span>Delete Community</span>
               </button>
             </>
           )}
@@ -241,7 +241,7 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
             id="space-detail-share-btn"
             onClick={handleShare}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#121215] hover:bg-[#1C1C20] border border-[#26262B] text-xs font-mono-code text-[#A0A09A] hover:text-[#D4FF3F] transition-all"
-            title="Copy Hub Link"
+            title="Copy Community Link"
           >
             {copiedLink ? (
               <>
@@ -292,7 +292,7 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
               {space.category}
             </span>
             <span className="px-2.5 py-1 text-[11px] font-mono-code text-[#8A8A8A] bg-[#16161A] border border-[#2A2A30]">
-              PUBLIC HUB
+              PUBLIC COMMUNITY
             </span>
             <div className="flex items-center gap-1 text-xs font-mono-code text-[#888] ml-auto">
               <Calendar className="w-3.5 h-3.5 text-[#666]" />
@@ -336,7 +336,7 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
               />
               <div>
                 <p className="text-xs font-mono-code text-[#777]">
-                  Hub Host & Founder
+                  Community Host & Founder
                 </p>
                 <p className="text-sm font-mono-code font-bold text-[#F5F5F0]">
                   {space.ownerName}{' '}
@@ -378,7 +378,7 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
                     className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-[#1A1A20] hover:bg-red-950/40 border border-[#333] hover:border-red-800 text-xs font-mono-code text-red-400 hover:text-red-300 transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    Delete Hub
+                    Delete Community
                   </button>
                 </div>
               ) : isMember ? (
@@ -412,7 +412,7 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />
-                      Join Hub
+                      Join Community
                     </>
                   )}
                 </button>
@@ -472,7 +472,7 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
             <div className="flex items-center gap-2.5">
               <Users className="w-5 h-5 text-[#D4FF3F]" />
               <h2 className="text-base font-bold font-mono-code text-[#F5F5F0] uppercase tracking-wider">
-                MEMBERS IN THIS HUB ({members.length})
+                MEMBERS IN THIS COMMUNITY ({members.length})
               </h2>
             </div>
             <span className="text-xs font-mono-code text-[#777]">
@@ -560,7 +560,7 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
                       <div>
                         {isMemberHost ? (
                           <span className="text-[10px] font-mono-code font-bold text-[#D4FF3F] bg-[#D4FF3F]/10 px-2 py-0.5 border border-[#D4FF3F]/30">
-                            HUB HOST
+                            COMMUNITY HOST
                           </span>
                         ) : isCurrentUser ? (
                           <span className="text-[10px] font-mono-code text-[#888]">
@@ -583,7 +583,7 @@ export const SpaceDetailView: React.FC<SpaceDetailViewProps> = ({
                               setMemberToRemove(member);
                             }}
                             className="inline-flex items-center gap-1 px-2 py-1 bg-red-950/30 hover:bg-red-900/60 border border-red-900/50 hover:border-red-600 text-red-400 hover:text-white text-[10px] font-mono-code transition-colors"
-                            title="Remove Member from Hub"
+                            title="Remove Member from Community"
                           >
                             <UserMinus className="w-3 h-3" />
                             <span>Remove</span>

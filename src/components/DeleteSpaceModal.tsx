@@ -33,8 +33,8 @@ export const DeleteSpaceModal: React.FC<DeleteSpaceModalProps> = ({
       onDeleted(space.id);
       onClose();
     } catch (err: any) {
-      console.error('Failed to delete Hub:', err);
-      setError(err?.message || 'Unable to delete Hub. Please check your connection and try again.');
+      console.error('Failed to delete Community:', err);
+      setError(err?.message || 'Unable to delete Community. Please check your connection and try again.');
       setIsDeleting(false);
     }
   };
@@ -74,7 +74,7 @@ export const DeleteSpaceModal: React.FC<DeleteSpaceModalProps> = ({
               id="delete-hub-title"
               className="text-lg font-bold font-sans-clean text-[#F5F5F0] tracking-tight"
             >
-              Delete this Hub?
+              Delete this Community?
             </h3>
             <p className="text-xs font-mono-code text-red-400/90 mt-0.5 font-medium">
               "{space.name}"
@@ -84,7 +84,7 @@ export const DeleteSpaceModal: React.FC<DeleteSpaceModalProps> = ({
 
         {/* Explanation / Warning Body */}
         <p className="text-xs sm:text-sm text-[#A0A09A] font-sans-clean leading-relaxed mb-6">
-          This will permanently remove the Hub and its associated Hub content according to the platform's deletion policy.
+          This will permanently remove the Community and its associated content according to the platform's deletion policy.
         </p>
 
         {/* Error Notice if any */}
@@ -122,7 +122,7 @@ export const DeleteSpaceModal: React.FC<DeleteSpaceModalProps> = ({
             ) : (
               <>
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete Hub</span>
+                <span>Delete Community</span>
               </>
             )}
           </button>

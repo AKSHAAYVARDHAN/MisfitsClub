@@ -62,7 +62,7 @@ export const PlatformSidebar: React.FC<PlatformSidebarProps> = ({
     },
     {
       id: 'sidebar-nav-spaces',
-      label: 'Hub',
+      label: 'Communities',
       route: '/spaces',
       icon: Layers,
     },

@@ -147,7 +147,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
         onSelectSpaceId(null);
       }
     }
-    setFeedbackNotice('Hub deleted.');
+    setFeedbackNotice('Community deleted.');
     setTimeout(() => {
       setFeedbackNotice(null);
     }, 4000);
@@ -266,21 +266,21 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
             <span>COMMUNITY GATHERINGS</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-bold font-sans-clean text-[#F5F5F0] tracking-tight mb-1.5 sm:mb-2">
-            HUB
+            COMMUNITIES
           </h1>
           <p className="text-xs sm:text-sm text-[#8E8E93] max-w-2xl leading-relaxed">
             Find people who are into the same unusual things you are. Gather around a shared curiosity, toolmaking project, deep inquiry, or craft.
           </p>
         </div>
 
-        {/* CTA: Create a Hub */}
+        {/* CTA: Create a Community */}
         <button
           id="spaces-create-btn"
           onClick={() => setIsCreateModalOpen(true)}
           className="btn-primary shrink-0 w-full sm:w-auto justify-center min-h-[44px] sm:min-h-0"
         >
           <Plus className="w-4 h-4" />
-          <span>Create Hub</span>
+          <span>Create Community</span>
         </button>
       </div>
 
@@ -303,7 +303,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search hubs by name, topic, or tag..."
+              placeholder="Search communities by name, topic, or tag..."
               className="w-full pl-9 pr-14 py-3 bg-[#0E0E12] border border-[#1E1E24] focus:border-[#D4FF3F]/60 text-xs sm:text-sm font-mono-code text-[#F5F5F0] placeholder-[#666670] focus:outline-none transition-colors min-h-[44px]"
             />
             {searchQuery && (
@@ -318,7 +318,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
             )}
           </div>
 
-          {/* Primary View Switcher: ALL HUBS / MY HUBS */}
+          {/* Primary View Switcher: ALL COMMUNITIES / MY COMMUNITIES */}
           <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#121216] border border-[#1E1E24]">
             <button
               id="spaces-mobile-tab-all"
@@ -330,7 +330,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
                   : 'text-[#8E8E93] hover:text-[#F5F5F0]'
               }`}
             >
-              <span>All Hubs ({spaces.length})</span>
+              <span>All Communities ({spaces.length})</span>
             </button>
             <button
               id="spaces-mobile-tab-mine"
@@ -342,11 +342,11 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
                   : 'text-[#8E8E93] hover:text-[#F5F5F0]'
               }`}
             >
-              <span>My Hubs ({mySpacesCount})</span>
+              <span>My Communities ({mySpacesCount})</span>
             </button>
           </div>
 
-          {/* Refine Hubs Trigger Button */}
+          {/* Refine Communities Trigger Button */}
           <button
             id="mobile-refine-hubs-btn"
             type="button"
@@ -361,7 +361,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
           >
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="w-3.5 h-3.5 text-[#D4FF3F]" />
-              <span>Refine Hubs</span>
+              <span>Refine Communities</span>
               {activeRefineCount > 0 && (
                 <span className="bg-[#D4FF3F] text-[#080808] w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ml-1">
                   {activeRefineCount}
@@ -375,7 +375,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
             />
           </button>
 
-          {/* Refine Hubs Panel */}
+          {/* Refine Communities Panel */}
           {showRefinePanel && (
             <div
               id="mobile-refine-hubs-panel"
@@ -385,7 +385,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
               <div className="flex items-center justify-between pb-3 border-b border-[#1E1E24]">
                 <span className="text-[11px] font-mono-code uppercase tracking-widest text-[#F5F5F0] font-bold flex items-center gap-2">
                   <SlidersHorizontal className="w-3.5 h-3.5 text-[#D4FF3F]" />
-                  <span>Refine Hubs</span>
+                  <span>Refine Communities</span>
                 </span>
                 {activeRefineCount > 0 && (
                   <span className="text-[10px] font-mono-code text-[#D4FF3F]">
@@ -519,7 +519,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search hubs by name, topic, or tag..."
+                placeholder="Search communities by name, topic, or tag..."
                 className="w-full pl-9 pr-9 py-2.5 bg-[#0E0E12] border border-[#1E1E24] focus:border-[#D4FF3F]/60 text-xs font-mono-code text-[#F5F5F0] placeholder-[#666670] focus:outline-none transition-colors h-[42px]"
               />
               {searchQuery && (
@@ -535,7 +535,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
               )}
             </div>
 
-            {/* Refine Hubs Trigger (Compact Fixed/Shrink-0 Control) */}
+            {/* Refine Communities Trigger (Compact Fixed/Shrink-0 Control) */}
             <button
               id="desktop-refine-hubs-btn"
               type="button"
@@ -550,7 +550,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
             >
               <SlidersHorizontal className="w-3.5 h-3.5 text-[#D4FF3F]" />
               <span>
-                REFINE HUBS
+                REFINE COMMUNITIES
                 {activeRefineCount > 0 && ` • ${activeRefineCount} ACTIVE`}
               </span>
               <ChevronDown
@@ -560,7 +560,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
               />
             </button>
 
-            {/* Scope Tabs: [ ALL HUBS ] [ MY HUBS ] (Compact Grouped Selector) */}
+            {/* Scope Tabs: [ ALL COMMUNITIES ] [ MY COMMUNITIES ] (Compact Grouped Selector) */}
             <div className="h-[42px] flex items-center gap-1 bg-[#121216] border border-[#1E1E24] p-1 shrink-0">
               <button
                 id="spaces-tab-all"
@@ -572,7 +572,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
                     : 'text-[#8E8E93] hover:text-[#F5F5F0]'
                 }`}
               >
-                All Hubs ({spaces.length})
+                All Communities ({spaces.length})
               </button>
               <button
                 id="spaces-tab-mine"
@@ -584,7 +584,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
                     : 'text-[#8E8E93] hover:text-[#F5F5F0]'
                 }`}
               >
-                My Hubs ({mySpacesCount})
+                My Communities ({mySpacesCount})
               </button>
             </div>
           </div>
@@ -739,21 +739,21 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
         <div className="py-24 text-center">
           <Loader2 className="w-8 h-8 animate-spin text-[#D4FF3F] mx-auto mb-3" />
           <p className="font-mono-code text-xs text-[#8E8E93] uppercase tracking-wider">
-            Loading Misfits Hubs...
+            Loading Misfits Communities...
           </p>
         </div>
       ) : filteredSpaces.length === 0 ? (
         <div className="bg-[#0E0E12] border border-[#1E1E24] p-12 text-center my-6">
           <Layers className="w-10 h-10 text-[#444450] mx-auto mb-4" />
           <h3 className="text-base font-bold font-mono-code text-[#F5F5F0] mb-2">
-            No Hubs Found
+            No Communities Found
           </h3>
           <p className="text-xs text-[#8E8E93] max-w-md mx-auto mb-6">
             {membershipTab === 'my-spaces'
-              ? "You haven't joined or created any Hubs yet. Explore public hubs or start your own gathering."
+              ? "You haven't joined or created any Communities yet. Explore public communities or start your own gathering."
               : searchQuery || selectedCategory !== 'All' || selectedTag
-              ? 'No hubs match your active filters. Try clearing your search or filters.'
-              : 'There are no active Hubs yet. Be the first to create one!'}
+              ? 'No communities match your active filters. Try clearing your search or filters.'
+              : 'There are no active Communities yet. Be the first to create one!'}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             {(searchQuery || selectedCategory !== 'All' || selectedTag || membershipTab === 'my-spaces') && (
@@ -774,7 +774,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({
               className="btn-primary"
             >
               <Plus className="w-4 h-4" />
-              Create Hub
+              Create Community
             </button>
           </div>
         </div>

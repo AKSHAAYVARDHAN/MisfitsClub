@@ -42,7 +42,7 @@ const PRINCIPLES: GuidelinePrinciple[] = [
     title: 'No Spam or Unsolicited Pitching',
     desc: 'Misfits Club is a sanctuary for craft, not an outbound sales channel.',
     detail:
-      'Do not use Connections, Messages, or Hubs for unsolicited marketing campaigns, generic recruiter spam, crypto pump schemes, or bulk automated outreach.',
+      'Do not use Connections, Messages, or Communities for unsolicited marketing campaigns, generic recruiter spam, crypto pump schemes, or bulk automated outreach.',
   },
   {
     number: '05',

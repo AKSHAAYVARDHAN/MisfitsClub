@@ -94,7 +94,7 @@ export const CreatePostComposer: React.FC<CreatePostComposerProps> = ({
           </div>
           <div>
             <h3 className="text-sm font-bold font-mono-code text-[#F5F5F0]">
-              Join Hub to Participate
+              Join Community to Participate
             </h3>
             <p className="text-xs text-[#8A8A8A] font-sans-clean mt-0.5">
               Members can start discussions, ask questions, share ideas, and leave replies.
@@ -107,7 +107,7 @@ export const CreatePostComposer: React.FC<CreatePostComposerProps> = ({
             onClick={onPromptJoin}
             className="px-5 py-2 bg-[#D4FF3F] hover:bg-[#b8e62f] text-[#080808] text-xs font-mono-code font-bold uppercase tracking-wider transition-all whitespace-nowrap"
           >
-            Join Hub
+            Join Community
           </button>
         )}
       </div>
@@ -129,7 +129,7 @@ export const CreatePostComposer: React.FC<CreatePostComposerProps> = ({
             className="w-9 h-9 rounded-none object-cover border border-[#333] shrink-0"
           />
           <div className="flex-1 bg-[#141418] border border-[#222] px-4 py-2 text-xs font-mono-code text-[#777] group-hover:text-[#AAA] group-hover:border-[#333] transition-colors">
-            Start a thought, question, or idea in this Hub...
+            Start a thought, question, or idea in this Community...
           </div>
           <button
             type="button"

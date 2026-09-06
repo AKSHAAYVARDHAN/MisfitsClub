@@ -12,7 +12,7 @@ export const storageService = {
    */
   async uploadHubPhoto(hubId: string, file: File): Promise<string> {
     if (!hubId) {
-      throw new Error('Hub ID is required for photo upload.');
+      throw new Error('Community ID is required for photo upload.');
     }
 
     if (!file) {

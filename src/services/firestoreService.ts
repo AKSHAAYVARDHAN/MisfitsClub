@@ -148,8 +148,8 @@ export const firestoreService = {
     return connectionService.cancelConnectionRequest(connectionId, currentUserId);
   },
 
-  async removeConnection(connectionId: string, currentUserId: string): Promise<void> {
-    return connectionService.removeConnection(connectionId, currentUserId);
+  async removeConnection(connectionId: string, currentUserId: string, otherUserId?: string): Promise<void> {
+    return connectionService.removeConnection(connectionId, currentUserId, otherUserId);
   },
 
   async getConnections(userId: string): Promise<Connection[]> {

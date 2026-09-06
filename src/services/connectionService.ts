@@ -285,10 +285,54 @@ export const connectionService = {
   /**
    * Remove an existing connection
    */
-  async removeConnection(connectionId: string, currentUserId: string): Promise<void> {
+  async removeConnection(connectionId: string, currentUserId: string, targetUserId?: string): Promise<void> {
     const path = `connections/${connectionId}`;
     try {
-      await deleteDoc(doc(db, 'connections', connectionId));
+      // 1. Direct document ID deletion if valid
+      if (
+        connectionId &&
+        !connectionId.startsWith('sample-') &&
+        !connectionId.startsWith('conn-maya') &&
+        !connectionId.startsWith('conn-elena') &&
+        !connectionId.startsWith('conn-tariq')
+      ) {
+        await deleteDoc(doc(db, 'connections', connectionId)).catch(() => {});
+      }
+
+      // 2. If targetUserId is provided, check deterministic IDs and any matching connection docs
+      if (currentUserId && targetUserId && !targetUserId.startsWith('p-')) {
+        const detId = this.generateConnectionId(currentUserId, targetUserId);
+        if (detId && detId !== connectionId) {
+          await deleteDoc(doc(db, 'connections', detId)).catch(() => {});
+        }
+        const prefixedDetId = `conn_${detId}`;
+        if (prefixedDetId !== connectionId) {
+          await deleteDoc(doc(db, 'connections', prefixedDetId)).catch(() => {});
+        }
+
+        // Search for any documents in connections collection involving both participants
+        const q = query(
+          collection(db, 'connections'),
+          where('participants', 'array-contains', currentUserId)
+        );
+        const snap = await getDocs(q);
+        const deletes: Promise<void>[] = [];
+        snap.forEach((d) => {
+          const data = d.data() as any;
+          const isTarget =
+            (data.participants && data.participants.includes(targetUserId)) ||
+            data.requesterId === targetUserId ||
+            data.targetId === targetUserId ||
+            data.profileId === targetUserId ||
+            d.id === connectionId;
+          if (isTarget) {
+            deletes.push(deleteDoc(d.ref).catch(() => {}));
+          }
+        });
+        if (deletes.length > 0) {
+          await Promise.all(deletes);
+        }
+      }
     } catch (error) {
       console.warn('Failed to remove connection in Firestore', error);
       handleFirestoreError(error, OperationType.DELETE, path);

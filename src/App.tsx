@@ -258,6 +258,9 @@ function MainApp() {
   const activeConnectionIdRef = useRef<string>(activeConnectionId);
   activeConnectionIdRef.current = activeConnectionId;
 
+  const profilesRef = useRef<(UserProfile | PublicProfile)[]>(profiles);
+  profilesRef.current = profiles;
+
   // Dedicated helper to select a conversation and reliably mark as read in state & Firestore
   const handleSelectConversation = useCallback(
     async (connectionId: string) => {
@@ -369,8 +372,22 @@ function MainApp() {
         const lastMessageAt = convo?.lastMessageAt || conn.lastMessageAt;
         const lastMessageTime = lastMessageAt ? formatMessageTime(lastMessageAt) : conn.lastMessageTime;
 
+        // Enrich counterpart profile with full public profile if available
+        const knownProfile = profilesRef.current.find((p) => (p.uid || p.id) === otherId) as PublicProfile | undefined;
+        const enrichedProfile = knownProfile ? {
+          ...conn.profile,
+          ...knownProfile,
+          name: knownProfile.name || conn.profile?.name,
+          role: knownProfile.role || conn.profile?.role,
+          college: knownProfile.college || conn.profile?.college,
+          bio: knownProfile.bio || conn.profile?.bio,
+          skills: knownProfile.skills && knownProfile.skills.length > 0 ? knownProfile.skills : conn.profile?.skills,
+          interests: knownProfile.interests && knownProfile.interests.length > 0 ? knownProfile.interests : conn.profile?.interests,
+        } : conn.profile;
+
         return {
           ...conn,
+          profile: enrichedProfile,
           unreadCount,
           lastMessage: convo?.lastMessage || conn.lastMessage,
           lastMessageTime,
@@ -417,48 +434,8 @@ function MainApp() {
           };
         });
 
-        // Incorporate direct conversations from Firestore that may not have a connection doc yet
-        const existingOtherIds = new Set(
-          prev.map((c) => getOtherParticipantId(c, currentUserId)).filter(Boolean)
-        );
-        const newConnsFromConvos: Connection[] = [];
-
-        (liveConvos || []).forEach((convo) => {
-          const otherId = convo.participantIds?.find((id) => id !== currentUserId);
-          if (otherId && !existingOtherIds.has(otherId) && !otherId.startsWith('p-')) {
-            const summary = convo.participantsSummary?.[otherId];
-            const isViewingThis =
-              currentPathRef.current === '/messages' &&
-              (activeConnectionIdRef.current === convo.id || activeConnectionIdRef.current === convo.connectionId);
-            const unread = isViewingThis ? 0 : (convo.unreadCounts?.[currentUserId] ?? 0);
-            const cId = convo.connectionId || convo.id;
-            newConnsFromConvos.push({
-              id: cId,
-              profileId: otherId,
-              profile: {
-                id: otherId,
-                name: summary?.name || 'Member',
-                handle: summary?.name ? summary.name.toLowerCase().replace(/\s+/g, '') : otherId.slice(0, 8),
-                avatarUrl: summary?.avatarUrl || summary?.profilePhoto,
-                profilePhoto: summary?.profilePhoto || summary?.avatarUrl,
-                role: summary?.role || 'Explorer',
-                location: summary?.location || 'Worldwide',
-              } as any,
-              connectedAt: convo.createdAt || 'Recently',
-              status: 'connected',
-              sharedIntents: [],
-              sharedInterests: [],
-              lastMessage: convo.lastMessage,
-              lastMessageTime: convo.lastMessageAt ? formatMessageTime(convo.lastMessageAt) : 'Recently',
-              lastMessageAt: convo.lastMessageAt,
-              unreadCount: unread,
-            });
-            existingOtherIds.add(otherId);
-          }
-        });
-
-        const combined = [...updated, ...newConnsFromConvos];
-        return sortConnectionsByActivity(combined, liveConvos || [], currentUserId);
+        // Derive connections strictly from valid connection documents
+        return sortConnectionsByActivity(updated, liveConvos || [], currentUserId);
       });
     });
 
@@ -818,9 +795,23 @@ function MainApp() {
   // Remove Connection
   const handleRemoveConnection = async (connectionId: string) => {
     const currentUserId = user?.uid || user?.id || 'current-user';
-    setConnections((prev) => prev.filter((c) => c.id !== connectionId));
+    const targetConn = connections.find((c) => c.id === connectionId);
+    const otherId = targetConn ? getOtherParticipantId(targetConn, currentUserId) : undefined;
+
+    // Immediately remove from local state so UI updates instantaneously
+    setConnections((prev) =>
+      prev.filter(
+        (c) => c.id !== connectionId && (!otherId || getOtherParticipantId(c, currentUserId) !== otherId)
+      )
+    );
+
+    // If active conversation was this connection, clear activeConnectionId
+    if (activeConnectionId === connectionId) {
+      setActiveConnectionId('');
+    }
+
     try {
-      await connectionService.removeConnection(connectionId, currentUserId);
+      await connectionService.removeConnection(connectionId, currentUserId, otherId);
     } catch (e) {
       console.warn('Failed to remove connection in Firestore', e);
     }

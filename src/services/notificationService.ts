@@ -12,7 +12,7 @@ import {
   onSnapshot,
   writeBatch,
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType, sanitizeFirestoreData } from './firebase';
+import { db, auth, handleFirestoreError, OperationType, sanitizeFirestoreData } from './firebase';
 import { AppNotification, NotificationType } from '../types';
 
 export interface CreateNotificationInput {
@@ -34,9 +34,14 @@ export const notificationService = {
    */
   generateNotificationId(type: NotificationType, referenceId: string, recipientId: string): string {
     const cleanType = type.toLowerCase().replace(/_/g, '-');
-    const cleanRef = referenceId.replace(/[^a-zA-Z0-9_\-]/g, '_');
-    const cleanRecip = recipientId.replace(/[^a-zA-Z0-9_\-]/g, '_');
-    return `notif_${cleanType}_${cleanRef}_${cleanRecip}`;
+    const cleanRef = referenceId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const cleanRecip = recipientId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const fullId = `notif_${cleanType}_${cleanRef}_${cleanRecip}`;
+    if (fullId.length <= 128) {
+      return fullId;
+    }
+    // Safely truncate reference and recipient parts if ID exceeds 128 chars
+    return `notif_${cleanType.slice(0, 20)}_${cleanRef.slice(-48)}_${cleanRecip.slice(-36)}`;
   },
 
   /**
@@ -55,8 +60,11 @@ export const notificationService = {
       referenceId,
     } = input;
 
+    // Use current authenticated Firebase user UID as authoritative senderId fallback
+    const effectiveSenderId = senderId || auth.currentUser?.uid || null;
+
     // Safety checks: do not notify yourself
-    if (!recipientId || recipientId === senderId) {
+    if (!recipientId || (effectiveSenderId && recipientId === effectiveSenderId)) {
       return null;
     }
 
@@ -64,17 +72,23 @@ export const notificationService = {
     const path = `notifications/${notifId}`;
     const now = new Date().toISOString();
 
+    // Ensure senderAvatar is not an oversized base64 data URI or broken string
+    let safeAvatar = senderAvatar?.trim();
+    if (safeAvatar && (safeAvatar.startsWith('data:') || safeAvatar.length > 2000)) {
+      safeAvatar = undefined;
+    }
+
     const notifData: AppNotification = {
       id: notifId,
       recipientId,
-      senderId: senderId || null,
-      senderName: senderName || 'A Misfits Member',
-      senderAvatar: senderAvatar || undefined,
-      senderRole: senderRole || undefined,
+      senderId: effectiveSenderId,
+      senderName: senderName ? senderName.slice(0, 100) : 'A Misfits Member',
+      senderAvatar: safeAvatar || undefined,
+      senderRole: senderRole ? senderRole.slice(0, 120) : undefined,
       type,
-      title,
-      message,
-      referenceId,
+      title: title ? title.slice(0, 120) : 'Notification',
+      message: message ? message.slice(0, 1000) : '',
+      referenceId: referenceId ? referenceId.slice(0, 128) : 'ref',
       read: false,
       createdAt: now,
       updatedAt: now,
@@ -87,7 +101,7 @@ export const notificationService = {
       return notifData;
     } catch (error) {
       console.warn('Failed to persist notification to Firestore (using fallback):', error);
-      handleFirestoreError(error, OperationType.CREATE, path);
+      handleFirestoreError(error, OperationType.WRITE, path);
       return notifData;
     }
   },

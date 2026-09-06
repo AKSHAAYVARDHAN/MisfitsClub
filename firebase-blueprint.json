@@ -356,7 +356,7 @@
         "senderAvatar": {
           "type": "string",
           "description": "Avatar URL of sender",
-          "maxLength": 500
+          "maxLength": 2048
         },
         "senderRole": {
           "type": "string",

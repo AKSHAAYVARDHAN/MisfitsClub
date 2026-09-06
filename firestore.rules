@@ -19,7 +19,7 @@ service cloud.firestore {
     }
 
     function isValidId(id) {
-      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$');
     }
 
     function incoming() {
@@ -410,9 +410,9 @@ service cloud.firestore {
       return data.id is string && data.id.size() <= 128 &&
              data.recipientId is string && data.recipientId.size() <= 128 &&
              (!('senderId' in data) || data.senderId == null || (data.senderId is string && data.senderId.size() <= 128)) &&
-             (!('senderName' in data) || (data.senderName is string && data.senderName.size() <= 100)) &&
-             (!('senderAvatar' in data) || (data.senderAvatar is string && data.senderAvatar.size() <= 500)) &&
-             (!('senderRole' in data) || (data.senderRole is string && data.senderRole.size() <= 120)) &&
+             (!('senderName' in data) || data.senderName == null || (data.senderName is string && data.senderName.size() <= 100)) &&
+             (!('senderAvatar' in data) || data.senderAvatar == null || (data.senderAvatar is string && data.senderAvatar.size() <= 2048)) &&
+             (!('senderRole' in data) || data.senderRole == null || (data.senderRole is string && data.senderRole.size() <= 120)) &&
              data.type is string && (
                data.type == 'CONNECTION_REQUEST' ||
                data.type == 'CONNECTION_ACCEPTED' ||
@@ -425,19 +425,26 @@ service cloud.firestore {
              data.message is string && data.message.size() > 0 && data.message.size() <= 1000 &&
              data.referenceId is string && data.referenceId.size() <= 128 &&
              data.read is bool &&
-             data.createdAt is string && data.createdAt.size() <= 64;
+             data.createdAt is string && data.createdAt.size() <= 64 &&
+             (!('updatedAt' in data) || data.updatedAt == null || (data.updatedAt is string && data.updatedAt.size() <= 64));
     }
 
     match /notifications/{notificationId} {
-      allow read: if isSignedIn() && resource.data.recipientId == request.auth.uid;
+      allow read: if isSignedIn() && (
+        resource == null ||
+        resource.data.recipientId == request.auth.uid ||
+        resource.data.senderId == request.auth.uid
+      );
       allow create: if isSignedIn() && isValidId(notificationId) && isValidNotification(incoming()) && incoming().id == notificationId && (
         incoming().senderId == request.auth.uid || incoming().recipientId == request.auth.uid
       );
       allow update: if isSignedIn() && isValidId(notificationId) && isValidNotification(incoming()) && (
-        resource.data.recipientId == request.auth.uid &&
-        incoming().diff(existing()).affectedKeys().hasOnly(['read', 'updatedAt'])
+        // Recipient can update read status
+        (resource.data.recipientId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['read', 'updatedAt'])) ||
+        // Sender who authored the notification can refresh/update it (e.g. resending request, intro prompt update)
+        (resource.data.senderId == request.auth.uid && incoming().senderId == request.auth.uid && incoming().recipientId == resource.data.recipientId)
       );
-      allow delete: if isSignedIn() && resource.data.recipientId == request.auth.uid;
+      allow delete: if isSignedIn() && (resource.data.recipientId == request.auth.uid || resource.data.senderId == request.auth.uid);
     }
 
     // =========================================================================

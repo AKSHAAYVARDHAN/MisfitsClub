@@ -1243,6 +1243,7 @@ function MainApp() {
             <ConnectionsView
               connections={connections}
               currentUser={user || INITIAL_USER}
+              allProfiles={profiles}
               initialTab={connectionsInitialTab}
               onOpenChat={(connId) => {
                 handleSelectConversation(connId);

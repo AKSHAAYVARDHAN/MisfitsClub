@@ -38,6 +38,7 @@ export interface UserProfile {
   lng?: number;
   roleEmoji?: string;
   tagline?: string;
+  currentThinking?: string;
   curiousAbout?: string[];
   building?: string;
   learning?: string;
@@ -81,6 +82,7 @@ export interface PublicProfile {
   role: string;
   roleEmoji?: string;
   tagline?: string;
+  currentThinking?: string;
   curiousAbout?: string[];
   building?: string;
   learning?: string;
@@ -155,6 +157,11 @@ export interface ProfileSummary {
   college?: string;
   department?: string;
   tagline?: string;
+  currentThinking?: string;
+  bio?: string;
+  building?: string;
+  learning?: string;
+  openQuestion?: string;
   skills?: string[];
   interests?: string[];
   intents?: ConnectionIntent[];

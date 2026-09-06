@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Connection, ConnectionIntent, PublicProfile, UserProfile } from '../types';
+import { getOtherParticipantId } from '../services/connectionService';
+import { firestoreService } from '../services/firestoreService';
 import { 
   Users, 
   MessageSquare, 
@@ -21,9 +23,74 @@ import {
   ChevronDown
 } from 'lucide-react';
 
+interface ProfileSnippetResult {
+  label: string;
+  content: string;
+}
+
+/**
+ * Resolves the primary profile snippet for an established connection.
+ * Priority order:
+ * 1. "ABOUT ME & CURRENT THINKING" (dedicated currentThinking field or bio)
+ * 2. Fallback to "What I'm Building" (building)
+ * 3. Fallback to "What I'm Learning" (learning)
+ * 4. Fallback to "Open Question I'm Pondering" (openQuestion)
+ */
+function getConnectedProfileSnippet(p: any): ProfileSnippetResult | null {
+  if (!p) return null;
+
+  // 1. "ABOUT ME & CURRENT THINKING"
+  const currentThinking = typeof p.currentThinking === 'string' ? p.currentThinking.trim() : '';
+  if (currentThinking) {
+    return {
+      label: 'About Me & Current Thinking',
+      content: currentThinking,
+    };
+  }
+
+  // Fallback to bio (About Me)
+  const bio = typeof p.bio === 'string' ? p.bio.trim() : '';
+  if (bio) {
+    return {
+      label: 'About Me & Current Thinking',
+      content: bio,
+    };
+  }
+
+  // 2. What I'm Building
+  const building = typeof p.building === 'string' ? p.building.trim() : '';
+  if (building) {
+    return {
+      label: "What I'm Building",
+      content: building,
+    };
+  }
+
+  // 3. What I'm Learning
+  const learning = typeof p.learning === 'string' ? p.learning.trim() : '';
+  if (learning) {
+    return {
+      label: "What I'm Learning",
+      content: learning,
+    };
+  }
+
+  // 4. Open Question I'm Pondering
+  const openQuestion = typeof p.openQuestion === 'string' ? p.openQuestion.trim() : '';
+  if (openQuestion) {
+    return {
+      label: "Open Question I'm Pondering",
+      content: openQuestion,
+    };
+  }
+
+  return null;
+}
+
 interface ConnectionsViewProps {
   connections: Connection[];
   currentUser: UserProfile | null;
+  allProfiles?: (UserProfile | PublicProfile)[];
   onOpenChat: (connectionId: string) => void;
   onExplore: () => void;
   onOpenOrb?: () => void;
@@ -40,6 +107,7 @@ type TabType = 'connected' | 'received' | 'sent';
 export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
   connections = [],
   currentUser,
+  allProfiles = [],
   onOpenChat,
   onExplore,
   onOpenOrb,
@@ -91,6 +159,37 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
   const currentUserId = currentUser?.uid || currentUser?.id;
   const safeConns = connections || [];
 
+  // Dynamic counterpart profiles cache to ensure latest data is displayed without stale caches
+  const [fetchedProfiles, setFetchedProfiles] = useState<Record<string, PublicProfile | UserProfile>>({});
+
+  React.useEffect(() => {
+    let isMounted = true;
+    const fetchMissingProfiles = async () => {
+      const knownIds = new Set(
+        (allProfiles || []).map((p) => p.uid || p.id).concat(Object.keys(fetchedProfiles))
+      );
+
+      for (const conn of safeConns) {
+        const otherId = getOtherParticipantId(conn, currentUserId || '');
+        if (otherId && !knownIds.has(otherId) && !otherId.startsWith('p-')) {
+          try {
+            const prof = await firestoreService.getPublicProfile(otherId);
+            if (prof && isMounted) {
+              setFetchedProfiles((prev) => ({ ...prev, [otherId]: prof }));
+            }
+          } catch (e) {
+            console.warn('Failed to fetch public profile for connection counterpart:', otherId, e);
+          }
+        }
+      }
+    };
+
+    fetchMissingProfiles();
+    return () => {
+      isMounted = false;
+    };
+  }, [safeConns, currentUserId, allProfiles]);
+
   // Partition connections by status and direction
   const connectedList = safeConns.filter((c) => c.status === 'connected');
   
@@ -126,6 +225,17 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
     return conn.requesterSummary || conn.profile;
   };
 
+  // Resolves the most up-to-date counterpart profile, combining connection summaries and live profile states
+  const getResolvedProfile = (conn: Connection, tab: TabType) => {
+    const otherId = getOtherParticipantId(conn, currentUserId || '');
+    const liveMatch = (otherId && (allProfiles || []).find((prof) => (prof.uid || prof.id) === otherId)) || (otherId ? fetchedProfiles[otherId] : null);
+    const baseSummary = getCounterpartProfile(conn, tab);
+    if (liveMatch) {
+      return { ...conn.profile, ...baseSummary, ...liveMatch };
+    }
+    return baseSummary ? { ...conn.profile, ...baseSummary } : conn.profile;
+  };
+
   // Apply intent and search filter
   const filteredList = getActiveList().filter((conn) => {
     // Intent filter
@@ -137,20 +247,28 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
     // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      const p = getCounterpartProfile(conn, activeTab);
+      const p = getResolvedProfile(conn, activeTab);
       const name = (p?.name || '').toLowerCase();
       const role = (p?.role || '').toLowerCase();
       const location = (p?.location || '').toLowerCase();
       const college = (p?.college || '').toLowerCase();
+      const bio = (p?.bio || '').toLowerCase();
+      const currentThinking = (p?.currentThinking || '').toLowerCase();
+      const building = (p?.building || '').toLowerCase();
+      const learning = (p?.learning || '').toLowerCase();
       const intro = (conn.introNote || '').toLowerCase();
-      const skills = (p?.skills || []).some((s) => s.toLowerCase().includes(q));
-      const interests = (p?.interests || []).some((i) => i.toLowerCase().includes(q));
+      const skills = (p?.skills || []).some((s: string) => s.toLowerCase().includes(q));
+      const interests = (p?.interests || []).some((i: string) => i.toLowerCase().includes(q));
 
       if (
         !name.includes(q) &&
         !role.includes(q) &&
         !location.includes(q) &&
         !college.includes(q) &&
+        !bio.includes(q) &&
+        !currentThinking.includes(q) &&
+        !building.includes(q) &&
+        !learning.includes(q) &&
         !intro.includes(q) &&
         !skills &&
         !interests
@@ -407,11 +525,11 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredList.map((conn) => {
-            const counterpart = getCounterpartProfile(conn, activeTab);
-            const p = counterpart ? { ...conn.profile, ...counterpart } : conn.profile;
+            const p = getResolvedProfile(conn, activeTab);
             const isIncoming = activeTab === 'received';
             const isOutgoing = activeTab === 'sent';
             const isConnected = activeTab === 'connected';
+            const connectedSnippet = isConnected ? getConnectedProfileSnippet(p) : null;
 
             return (
               <div
@@ -476,8 +594,20 @@ export const ConnectionsView: React.FC<ConnectionsViewProps> = ({
                     </p>
                   )}
 
-                  {/* Intro Note / Starter Prompt if included */}
-                  {conn.introNote && (
+                  {/* For Established Connections: Display Connected Member's Current Profile Context */}
+                  {isConnected && connectedSnippet && (
+                    <div className="bg-[#121216] p-3 border border-[#202026] mb-3.5">
+                      <span className="text-[9px] text-[#D4FF3F] font-mono-code uppercase tracking-widest font-bold block mb-1">
+                        {connectedSnippet.label}
+                      </span>
+                      <p className="text-xs text-[#D8D8DC] italic leading-relaxed">
+                        “{connectedSnippet.content}”
+                      </p>
+                    </div>
+                  )}
+
+                  {/* For Pending Requests: Display Starter Note / Opening Message */}
+                  {!isConnected && conn.introNote && (
                     <div className="bg-[#121216] p-3 border border-[#202026] mb-3.5">
                       <span className="text-[9px] text-[#D4FF3F] font-mono-code uppercase tracking-widest font-bold block mb-1">
                         {isIncoming ? 'Opening Message from them' : 'Your Starter Note'}

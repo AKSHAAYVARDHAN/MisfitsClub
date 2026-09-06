@@ -342,6 +342,8 @@ service cloud.firestore {
              data.text is string && data.text.size() > 0 && data.text.size() <= 4000 &&
              (!('timestamp' in data) || (data.timestamp is string && data.timestamp.size() <= 64)) &&
              (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+             (!('read' in data) || data.read is bool) &&
+             (!('recipientId' in data) || (data.recipientId is string && data.recipientId.size() <= 128)) &&
              (!('readAt' in data) || (data.readAt is string && data.readAt.size() <= 64)) &&
              (!('readBy' in data) || (data.readBy is list && data.readBy.size() <= 10)) &&
              (!('isStarterPrompt' in data) || data.isStarterPrompt is bool);

@@ -176,6 +176,7 @@ export interface Connection {
   introNote?: string;
   lastMessage?: string;
   lastMessageTime?: string;
+  lastMessageAt?: string;
   unreadCount?: number;
   createdAt?: string;
   updatedAt?: string;
@@ -186,10 +187,13 @@ export interface ChatMessage {
   conversationId?: string;
   connectionId?: string;
   senderId: 'currentUser' | string;
+  recipientId?: string;
   senderName?: string;
   text: string;
   timestamp: string;
   createdAt?: string;
+  read?: boolean;
+  readAt?: string;
   readBy?: string[];
   isStarterPrompt?: boolean;
 }

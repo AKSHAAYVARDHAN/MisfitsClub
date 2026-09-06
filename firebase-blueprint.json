@@ -288,6 +288,11 @@
           "description": "UID of author or 'currentUser'",
           "maxLength": 128
         },
+        "recipientId": {
+          "type": "string",
+          "description": "UID of recipient",
+          "maxLength": 128
+        },
         "text": {
           "type": "string",
           "description": "Content of message",
@@ -297,6 +302,19 @@
           "type": "string",
           "description": "Display time text",
           "maxLength": 64
+        },
+        "read": {
+          "type": "boolean",
+          "description": "Whether the message has been read by recipient"
+        },
+        "readAt": {
+          "type": "string",
+          "description": "Timestamp when the message was read",
+          "maxLength": 64
+        },
+        "readBy": {
+          "type": "array",
+          "description": "List of user UIDs who have viewed this message"
         },
         "isStarterPrompt": {
           "type": "boolean",

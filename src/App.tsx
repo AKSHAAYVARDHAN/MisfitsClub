@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   UserProfile, 
   PublicProfile,
   Connection, 
+  Conversation,
   ChatMessage, 
   CuriousBoardPost, 
   AppNotification
@@ -15,7 +16,7 @@ import {
 import { firestoreService } from './services/firestoreService';
 import { connectionService, getOtherParticipantId } from './services/connectionService';
 import { notificationService } from './services/notificationService';
-import { messageService } from './services/messageService';
+import { messageService, formatMessageTime } from './services/messageService';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { RouterProvider, useRouter, AppRoute } from './context/RouterContext';
 import { Navbar } from './components/Navbar';
@@ -63,7 +64,7 @@ const INITIAL_SAMPLE_CONNECTIONS: Connection[] = [
     introNote: 'Building micro-satellites sounds incredible. Would love to swap notes on kinematics.',
     lastMessage: 'I am testing the new brushless gimbal motors this afternoon at the lab if you want to see the torque benchmarks.',
     lastMessageTime: 'Tuesday',
-    unreadCount: 1,
+    unreadCount: 0,
   },
   {
     id: 'conn-tariq',
@@ -111,6 +112,52 @@ const INITIAL_SAMPLE_NOTIFICATIONS: AppNotification[] = [
   },
 ];
 
+/**
+ * Authoritative conversation sorter:
+ * Prioritizes latest message activity timestamp (lastMessageAt),
+ * falling back to conversation or connection creation/update timestamps.
+ * Guarantees that conversations with recent incoming/outgoing messages move to the top.
+ */
+function sortConnectionsByActivity(
+  conns: Connection[],
+  convos: Conversation[] = [],
+  currentUserId = ''
+): Connection[] {
+  return [...conns].sort((a, b) => {
+    const otherA = getOtherParticipantId(a, currentUserId);
+    const otherB = getOtherParticipantId(b, currentUserId);
+
+    const convoA = convos.find(
+      (c) =>
+        (c.participantIds && c.participantIds.includes(currentUserId) && otherA && c.participantIds.includes(otherA)) ||
+        c.connectionId === a.id ||
+        c.id === a.id
+    );
+    const convoB = convos.find(
+      (c) =>
+        (c.participantIds && c.participantIds.includes(currentUserId) && otherB && c.participantIds.includes(otherB)) ||
+        c.connectionId === b.id ||
+        c.id === b.id
+    );
+
+    const timeA = convoA?.lastMessageAt || a.lastMessageAt || '';
+    const timeB = convoB?.lastMessageAt || b.lastMessageAt || '';
+
+    if (timeA && timeB) {
+      const cmp = timeB.localeCompare(timeA);
+      if (cmp !== 0) return cmp;
+    } else if (timeA && !timeB) {
+      return -1;
+    } else if (!timeA && timeB) {
+      return 1;
+    }
+
+    const fallbackA = convoA?.updatedAt || a.updatedAt || a.connectedAt || a.createdAt || '';
+    const fallbackB = convoB?.updatedAt || b.updatedAt || b.connectedAt || b.createdAt || '';
+    return fallbackB.localeCompare(fallbackA);
+  });
+}
+
 function MainApp() {
   const { user, isAuthenticated, isLoading, signOut, completeOnboarding, updateUser } = useAuth();
   const { currentPath, navigate } = useRouter();
@@ -123,6 +170,7 @@ function MainApp() {
 
   // Connections list synchronized from Firestore with local fallback
   const [connections, setConnections] = useState<Connection[]>(INITIAL_SAMPLE_CONNECTIONS);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [connectionsInitialTab, setConnectionsInitialTab] = useState<'connected' | 'received' | 'sent'>('connected');
 
   // Notifications state
@@ -197,9 +245,73 @@ function MainApp() {
     }
   }, [currentPath]);
 
-  // Keep ref for connections to avoid re-triggering effects on state updates
+  // Keep refs for live state to avoid stale closure or effect re-trigger cycles
   const connectionsRef = useRef<Connection[]>(connections);
   connectionsRef.current = connections;
+
+  const conversationsRef = useRef<Conversation[]>(conversations);
+  conversationsRef.current = conversations;
+
+  const currentPathRef = useRef<string>(currentPath);
+  currentPathRef.current = currentPath;
+
+  const activeConnectionIdRef = useRef<string>(activeConnectionId);
+  activeConnectionIdRef.current = activeConnectionId;
+
+  // Dedicated helper to select a conversation and reliably mark as read in state & Firestore
+  const handleSelectConversation = useCallback(
+    async (connectionId: string) => {
+      if (!connectionId) return;
+      setActiveConnectionId(connectionId);
+
+      const currentUserId = user?.uid || user?.id;
+      if (!currentUserId) return;
+
+      // 1. Instant optimistic UI update for unreadCount on connections
+      setConnections((prev) =>
+        prev.map((c) => (c.id === connectionId ? { ...c, unreadCount: 0 } : c))
+      );
+
+      // 2. Identify corresponding conversation ID
+      const targetConn = connectionsRef.current.find((c) => c.id === connectionId);
+      const targetUserId = targetConn ? getOtherParticipantId(targetConn, currentUserId) : null;
+
+      let conversationId: string | null = null;
+      if (targetUserId && !targetUserId.startsWith('p-') && targetUserId !== 'sample-target') {
+        try {
+          conversationId = messageService.getDeterministicConversationId(currentUserId, targetUserId);
+        } catch {
+          // ignore
+        }
+      }
+
+      // 3. Clear unread in conversations state
+      setConversations((prev) =>
+        prev.map((c) =>
+          (conversationId && c.id === conversationId) || c.connectionId === connectionId || c.id === connectionId
+            ? { ...c, unreadCounts: { ...c.unreadCounts, [currentUserId]: 0 } }
+            : c
+        )
+      );
+
+      // 4. Persist read state in Firestore (conversation doc + messages subcollection + connection doc)
+      if (conversationId) {
+        try {
+          await messageService.markConversationAsRead(conversationId, currentUserId, connectionId);
+        } catch (err) {
+          console.warn('Failed to mark conversation read in Firestore:', err);
+        }
+      }
+
+      // 5. Always ensure connection document in Firestore has unreadCount: 0
+      try {
+        await connectionService.markConnectionAsRead(connectionId);
+      } catch (err) {
+        console.warn('Failed to mark connection read in Firestore:', err);
+      }
+    },
+    [user?.uid, user?.id]
+  );
 
   // Synchronize live members directory from Firestore.
   // IMPORTANT: Only subscribe after Firebase Auth has fully resolved.
@@ -236,7 +348,38 @@ function MainApp() {
     }
 
     const unsub = connectionService.subscribeUserConnections(currentUserId, (liveConns) => {
-      setConnections(liveConns || []);
+      const currentConvos = conversationsRef.current;
+      const sanitized = (liveConns || []).map((conn) => {
+        const otherId = getOtherParticipantId(conn, currentUserId);
+        const convo = currentConvos.find(
+          (c) =>
+            (c.participantIds && c.participantIds.includes(currentUserId) && otherId && c.participantIds.includes(otherId)) ||
+            c.connectionId === conn.id ||
+            c.id === conn.id
+        );
+        const isViewing = currentPathRef.current === '/messages' && activeConnectionIdRef.current === conn.id;
+        // Unread count must strictly represent unread messages from other user in conversation
+        const unreadCount = isViewing ? 0 : (convo?.unreadCounts?.[currentUserId] ?? 0);
+
+        // If legacy connection doc had unreadCount > 0 but convo has 0, clean up Firestore doc in background
+        if (conn.unreadCount && conn.unreadCount > 0 && unreadCount === 0) {
+          connectionService.markConnectionAsRead(conn.id).catch(() => {});
+        }
+
+        const lastMessageAt = convo?.lastMessageAt || conn.lastMessageAt;
+        const lastMessageTime = lastMessageAt ? formatMessageTime(lastMessageAt) : conn.lastMessageTime;
+
+        return {
+          ...conn,
+          unreadCount,
+          lastMessage: convo?.lastMessage || conn.lastMessage,
+          lastMessageTime,
+          lastMessageAt,
+        };
+      });
+
+      const sorted = sortConnectionsByActivity(sanitized, currentConvos, currentUserId);
+      setConnections(sorted);
     });
 
     return () => unsub();
@@ -248,50 +391,112 @@ function MainApp() {
     if (!currentUserId) return;
 
     const unsub = messageService.subscribeUserConversations(currentUserId, (liveConvos) => {
-      if (liveConvos && liveConvos.length > 0) {
-        setConnections((prev) => {
-          let hasChange = false;
-          const next = prev.map((conn) => {
-            const otherId = getOtherParticipantId(conn, currentUserId);
-            const convo = liveConvos.find(
-              (c) =>
-                (c.participantIds.includes(currentUserId) && otherId && c.participantIds.includes(otherId)) ||
-                c.connectionId === conn.id
-            );
-            if (convo) {
-              const newLastMsg = convo.lastMessage || conn.lastMessage;
-              const newTime = convo.lastMessageAt ? 'Active' : conn.lastMessageTime;
-              const newUnread = convo.unreadCounts?.[currentUserId] ?? conn.unreadCount;
-              if (
-                newLastMsg !== conn.lastMessage ||
-                newTime !== conn.lastMessageTime ||
-                newUnread !== conn.unreadCount
-              ) {
-                hasChange = true;
-                return {
-                  ...conn,
-                  lastMessage: newLastMsg,
-                  lastMessageTime: newTime,
-                  unreadCount: newUnread,
-                };
-              }
-            }
-            return conn;
-          });
-          return hasChange ? next : prev;
+      setConversations(liveConvos || []);
+      setConnections((prev) => {
+        const updated = prev.map((conn) => {
+          const otherId = getOtherParticipantId(conn, currentUserId);
+          const convo = (liveConvos || []).find(
+            (c) =>
+              (c.participantIds && c.participantIds.includes(currentUserId) && otherId && c.participantIds.includes(otherId)) ||
+              c.connectionId === conn.id ||
+              c.id === conn.id
+          );
+
+          const isViewingThis = currentPathRef.current === '/messages' && activeConnectionIdRef.current === conn.id;
+          const unreadCount = isViewingThis ? 0 : (convo?.unreadCounts?.[currentUserId] ?? 0);
+          const newLastMsg = convo?.lastMessage || conn.lastMessage;
+          const lastMessageAt = convo?.lastMessageAt || conn.lastMessageAt;
+          const newTime = lastMessageAt ? formatMessageTime(lastMessageAt) : conn.lastMessageTime;
+
+          return {
+            ...conn,
+            lastMessage: newLastMsg,
+            lastMessageTime: newTime,
+            lastMessageAt,
+            unreadCount,
+          };
         });
-      }
+
+        // Incorporate direct conversations from Firestore that may not have a connection doc yet
+        const existingOtherIds = new Set(
+          prev.map((c) => getOtherParticipantId(c, currentUserId)).filter(Boolean)
+        );
+        const newConnsFromConvos: Connection[] = [];
+
+        (liveConvos || []).forEach((convo) => {
+          const otherId = convo.participantIds?.find((id) => id !== currentUserId);
+          if (otherId && !existingOtherIds.has(otherId) && !otherId.startsWith('p-')) {
+            const summary = convo.participantsSummary?.[otherId];
+            const isViewingThis =
+              currentPathRef.current === '/messages' &&
+              (activeConnectionIdRef.current === convo.id || activeConnectionIdRef.current === convo.connectionId);
+            const unread = isViewingThis ? 0 : (convo.unreadCounts?.[currentUserId] ?? 0);
+            const cId = convo.connectionId || convo.id;
+            newConnsFromConvos.push({
+              id: cId,
+              profileId: otherId,
+              profile: {
+                id: otherId,
+                name: summary?.name || 'Member',
+                handle: summary?.name ? summary.name.toLowerCase().replace(/\s+/g, '') : otherId.slice(0, 8),
+                avatarUrl: summary?.avatarUrl || summary?.profilePhoto,
+                profilePhoto: summary?.profilePhoto || summary?.avatarUrl,
+                role: summary?.role || 'Explorer',
+                location: summary?.location || 'Worldwide',
+              } as any,
+              connectedAt: convo.createdAt || 'Recently',
+              status: 'connected',
+              sharedIntents: [],
+              sharedInterests: [],
+              lastMessage: convo.lastMessage,
+              lastMessageTime: convo.lastMessageAt ? formatMessageTime(convo.lastMessageAt) : 'Recently',
+              lastMessageAt: convo.lastMessageAt,
+              unreadCount: unread,
+            });
+            existingOtherIds.add(otherId);
+          }
+        });
+
+        const combined = [...updated, ...newConnsFromConvos];
+        return sortConnectionsByActivity(combined, liveConvos || [], currentUserId);
+      });
     });
 
     return () => unsub();
   }, [user?.uid, user?.id]);
 
-  // Synchronize real-time messages for active conversation
+  // Automatically select the first connected dialogue if activeConnectionId is empty, invalid, or sample
+  useEffect(() => {
+    const connected = connections.filter((c) => c.status === 'connected');
+    if (connected.length > 0) {
+      const exists = connected.some((c) => c.id === activeConnectionId);
+      if (!exists || activeConnectionId === 'conn-maya') {
+        const firstId = connected[0].id;
+        setActiveConnectionId(firstId);
+        if (currentPath === '/messages') {
+          handleSelectConversation(firstId);
+        }
+      }
+    }
+  }, [connections, activeConnectionId, currentPath, handleSelectConversation]);
+
+  // Synchronize real-time messages for active conversation & handle read states
   useEffect(() => {
     const currentUserId = user?.uid || user?.id;
-    if (!currentUserId) return;
+    if (!currentUserId || !activeConnectionId) return;
     const activeConn = connectionsRef.current.find((c) => c.id === activeConnectionId);
     if (!activeConn) return;
+
+    // Immediately clear unreadCount locally for the active conversation when on /messages
+    if (currentPath === '/messages') {
+      setConnections((prev) => {
+        const target = prev.find((c) => c.id === activeConnectionId);
+        if (target && (target.unreadCount || 0) > 0) {
+          return prev.map((c) => (c.id === activeConnectionId ? { ...c, unreadCount: 0 } : c));
+        }
+        return prev;
+      });
+    }
 
     const targetUserId = getOtherParticipantId(activeConn, currentUserId);
     if (!targetUserId) return;
@@ -305,15 +510,17 @@ function MainApp() {
       return;
     }
 
+    // Mark as read in Firestore when viewing on /messages
     if (currentPath === '/messages') {
-      messageService.markConversationAsRead(conversationId, currentUserId);
-      setConnections((prev) => {
-        const target = prev.find((c) => c.id === activeConnectionId);
-        if (target && (target.unreadCount || 0) > 0) {
-          return prev.map((c) => (c.id === activeConnectionId ? { ...c, unreadCount: 0 } : c));
-        }
-        return prev;
-      });
+      messageService.markConversationAsRead(conversationId, currentUserId, activeConnectionId);
+      connectionService.markConnectionAsRead(activeConnectionId);
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === conversationId || c.connectionId === activeConnectionId
+            ? { ...c, unreadCounts: { ...c.unreadCounts, [currentUserId]: 0 } }
+            : c
+        )
+      );
     }
 
     const unsub = messageService.subscribeConversationMessages(conversationId, (liveMsgs) => {
@@ -324,6 +531,25 @@ function MainApp() {
           );
           return [...otherMsgs, ...liveMsgs];
         });
+
+        // When new messages arrive while actively viewing this conversation on /messages:
+        // Automatically mark unread messages as read so the badge doesn't increase
+        if (currentPath === '/messages') {
+          const hasUnread = liveMsgs.some(
+            (m) => m.senderId !== currentUserId && (!m.readBy || !m.readBy.includes(currentUserId))
+          );
+          if (hasUnread) {
+            messageService.markConversationAsRead(conversationId, currentUserId, activeConnectionId);
+            connectionService.markConnectionAsRead(activeConnectionId);
+            setConversations((prev) =>
+              prev.map((c) =>
+                c.id === conversationId || c.connectionId === activeConnectionId
+                  ? { ...c, unreadCounts: { ...c.unreadCounts, [currentUserId]: 0 } }
+                  : c
+              )
+            );
+          }
+        }
       }
     });
 
@@ -381,7 +607,7 @@ function MainApp() {
       navigate('/connections');
     } else if (notif.type === 'CONNECTION_ACCEPTED') {
       if (notif.referenceId) {
-        setActiveConnectionId(notif.referenceId);
+        handleSelectConversation(notif.referenceId);
         navigate('/messages');
       } else {
         setConnectionsInitialTab('connected');
@@ -405,9 +631,9 @@ function MainApp() {
             c.profileId === notif.referenceId
         );
         if (matched) {
-          setActiveConnectionId(matched.id);
+          handleSelectConversation(matched.id);
         } else {
-          setActiveConnectionId(notif.referenceId);
+          handleSelectConversation(notif.referenceId);
         }
       }
       navigate('/messages');
@@ -450,7 +676,46 @@ function MainApp() {
     setConnectModalTarget(target as UserProfile);
   };
 
-  // Start new conversation / Send connection request
+  // Send connection request only (does NOT create conversations or send messages or redirect)
+  const handleSendConnectionRequest = async (
+    target: UserProfile | PublicProfile,
+    introNote?: string
+  ): Promise<void> => {
+    const currentUserId = user?.uid || user?.id || 'current-user';
+    const targetUserId = target.uid || target.id;
+
+    // Check if connection or request already exists to prevent duplicate connection requests
+    const deterministicId = connectionService.generateConnectionId(currentUserId, targetUserId);
+    const existingConn = connections.find(
+      (c) =>
+        c.id === deterministicId ||
+        c.profileId === targetUserId ||
+        (c.requesterId === currentUserId && (c.targetId === targetUserId || c.profileId === targetUserId)) ||
+        (c.targetId === currentUserId && (c.requesterId === targetUserId || c.profileId === targetUserId)) ||
+        (c.participants && c.participants.includes(targetUserId) && c.participants.includes(currentUserId))
+    );
+
+    if (existingConn && (existingConn.status === 'pending' || existingConn.status === 'connected')) {
+      return;
+    }
+
+    const currentUserObj = user || INITIAL_USER;
+
+    // Send connection request to Firestore via connectionService
+    const createdConn = await connectionService.sendConnectionRequest({
+      requester: currentUserObj,
+      target,
+      introNote: introNote?.trim() || undefined,
+    });
+
+    // Update local connections state so Discover card immediately shows "Request Sent"
+    setConnections((prev) => [
+      createdConn,
+      ...prev.filter((c) => c.id !== createdConn.id),
+    ]);
+  };
+
+  // Start new conversation / Send connection request (Legacy fallback)
   const handleStartConversation = async (target: UserProfile | PublicProfile, introPrompt: string) => {
     const currentUserId = user?.uid || user?.id || 'current-user';
     const targetUserId = target.uid || target.id;
@@ -464,7 +729,7 @@ function MainApp() {
     );
 
     if (existingConn && existingConn.status === 'connected') {
-      setActiveConnectionId(existingConn.id);
+      handleSelectConversation(existingConn.id);
       navigate('/messages');
       setConnectModalTarget(null);
       return;
@@ -591,14 +856,16 @@ function MainApp() {
       timestamp: 'Just now',
     };
 
+    const now = new Date().toISOString();
     setMessages((prev) => [...prev, newMsg]);
-    setConnections((prev) =>
-      prev.map((c) =>
+    setConnections((prev) => {
+      const updated = prev.map((c) =>
         c.id === connectionId
-          ? { ...c, lastMessage: text, lastMessageTime: 'Just now', unreadCount: 0 }
+          ? { ...c, lastMessage: text, lastMessageTime: 'Just now', lastMessageAt: now, unreadCount: 0 }
           : c
-      )
-    );
+      );
+      return sortConnectionsByActivity(updated, conversationsRef.current, currentUserId);
+    });
 
     if (!targetUserId.startsWith('p-') && targetUserId !== 'sample-target') {
       try {
@@ -625,6 +892,7 @@ function MainApp() {
           `This would make an incredible experiment. We should prototype a small version together.`,
         ];
         const randomReply = replies[Math.floor(Math.random() * replies.length)];
+        const replyNow = new Date().toISOString();
         const replyMsg: ChatMessage = {
           id: `msg-reply-${Date.now()}`,
           conversationId,
@@ -636,13 +904,22 @@ function MainApp() {
         };
 
         setMessages((prev) => [...prev, replyMsg]);
-        setConnections((prev) =>
-          prev.map((c) =>
-            c.id === connectionId
-              ? { ...c, lastMessage: randomReply, lastMessageTime: 'Just now' }
-              : c
-          )
-        );
+        setConnections((prev) => {
+          const updated = prev.map((c) => {
+            if (c.id === connectionId) {
+              const isViewing = currentPath === '/messages' && activeConnectionId === connectionId;
+              return {
+                ...c,
+                lastMessage: randomReply,
+                lastMessageTime: 'Just now',
+                lastMessageAt: replyNow,
+                unreadCount: isViewing ? 0 : (c.unreadCount || 0) + 1,
+              };
+            }
+            return c;
+          });
+          return sortConnectionsByActivity(updated, conversationsRef.current, currentUserId);
+        });
       }, 2000);
     }
   };
@@ -669,6 +946,27 @@ function MainApp() {
     }
   };
 
+  // Count unread notifications & messages - authoritative Firestore & active view aware
+  const unreadMessagesCount = useMemo(() => {
+    const currentUserId = user?.uid || user?.id;
+    if (!currentUserId) {
+      return connections.reduce((sum, c) => {
+        if (currentPath === '/messages' && c.id === activeConnectionId) return sum;
+        return sum + (c.unreadCount || 0);
+      }, 0);
+    }
+
+    const connected = connections.filter((c) => c.status === 'connected');
+    return connected.reduce((sum, c) => {
+      // If actively viewing this conversation on /messages, it contributes 0
+      if (currentPath === '/messages' && c.id === activeConnectionId) return sum;
+      return sum + (c.unreadCount || 0);
+    }, 0);
+  }, [user?.uid, user?.id, connections, currentPath, activeConnectionId]);
+
+  const activeConnectionsCount = connections.filter((c) => c.status === 'connected').length;
+  const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#080808] flex flex-col items-center justify-center text-[#F2F2ED]">
@@ -681,11 +979,6 @@ function MainApp() {
       </div>
     );
   }
-
-  // Count unread notifications & messages
-  const unreadMessagesCount = connections.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
-  const activeConnectionsCount = connections.filter((c) => c.status === 'connected').length;
-  const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
 
   const isPublicView = currentPath === '/' || currentPath === '/signin' || currentPath === '/signup' || currentPath === '/reset-password';
   const isOnboardingView = currentPath === '/onboarding';
@@ -861,7 +1154,7 @@ function MainApp() {
                 onSelectProfile={(profile) => setSelectedMemberProfile(profile)}
                 onConnect={handleOpenConnectModal}
                 onOpenChat={(connId) => {
-                  setActiveConnectionId(connId);
+                  handleSelectConversation(connId);
                   navigate('/messages');
                 }}
                 onOpenOnboarding={() => navigate('/onboarding')}
@@ -898,7 +1191,7 @@ function MainApp() {
                   (c) => c.profileId === targetUid || c.profile?.id === targetUid || c.targetId === targetUid
                 );
                 if (matchedConn) {
-                  setActiveConnectionId(matchedConn.id);
+                  handleSelectConversation(matchedConn.id);
                   navigate('/messages');
                 } else {
                   const p = profiles.find((prof) => prof.id === targetUid);
@@ -919,7 +1212,7 @@ function MainApp() {
               connections={connections}
               onOpenProfile={() => navigate('/profile')}
               onOpenChat={(connId) => {
-                setActiveConnectionId(connId);
+                handleSelectConversation(connId);
                 navigate('/messages');
               }}
               onSelectProfile={(profile) => setSelectedMemberProfile(profile as PublicProfile)}
@@ -961,7 +1254,7 @@ function MainApp() {
               currentUser={user || INITIAL_USER}
               initialTab={connectionsInitialTab}
               onOpenChat={(connId) => {
-                setActiveConnectionId(connId);
+                handleSelectConversation(connId);
                 navigate('/messages');
               }}
               onExplore={() => navigate('/discover')}
@@ -979,7 +1272,7 @@ function MainApp() {
             <MessagesView
               connections={connections.filter((c) => c.status === 'connected')}
               activeConnectionId={activeConnectionId}
-              onSelectConnection={(id) => setActiveConnectionId(id)}
+              onSelectConnection={handleSelectConversation}
               messages={messages}
               onSendMessage={handleSendMessage}
               currentUser={user || INITIAL_USER}
@@ -1026,13 +1319,14 @@ function MainApp() {
         onToggleBookmark={handleToggleBookmark}
       />
 
-      {/* Connect & Conversation Starter Modal */}
+      {/* Connect & Serendipitous Match Modal */}
       <ConnectModal
         isOpen={!!connectModalTarget}
         onClose={() => setConnectModalTarget(null)}
         targetProfile={connectModalTarget}
         currentUser={user || INITIAL_USER}
-        onStartConversation={handleStartConversation}
+        connections={connections}
+        onConnect={handleSendConnectionRequest}
       />
 
     </div>

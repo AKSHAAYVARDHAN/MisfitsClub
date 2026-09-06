@@ -128,7 +128,7 @@ export const connectionService = {
       introNote: introNote.trim() || undefined,
       lastMessage: introNote.trim() || 'Sent a connection request',
       lastMessageTime: 'Just now',
-      unreadCount: 1,
+      unreadCount: 0,
       createdAt: now,
       updatedAt: now,
     };
@@ -201,6 +201,7 @@ export const connectionService = {
       await updateDoc(doc(db, 'connections', connectionId), {
         status: 'connected',
         connectedAt: now,
+        unreadCount: 0,
         updatedAt: now,
       });
 
@@ -225,6 +226,28 @@ export const connectionService = {
     } catch (error) {
       console.warn('Failed to accept connection in Firestore', error);
       handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
+  /**
+   * Authoritatively mark a connection's unreadCount as 0 in Firestore
+   */
+  async markConnectionAsRead(connectionId: string): Promise<void> {
+    if (!connectionId) return;
+    try {
+      const connRef = doc(db, 'connections', connectionId);
+      const connSnap = await getDoc(connRef);
+      if (connSnap.exists()) {
+        const data = connSnap.data() as any;
+        if (data.unreadCount && data.unreadCount !== 0) {
+          await updateDoc(connRef, {
+            unreadCount: 0,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Could not mark connection document as read:', err);
     }
   },
 
@@ -323,8 +346,12 @@ export const connectionService = {
           } as Connection);
         });
 
-        // Sort by updatedAt or createdAt desc
-        conns.sort((a, b) => (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''));
+        // Sort by lastMessageAt, falling back to updatedAt or createdAt desc
+        conns.sort((a, b) => {
+          const timeA = a.lastMessageAt || a.updatedAt || a.createdAt || '';
+          const timeB = b.lastMessageAt || b.updatedAt || b.createdAt || '';
+          return timeB.localeCompare(timeA);
+        });
         onUpdate(conns);
       },
       (error) => {

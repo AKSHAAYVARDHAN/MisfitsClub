@@ -411,7 +411,7 @@ export const INITIAL_CONNECTIONS: Connection[] = [
     introNote: 'Loved your thoughts on analog film memory vs neural interpolation. Would love to swap notes on generative aesthetics!',
     lastMessage: 'The grain shader simulation in your test file worked wonderfully.',
     lastMessageTime: 'Yesterday, 11:20 PM',
-    unreadCount: 1,
+    unreadCount: 0,
   },
   {
     id: 'c-arjun',

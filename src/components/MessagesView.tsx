@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Connection, ChatMessage, UserProfile } from '../types';
 import { 
   Send, 
@@ -43,9 +43,6 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   const safeConnections = connections || [];
   const safeMessages = messages || [];
 
-  // Active connection
-  const activeConnection = safeConnections.find((c) => c.id === activeConnectionId) || safeConnections[0];
-
   // Helper to match messages for a connection
   const getMessagesForConnection = (conn: Connection | undefined) => {
     if (!conn) return [];
@@ -68,8 +65,55 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     });
   };
 
+  // Authoritatively sort conversations strictly by most recent message activity
+  const sortedConnections = useMemo(() => {
+    return [...safeConnections].sort((a, b) => {
+      let timeA = a.lastMessageAt || '';
+      let timeB = b.lastMessageAt || '';
+
+      const msgsA = getMessagesForConnection(a);
+      if (msgsA.length > 0) {
+        const lastA = msgsA[msgsA.length - 1];
+        if (lastA.createdAt && (!timeA || lastA.createdAt > timeA)) {
+          timeA = lastA.createdAt;
+        }
+      }
+
+      const msgsB = getMessagesForConnection(b);
+      if (msgsB.length > 0) {
+        const lastB = msgsB[msgsB.length - 1];
+        if (lastB.createdAt && (!timeB || lastB.createdAt > timeB)) {
+          timeB = lastB.createdAt;
+        }
+      }
+
+      if (timeA && timeB) {
+        const cmp = timeB.localeCompare(timeA);
+        if (cmp !== 0) return cmp;
+      } else if (timeA && !timeB) {
+        return -1;
+      } else if (!timeA && timeB) {
+        return 1;
+      }
+
+      const fallbackA = a.updatedAt || a.connectedAt || a.createdAt || '';
+      const fallbackB = b.updatedAt || b.connectedAt || b.createdAt || '';
+      return fallbackB.localeCompare(fallbackA);
+    });
+  }, [safeConnections, safeMessages, currentUser?.uid, currentUser?.id]);
+
+  // Active connection
+  const activeConnection = sortedConnections.find((c) => c.id === activeConnectionId) || sortedConnections[0];
+
   // Messages for active connection
   const activeMessages = getMessagesForConnection(activeConnection);
+
+  // Sync active connection selection with parent if mismatch
+  useEffect(() => {
+    if (activeConnection && activeConnection.id !== activeConnectionId) {
+      onSelectConnection(activeConnection.id);
+    }
+  }, [activeConnection?.id, activeConnectionId, onSelectConnection]);
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -88,7 +132,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     onSendMessage(activeConnection.id, starterText);
   };
 
-  if (safeConnections.length === 0) {
+  if (sortedConnections.length === 0) {
     return (
       <div className="min-h-[75vh] flex flex-col items-center justify-center text-center px-6 max-w-md mx-auto py-12 sm:py-20 bg-[#09090B] text-[#F5F5F0] selection:bg-[#D4FF3F] selection:text-[#080808]">
         <div className="w-12 h-12 bg-[#121216] border border-[#1E1E24] flex items-center justify-center mb-6">
@@ -129,16 +173,16 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               </h2>
             </div>
             <span className="text-[10px] font-mono-code text-[#7A7A82] uppercase tracking-wider">
-              {safeConnections.length} ACTIVE
+              {sortedConnections.length} ACTIVE
             </span>
           </div>
 
           {/* Conversations List */}
           <div className="flex-1 overflow-y-auto divide-y divide-[#18181E]">
-            {safeConnections.map((conn) => {
+            {sortedConnections.map((conn) => {
               const isSelected = activeConnection?.id === conn.id;
               const allConvoMsgs = getMessagesForConnection(conn);
-              const lastMsg = allConvoMsgs.slice(-1)[0]?.text || conn.introNote || 'Connected on Misfits Club';
+              const lastMsg = allConvoMsgs.slice(-1)[0]?.text || conn.lastMessage || conn.introNote || 'Connected on Misfits Club';
               const lastTime = allConvoMsgs.slice(-1)[0]?.timestamp || conn.lastMessageTime || 'Just now';
 
               return (

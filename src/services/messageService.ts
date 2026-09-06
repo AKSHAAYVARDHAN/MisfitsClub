@@ -10,6 +10,7 @@ import {
   limit,
   onSnapshot,
   increment,
+  arrayUnion,
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, sanitizeFirestoreData } from './firebase';
 import { Conversation, ChatMessage, UserProfile, PublicProfile } from '../types';
@@ -213,10 +214,12 @@ export const messageService = {
       conversationId,
       connectionId: connectionId || conversationId,
       senderId,
+      recipientId,
       senderName: senderProfile.name || 'Member',
       text: trimmedText,
       timestamp: formattedTime,
       createdAt: now,
+      read: false,
       readBy: [senderId],
       isStarterPrompt: Boolean(isStarterPrompt),
     };
@@ -261,13 +264,14 @@ export const messageService = {
         };
         await setDoc(convoDocRef, sanitizeFirestoreData(conversationData));
       } else {
-        // Update conversation metadata & increment recipient unread count
+        // Update conversation metadata & increment recipient unread count, reset sender unread count
         await updateDoc(convoDocRef, {
           lastMessage: trimmedText,
           lastMessageAt: now,
           lastMessageSenderId: senderId,
           updatedAt: now,
           [`unreadCounts.${recipientId}`]: increment(1),
+          [`unreadCounts.${senderId}`]: 0,
         });
       }
 
@@ -275,7 +279,29 @@ export const messageService = {
       const msgDocRef = doc(db, 'conversations', conversationId, 'messages', messageId);
       await setDoc(msgDocRef, sanitizedMessage);
 
-      // 3. Trigger direct message notification for recipient (if real member)
+      // 3. Keep linked connection document in sync with latest message activity
+      const sortedIds = [senderId, recipientId].sort();
+      const deterministicConnId = `conn_${sortedIds[0]}_${sortedIds[1]}`;
+      const connIdToUpdate = connectionId || deterministicConnId;
+
+      if (connIdToUpdate && !connIdToUpdate.startsWith('conn-p-') && !connIdToUpdate.startsWith('c-')) {
+        try {
+          const connRef = doc(db, 'connections', connIdToUpdate);
+          const connSnap = await getDoc(connRef);
+          if (connSnap.exists()) {
+            await updateDoc(connRef, {
+              lastMessage: trimmedText.length > 500 ? `${trimmedText.slice(0, 497)}...` : trimmedText,
+              lastMessageTime: formattedTime,
+              lastMessageAt: now,
+              updatedAt: now,
+            });
+          }
+        } catch (connErr) {
+          console.warn('Could not update connection doc metadata on message send:', connErr);
+        }
+      }
+
+      // 4. Trigger direct message notification for recipient (if real member)
       if (recipientId && recipientId !== senderId && !recipientId.startsWith('p-')) {
         try {
           const previewText =
@@ -367,33 +393,124 @@ export const messageService = {
 
   /**
    * Mark a conversation as read for the current user.
+   * Clears unread count on the conversation document and marks individual
+   * unread messages where user is the recipient as read with readBy and readAt.
+   * Also ensures linked connection document unreadCount is reset to 0 in Firestore.
    */
-  async markConversationAsRead(conversationId: string, userId: string): Promise<void> {
+  async markConversationAsRead(
+    conversationId: string,
+    userId: string,
+    connectionId?: string
+  ): Promise<void> {
     if (!conversationId || !userId) return;
     // Guard: skip conversations that involve sample/demo profile IDs.
-    // These conversations don't exist in Firestore — the conversation ID embeds the profile ID
-    // (e.g. conv_realUID_p-maya) so we can detect them reliably.
-    if (conversationId.includes('_p-') || conversationId.startsWith('conv_p-')) return;
-    const path = `conversations/${conversationId}`;
+    if (conversationId.includes('_p-') || conversationId.startsWith('conv_p-') || conversationId.startsWith('conn-p-')) return;
+
+    const now = new Date().toISOString();
+
+    // 1. Immediately reset connection document unreadCount if provided
+    const targetConnId = connectionId || (conversationId.startsWith('conn_') ? conversationId : null);
+    if (targetConnId && !targetConnId.startsWith('conn-p-') && !targetConnId.startsWith('c-')) {
+      try {
+        const connRef = doc(db, 'connections', targetConnId);
+        const connSnap = await getDoc(connRef);
+        if (connSnap.exists()) {
+          const data = connSnap.data() as any;
+          if (data.unreadCount && data.unreadCount !== 0) {
+            await updateDoc(connRef, { unreadCount: 0, updatedAt: now });
+          }
+        }
+      } catch (connErr) {
+        console.warn('Could not reset connection unreadCount:', connErr);
+      }
+    }
 
     try {
       const convoDocRef = doc(db, 'conversations', conversationId);
       const convoSnap = await getDoc(convoDocRef);
       if (!convoSnap.exists()) {
-        // Parent conversation not created in Firestore yet
         return;
       }
 
       const convoData = convoSnap.data() as Conversation;
       const currentUnread = convoData.unreadCounts?.[userId] || 0;
-      if (currentUnread > 0) {
+
+      // 2. Reset unreadCounts for this user on the conversation document
+      if (currentUnread > 0 || convoData.unreadCounts?.[userId] !== 0) {
         await updateDoc(convoDocRef, {
           [`unreadCounts.${userId}`]: 0,
-          updatedAt: new Date().toISOString(),
+          updatedAt: now,
         });
+      }
+
+      // 3. Mark individual unread messages as read in the subcollection
+      try {
+        const msgsRef = collection(db, 'conversations', conversationId, 'messages');
+        const msgsSnap = await getDocs(query(msgsRef, limit(100)));
+
+        const updatePromises: Promise<void>[] = [];
+        msgsSnap.forEach((msgDoc) => {
+          const mData = msgDoc.data() as ChatMessage;
+          // If sender was someone else and current user hasn't read it yet
+          if (mData.senderId !== userId && (!mData.readBy || !mData.readBy.includes(userId))) {
+            const updateP = updateDoc(msgDoc.ref, {
+              readBy: arrayUnion(userId),
+              readAt: now,
+              read: true,
+            }).catch((err) => {
+              console.warn('Failed to mark message read doc:', err);
+            });
+            updatePromises.push(updateP);
+          }
+        });
+
+        if (updatePromises.length > 0) {
+          await Promise.all(updatePromises);
+        }
+      } catch (subErr) {
+        console.warn('Notice updating messages read state in subcollection:', subErr);
+      }
+
+      // 4. If there is a linked connection, ensure its unreadCount is also 0
+      const linkedConnId = convoData.connectionId || targetConnId;
+      if (linkedConnId && !linkedConnId.startsWith('conn-p-') && !linkedConnId.startsWith('c-')) {
+        try {
+          const connRef = doc(db, 'connections', linkedConnId);
+          const connSnap = await getDoc(connRef);
+          if (connSnap.exists() && (connSnap.data() as any).unreadCount !== 0) {
+            await updateDoc(connRef, { unreadCount: 0, updatedAt: now });
+          }
+        } catch {
+          // ignore non-critical connection sync
+        }
       }
     } catch (error) {
       console.warn('Failed to mark conversation as read in Firestore:', error);
     }
+  },
+
+  /**
+   * Helper to retrieve unread message count for a given user in a conversation
+   */
+  getUnreadCountForUser(conversation: Conversation | undefined | null, userId: string): number {
+    if (!conversation || !userId) return 0;
+    return conversation.unreadCounts?.[userId] || 0;
+  },
+
+  /**
+   * Authoritative calculation of total unread messages across conversations for a user
+   */
+  calculateTotalUnread(conversations: Conversation[], userId: string, activeConversationId?: string | null): number {
+    if (!conversations || !userId) return 0;
+    return conversations.reduce((total, c) => {
+      // If user is actively viewing this conversation, count is 0
+      if (activeConversationId && (c.id === activeConversationId || c.connectionId === activeConversationId)) {
+        return total;
+      }
+      if (c.participantIds && c.participantIds.includes(userId)) {
+        return total + (c.unreadCounts?.[userId] || 0);
+      }
+      return total;
+    }, 0);
   },
 };
